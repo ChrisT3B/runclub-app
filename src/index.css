@@ -607,4 +607,11 @@ html, body {
   .main-content {
     width: 100%;
   }
+  .user-menu-trigger {
+  /* Add these for debugging */
+  background: red !important;
+  z-index: 1000 !important;
+  position: relative !important;
+}
+
 }
