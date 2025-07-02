@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AdminService, Member } from '../services/adminService';
+import { MemberEditModal } from './MemberEditModal';
 
 export const MemberList: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
@@ -7,6 +8,7 @@ export const MemberList: React.FC = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
 
   useEffect(() => {
     loadMembers();
@@ -124,10 +126,7 @@ export const MemberList: React.FC = () => {
                           <button
                             className="btn btn-secondary"
                             style={{ fontSize: '12px', padding: '4px 8px' }}
-                            onClick={() => {
-                              // TODO: Navigate to member detail page
-                              console.log('View member:', member.id);
-                            }}
+                            onClick={() => setEditingMember(member)}
                           >
                             📝 Edit
                           </button>
@@ -195,6 +194,21 @@ export const MemberList: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingMember && (
+        <MemberEditModal
+          member={editingMember}
+          isOpen={true}
+          onClose={() => setEditingMember(null)}
+          onSave={(updatedMember) => {
+            setMembers(prev => prev.map(m => 
+              m.id === updatedMember.id ? updatedMember : m
+            ));
+            setEditingMember(null);
+          }}
+        />
+      )}
     </div>
   );
 };

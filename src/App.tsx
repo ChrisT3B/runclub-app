@@ -11,6 +11,8 @@ import { Card } from './shared/components/ui/Card'
 import { PageHeader } from './shared/components/ui/PageHeader'
 import { ProfileEditForm } from './modules/membership/components/ProfileEditForm'
 import { MemberList } from './modules/admin/components/MemberList'
+import { PendingApprovalsCard } from './modules/admin/components/PendingApprovalsCard'
+
 
 // Dashboard content component - Updated for custom CSS
 const DashboardContent = () => {
@@ -22,6 +24,13 @@ const DashboardContent = () => {
         <h1 className="page-title">Dashboard</h1>
         <p className="page-description">Welcome to your RunClub member portal</p>
       </div>
+      
+      {/* Admin-only Pending Approvals Card */}
+      {state.user?.accessLevel === 'admin' && (
+        <div style={{ marginBottom: '24px' }}>
+          <PendingApprovalsCard />
+        </div>
+      )}
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '24px' }}>
         <div className="card">
@@ -101,6 +110,7 @@ const DashboardContent = () => {
     </>
   )
 }
+
 
 // Main app content with navigation
 const AppContent = () => {

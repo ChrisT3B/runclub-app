@@ -85,4 +85,27 @@ export class AdminService {
       throw error;
     }
   }
+
+  /**
+   * Update complete member details
+   */
+  static async updateMemberDetails(memberId: string, memberData: Partial<Member>): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update({ 
+          ...memberData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', memberId);
+
+      if (error) {
+        console.error('Failed to update member details:', error);
+        throw new Error(error.message);
+      }
+    } catch (error) {
+      console.error('AdminService.updateMemberDetails error:', error);
+      throw error;
+    }
+  }
 }
