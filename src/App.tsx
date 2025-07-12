@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { AuthProvider } from './modules/auth/context/AuthContext'
 import { LoginForm } from './modules/auth/components/LoginForm'
 import { RegisterForm } from './modules/auth/components/RegisterForm'
@@ -134,7 +134,7 @@ return (
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {upcomingBookings.map((booking, index) => (
+            {upcomingBookings.map((booking) => (
               <div 
                 key={booking.id}
                 style={{ 
