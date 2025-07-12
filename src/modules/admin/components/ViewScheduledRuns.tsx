@@ -277,7 +277,6 @@ export const ViewScheduledRuns: React.FC = () => {
     const runUrl = window.location.origin + '/runs/' + run.id;
     const runText = `🏃‍♂️ ${run.run_title}\n\n📅 ${formatDate(run.run_date)} at ${formatTime(run.run_time)}\n📍 ${run.meeting_point}\n${run.approximate_distance ? `🏃‍♂️ ${run.approximate_distance}\n` : ''}${run.description ? `\n${run.description}\n` : ''}\n👥 ${run.max_participants - run.booking_count} spaces available!\n\nBook your place now! 👇`;
     
-    const FACEBOOK_GROUP_ID = '1546345365694459';
     
     // Fallback copy function
     const copyFallback = (text: string) => {

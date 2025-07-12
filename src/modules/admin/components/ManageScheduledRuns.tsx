@@ -5,7 +5,7 @@ import { CreateScheduledRunForm } from './CreateScheduledRunForm';
 import { EditScheduledRunForm } from './EditScheduledRunForm';
 
 export const ManageScheduledRuns: React.FC = () => {
-  const { state } = useAuth();
+  const {  } = useAuth();
   const [runs, setRuns] = useState<ScheduledRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

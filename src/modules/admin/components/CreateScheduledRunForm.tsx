@@ -97,7 +97,9 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
   // Generate individual runs for weekly recurrence
   const generateWeeklyRuns = (baseData: ScheduledRunData) => {
     const runs = [];
-    
+      if (!state.user?.id) {
+         throw new Error('User must be logged in to create runs');
+      }
     if (!baseData.is_recurring) {
       // Single run
       return [{
