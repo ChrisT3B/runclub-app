@@ -9,7 +9,7 @@ interface AuthLayoutProps {
 
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ 
   children, 
-  title = "RunClub App",
+  title = "Run Alcester App",
   subtitle = "Member Portal"
 }) => {
   return (
