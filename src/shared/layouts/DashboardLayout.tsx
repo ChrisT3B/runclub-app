@@ -50,7 +50,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <div className="main-content">
         <Header   
         onMenuClick={() => setSidebarOpen(true)}
-        _showMenuButton={true}/>
+     />
         
         {/* Content Area */}
         <div className="content-area">

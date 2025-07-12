@@ -157,10 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  // Verify email function
-  const verifyEmail = async (token: string) => {
-    console.log('Email verification:', token)
-  }
+
 
   // Refresh user function
   const refreshUser = async () => {

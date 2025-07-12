@@ -2,16 +2,12 @@ import React from 'react';
 
 interface HeaderProps {
   title?: string;
-  _showUserMenu?: boolean;
     onMenuClick?: () => void;     // Add this line
-  _showMenuButton?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
   title = "Run Alcester App", 
-  _showUserMenu = true,
   onMenuClick,                  // Add this line
-  _showMenuButton = false        // Add this line
 }) => {
   console.log('Simple header working!');
 
