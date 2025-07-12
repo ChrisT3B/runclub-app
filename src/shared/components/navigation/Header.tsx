@@ -3,11 +3,15 @@ import React from 'react';
 interface HeaderProps {
   title?: string;
   showUserMenu?: boolean;
+    onMenuClick?: () => void;     // Add this line
+  showMenuButton?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
-  title = "RunClub Manager", 
-  showUserMenu = true 
+  title = "Run Alcester App", 
+  showUserMenu = true,
+  onMenuClick,                  // Add this line
+  showMenuButton = false        // Add this line
 }) => {
   console.log('Simple header working!');
 
@@ -15,6 +19,13 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="header">
       <div className="header-content">
         <div className="header-left">
+                {/* Mobile menu button */}
+      <button 
+        className="mobile-menu-btn"
+        onClick={onMenuClick}
+      >
+        ☰
+      </button>
           <h1 className="header-title">{title}</h1>
         </div>
         <div className="header-right">

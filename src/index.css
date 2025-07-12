@@ -613,5 +613,8 @@ html, body {
   z-index: 1000 !important;
   position: relative !important;
 }
-
+.header {
+  position: relative;
+  z-index: 100 !important;
+}
 }

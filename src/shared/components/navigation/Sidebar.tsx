@@ -13,25 +13,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
-    { id: 'events', name: 'Events', icon: '🏃‍♂️' },
+    { id: 'scheduled-runs', name: 'Scheduled Runs', icon: '🏃‍♂️' },
     { id: 'profile', name: 'My Profile', icon: '👤' },
   ]
 
   // Add LIRF-specific navigation
   if (state.user?.accessLevel === 'lirf' || state.user?.accessLevel === 'admin') {
     navigation.push(
-      { id: 'manage-events', name: 'Manage Events', icon: '📅' },
-      { id: 'lirf-dashboard', name: 'LIRF Dashboard', icon: '🎯' }
+      { id: 'manage-runs', name: 'Manage Scheduled Runs', icon: '📅' },
     )
   }
 
-  // Add admin-specific navigation
-  if (state.user?.accessLevel === 'admin') {
-    navigation.push(
-      { id: 'members', name: 'Members', icon: '👥' },
-      { id: 'lirfs', name: 'LIRFs', icon: '🏅' },
+// Add admin-specific navigation
+if (state.user?.accessLevel === 'admin') {
+  navigation.push(
+    { id: 'members', name: 'Members', icon: '👥' },
       { id: 'communications', name: 'Communications', icon: '📧' }
-    )
+  )
+
   }
 
   return (

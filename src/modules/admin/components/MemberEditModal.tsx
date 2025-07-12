@@ -24,7 +24,8 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
     emergency_contact_phone: member.emergency_contact_phone || '',
     health_conditions: member.health_conditions || '',
     membership_status: member.membership_status || 'pending',
-    access_level: member.access_level || 'member'
+    access_level: member.access_level || 'member',
+    dbs_expiry_date: member.dbs_expiry_date || ''
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -41,11 +42,24 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
     setError('');
 
     try {
+      // Validate DBS date for LIRFs and Admins
+      if ((formData.access_level === 'lirf' || formData.access_level === 'admin') && 
+          formData.dbs_expiry_date && 
+          new Date(formData.dbs_expiry_date) < new Date()) {
+        setError('Warning: DBS expiry date is in the past. Please verify this is correct.');
+      }
+
+      // Clean up form data - remove empty DBS date for non-LIRF members
+      const cleanFormData: any = { ...formData };
+      if (formData.access_level === 'member' || !formData.dbs_expiry_date) {
+        cleanFormData.dbs_expiry_date = undefined;
+      }
+
       // Update member in database
-      await AdminService.updateMemberDetails(member.id, formData);
+      await AdminService.updateMemberDetails(member.id, cleanFormData);
       
       // Create updated member object
-      const updatedMember = { ...member, ...formData };
+      const updatedMember = { ...member, ...cleanFormData };
       onSave(updatedMember);
       onClose();
       
@@ -56,6 +70,27 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
       setIsLoading(false);
     }
   };
+
+  // Check if current access level requires DBS
+  const requiresDBS = formData.access_level === 'lirf' || formData.access_level === 'admin';
+
+  // Get DBS status for warning display
+  const getDBSWarning = () => {
+    if (!requiresDBS || !formData.dbs_expiry_date) return null;
+    
+    const today = new Date();
+    const expiryDate = new Date(formData.dbs_expiry_date);
+    const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilExpiry < 0) {
+      return { type: 'error', message: `DBS expired ${Math.abs(daysUntilExpiry)} days ago` };
+    } else if (daysUntilExpiry <= 30) {
+      return { type: 'warning', message: `DBS expires in ${daysUntilExpiry} days` };
+    }
+    return null;
+  };
+
+  const dbsWarning = getDBSWarning();
 
   if (!isOpen) return null;
 
@@ -197,7 +232,7 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
                   Admin Settings
                 </h4>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                   <div className="form-group">
                     <label className="form-label" htmlFor="membership_status">Membership Status</label>
                     <select
@@ -228,6 +263,42 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
                     </select>
                   </div>
                 </div>
+
+                {/* DBS Expiry - Only show for LIRFs and Admins */}
+                {requiresDBS && (
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="dbs_expiry_date">
+                      DBS Expiry Date
+                      {requiresDBS && <span style={{ color: '#dc2626' }}> *</span>}
+                    </label>
+                    <input
+                      type="date"
+                      id="dbs_expiry_date"
+                      name="dbs_expiry_date"
+                      value={formData.dbs_expiry_date}
+                      onChange={handleInputChange}
+                      className="form-input"
+                      min={new Date().toISOString().split('T')[0]} // Minimum date is today
+                    />
+                    <div style={{ fontSize: '12px', color: 'var(--gray-500)', marginTop: '4px' }}>
+                      Required for LIRF and Admin access levels
+                    </div>
+                    
+                    {dbsWarning && (
+                      <div style={{
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        marginTop: '8px',
+                        background: dbsWarning.type === 'error' ? '#fee2e2' : '#fef3c7',
+                        color: dbsWarning.type === 'error' ? '#dc2626' : '#92400e',
+                        border: `1px solid ${dbsWarning.type === 'error' ? '#fecaca' : '#fde68a'}`
+                      }}>
+                        ⚠️ {dbsWarning.message}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Medical Information */}

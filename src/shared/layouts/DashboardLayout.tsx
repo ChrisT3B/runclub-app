@@ -46,32 +46,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </div>
       )}
 
-      {/* Main Content Area */}
-      <div className="main-content">
-        {/* Header with Mobile Menu Button */}
-        <div className="header">
-          <div className="header-content">
-            <div className="header-left">
-              {/* Mobile menu button */}
-              <button 
-                className="mobile-menu-btn"
-                onClick={() => setSidebarOpen(true)}
-              >
-                ☰
-              </button>
-              <h1 className="header-title">RunClub Manager</h1>
-            </div>
-            <div className="header-right">
-              <div className="user-avatar">U</div>
-            </div>
-          </div>
-        </div>
-
+        {/* Main Content Area */}
+        <div className="main-content">
+        <Header   
+        onMenuClick={() => setSidebarOpen(true)}
+        showMenuButton={true}/>
+        
         {/* Content Area */}
         <div className="content-area">
-          {children}
+            {children}
         </div>
-      </div>
+        </div>
     </div>
   )
 }

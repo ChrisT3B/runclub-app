@@ -13,6 +13,7 @@ export interface Member {
   ea_urn?: string;
   ea_conduct_accepted: boolean;
   access_level: string;
+  dbs_expiry_date?: string; // New DBS expiry field
   created_at: string;
   updated_at: string;
 }
@@ -109,3 +110,6 @@ export class AdminService {
     }
   }
 }
+
+// Also provide a default export for compatibility
+export default AdminService;
