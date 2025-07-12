@@ -19,6 +19,10 @@ export interface User {
   id: string;
   email: string;
   fullName: string;
+  phone?: string;                        // ← Add this
+  emergency_contact_name?: string;       // ← Add this  
+  emergency_contact_phone?: string;      // ← Add this
+  health_conditions?: string;            // ← Add this
   accessLevel: string;
   membershipStatus: string;
   emailVerified: boolean;

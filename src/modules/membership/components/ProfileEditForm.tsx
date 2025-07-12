@@ -13,14 +13,14 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Form state
-  const [formData, setFormData] = useState({
-    fullName: state.user?.fullName || '',
-    email: state.user?.email || '',
-    phone: (state.user as any)?.phone || '',
-    emergencyContact: (state.user as any)?.emergencyContact || '',
-    emergencyPhone: (state.user as any)?.emergencyPhone || '',
-    medicalInfo: (state.user as any)?.medicalInfo || ''
+// Form state
+const [formData, setFormData] = useState({
+  fullName: state.user?.fullName || '',
+  email: state.user?.email || '',
+  phone: (state.user as any)?.phone || '',
+  emergencyContact: (state.user as any)?.emergency_contact_name || '',
+  emergencyPhone: (state.user as any)?.emergency_contact_phone || '', 
+  medicalInfo: (state.user as any)?.health_conditions || ''
 });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

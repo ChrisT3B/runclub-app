@@ -43,6 +43,10 @@ export class AuthService {
         id: data.user.id,
         email: data.user.email!,
         fullName: memberProfile.full_name,
+        phone: memberProfile.phone,
+        emergency_contact_name: memberProfile.emergency_contact_name,
+        emergency_contact_phone: memberProfile.emergency_contact_phone,
+        health_conditions: memberProfile.health_conditions,
         accessLevel: memberProfile.access_level,
         membershipStatus: memberProfile.membership_status,
         emailVerified: data.user.email_confirmed_at !== null,
@@ -60,6 +64,10 @@ export class AuthService {
             id: data.user.id,
             email: data.user.email!,
             fullName: memberProfile.full_name,
+            phone: memberProfile.phone,
+            emergency_contact_name: memberProfile.emergency_contact_name,
+            emergency_contact_phone: memberProfile.emergency_contact_phone,
+            health_conditions: memberProfile.health_conditions,
             accessLevel: memberProfile.access_level,
             membershipStatus: memberProfile.membership_status,
             emailVerified: true,
@@ -74,6 +82,10 @@ export class AuthService {
         id: data.user.id,
         email: data.user.email!,
         fullName: data.user.user_metadata?.full_name || 'User',
+        phone: data.user.user_metadata?.phone || undefined,
+        emergency_contact_name: data.user.user_metadata?.emergency_contact_name || undefined,
+        emergency_contact_phone: data.user.user_metadata?.emergency_contact_phone || undefined,
+        health_conditions: data.user.user_metadata?.health_conditions || undefined,
         accessLevel: 'member',
         membershipStatus: 'active',
         emailVerified: data.user.email_confirmed_at !== null,
@@ -103,12 +115,12 @@ export class AuthService {
       options: {
         data: {
           full_name: fullName,
-          phone: registrationData.phone || null,
-          emergency_contact_name: registrationData.emergencyContactName || null,
-          emergency_contact_phone: registrationData.emergencyContactPhone || null,
-          health_conditions: registrationData.healthConditions || null,
+          phone: registrationData.phone || undefined,
+          emergency_contact_name: registrationData.emergencyContactName || undefined,
+          emergency_contact_phone: registrationData.emergencyContactPhone || undefined,
+          health_conditions: registrationData.healthConditions || undefined,
         },
-        emailRedirectTo: `${window.location.origin}/login`
+        emailRedirectTo: `https://runclub-app.vercel.app/login`
       },
     })
 
@@ -125,7 +137,7 @@ export class AuthService {
     // Check if user needs email verification
     if (!data.user.email_confirmed_at) {
       // Don't create the member profile yet - wait for email confirmation
-      throw new Error('Please check your email and click the verification link to complete registration.')
+      
     }
 
     // If email is already confirmed (shouldn't happen with current setup), create profile
@@ -139,6 +151,10 @@ export class AuthService {
       id: data.user.id,
       email: data.user.email!,
       fullName: fullName,
+      phone: registrationData.phone || undefined,
+      emergency_contact_name: registrationData.emergencyContactName || undefined,
+      emergency_contact_phone: registrationData.emergencyContactPhone || undefined,
+      health_conditions: registrationData.healthConditions || undefined,
       accessLevel: 'member',
       membershipStatus: 'active',
       emailVerified: data.user.email_confirmed_at !== null,
@@ -169,7 +185,7 @@ export class AuthService {
     const { data, error } = await supabase.auth.resetPasswordForEmail(
       email.toLowerCase().trim(),
       {
-        redirectTo: `${window.location.origin}/?type=recovery`,
+        redirectTo: `https://runclub-app.vercel.app/?type=recovery`,
       }
     )
 
@@ -203,6 +219,10 @@ export class AuthService {
         id: user.id,
         email: user.email!,
         fullName: memberProfile.full_name,
+        phone: memberProfile.phone,
+        emergency_contact_name: memberProfile.emergency_contact_name,
+        emergency_contact_phone: memberProfile.emergency_contact_phone,
+        health_conditions: memberProfile.health_conditions,
         accessLevel: memberProfile.access_level,
         membershipStatus: memberProfile.membership_status,
         emailVerified: user.email_confirmed_at !== null,
@@ -220,6 +240,10 @@ export class AuthService {
             id: user.id,
             email: user.email!,
             fullName: memberProfile.full_name,
+            phone: memberProfile.phone,
+            emergency_contact_name: memberProfile.emergency_contact_name,
+            emergency_contact_phone: memberProfile.emergency_contact_phone,
+            health_conditions: memberProfile.health_conditions,
             accessLevel: memberProfile.access_level,
             membershipStatus: memberProfile.membership_status,
             emailVerified: true,
@@ -234,6 +258,10 @@ export class AuthService {
         id: user.id,
         email: user.email!,
         fullName: user.user_metadata?.full_name || 'User',
+        phone: user.user_metadata?.phone || undefined,
+        emergency_contact_name: user.user_metadata?.emergency_contact_name || undefined,
+        emergency_contact_phone: user.user_metadata?.emergency_contact_phone || undefined,
+        health_conditions: user.user_metadata?.health_conditions || undefined,
         accessLevel: 'member',
         membershipStatus: 'active',
         emailVerified: user.email_confirmed_at !== null,
@@ -281,12 +309,14 @@ export class AuthService {
         id: user.id,
         email: user.email,
         full_name: user.user_metadata?.full_name || 'User',
-        phone: user.user_metadata?.phone || null,
-        emergency_contact_name: user.user_metadata?.emergency_contact_name || null,
-        emergency_contact_phone: user.user_metadata?.emergency_contact_phone || null,
-        health_conditions: user.user_metadata?.health_conditions || null,
+        phone: user.user_metadata?.phone || undefined,
+        emergency_contact_name: user.user_metadata?.emergency_contact_name || undefined,
+        emergency_contact_phone: user.user_metadata?.emergency_contact_phone || undefined,
+        health_conditions: user.user_metadata?.health_conditions || undefined,
         membership_status: 'active',
-        access_level: 'member'
+        access_level: 'member',
+        is_paid_member: false,
+        ea_conduct_accepted: false
       })
     
     if (error) {
@@ -309,12 +339,14 @@ export class AuthService {
         id: user.id,
         email: user.email,
         full_name: registrationData.fullName,
-        phone: registrationData.phone || null,
-        emergency_contact_name: registrationData.emergencyContactName || null,
-        emergency_contact_phone: registrationData.emergencyContactPhone || null,
-        health_conditions: registrationData.healthConditions || null,
+        phone: registrationData.phone || undefined,
+        emergency_contact_name: registrationData.emergencyContactName || undefined,
+        emergency_contact_phone: registrationData.emergencyContactPhone || undefined,
+        health_conditions: registrationData.healthConditions || undefined,
         membership_status: 'active',
-        access_level: 'member'
+        access_level: 'member',
+        is_paid_member: false,
+        ea_conduct_accepted: false
       })
     
     if (error) {
