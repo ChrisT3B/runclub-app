@@ -8,7 +8,7 @@ interface RegisterFormProps {
 }
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ 
-  onSuccess, 
+  onSuccess: _onSuccess, 
   onLogin 
 }) => {
   const { state, register } = useAuth()

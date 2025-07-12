@@ -17,11 +17,11 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
   const [formData, setFormData] = useState({
     fullName: state.user?.fullName || '',
     email: state.user?.email || '',
-    phone: state.user?.phone || '',
-    emergencyContact: state.user?.emergencyContact || '',
-    emergencyPhone: state.user?.emergencyPhone || '',
-    medicalInfo: state.user?.medicalInfo || ''
-  });
+    phone: (state.user as any)?.phone || '',
+    emergencyContact: (state.user as any)?.emergencyContact || '',
+    emergencyPhone: (state.user as any)?.emergencyPhone || '',
+    medicalInfo: (state.user as any)?.medicalInfo || ''
+});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

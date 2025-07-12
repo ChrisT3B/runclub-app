@@ -314,17 +314,17 @@ const AppContent = () => {
                       </div>
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Phone:</div>
-                        <div style={{ color: 'var(--gray-900)' }}>{state.user?.phone || 'Not set'}</div>
+                        <div style={{ color: 'var(--gray-900)' }}>{(state.user as any)?.phone || 'Not set'}</div>
                       </div>
                     </div>
                     <div>
                       <div style={{ marginBottom: '16px' }}>
                         <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Emergency Contact:</div>
-                        <div style={{ color: 'var(--gray-900)' }}>{state.user?.emergencyContact || 'Not set'}</div>
+                        <div style={{ color: 'var(--gray-900)' }}>{(state.user as any)?.emergencyContact || 'Not set'}</div>
                       </div>
                       <div style={{ marginBottom: '16px' }}>
                         <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Emergency Phone:</div>
-                        <div style={{ color: 'var(--gray-900)' }}>{state.user?.emergencyPhone || 'Not set'}</div>
+                        <div style={{ color: 'var(--gray-900)' }}>{(state.user as any)?.emergencyPhone || 'Not set'}</div>
                       </div>
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Access Level:</div>

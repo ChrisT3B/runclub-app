@@ -1,6 +1,31 @@
 import React, { createContext, useReducer, useEffect, ReactNode } from 'react'
 import { AuthService } from '../services/authService'
-import type { AuthState, AuthContextValue, LoginCredentials, RegistrationData } from '../types'
+interface AuthState {
+  user: any;
+  loading: boolean;
+  error: string | null;
+  isAuthenticated: boolean;
+}
+
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface RegistrationData {
+  email: string;
+  password: string;
+  fullName: string;
+}
+
+interface AuthContextValue {
+  state: AuthState;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  register: (data: RegistrationData) => Promise<void>;
+  logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
+}
 
 // Initial state
 const initialState: AuthState = {
@@ -153,7 +178,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     resetPassword,
-    verifyEmail,
     refreshUser,
   }
 
