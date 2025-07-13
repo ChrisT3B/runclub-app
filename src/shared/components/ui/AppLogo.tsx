@@ -6,7 +6,7 @@ interface LogoProps {
   style?: React.CSSProperties;
 }
 
-export const Logo: React.FC<LogoProps> = ({ 
+export const AppLogo: React.FC<LogoProps> = ({ 
   size = 'medium', 
   className = '',
   style = {}

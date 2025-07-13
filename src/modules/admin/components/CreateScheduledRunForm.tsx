@@ -89,7 +89,6 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
     if (!startDate || recurrences <= 1) return startDate;
     
     const [year, month, day] = startDate.split('-').map(Number);
-    const start = new Date(year, month - 1, day);
     const weeksToAdd = (recurrences - 1) * 7;
     const endDate = new Date(year, month - 1, day + weeksToAdd);
     return endDate.toISOString().split('T')[0];
