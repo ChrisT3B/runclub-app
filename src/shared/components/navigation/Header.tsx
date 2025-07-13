@@ -1,5 +1,5 @@
 import React from 'react';
-import { Logo } from '../ui/logo';
+import { AppLogo } from '../ui/AppLogo';
 
 interface HeaderProps {
   title?: string;
@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
             alignItems: 'center', 
             gap: '12px' 
           }}>
-            <Logo 
+            <AppLogo 
               size="small" 
               style={{ 
                 width: '40px', 
