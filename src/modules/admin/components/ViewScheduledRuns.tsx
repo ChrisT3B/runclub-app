@@ -19,7 +19,7 @@ interface RunWithAllInfo extends ScheduledRun {
   }>;
 }
 
-export const ViewScheduledRuns: React.FC = () => {
+export const ViewScheduledRuns: React.FC = () =>  {
   const { state } = useAuth();
   const [runs, setRuns] = useState<RunWithAllInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -433,7 +433,7 @@ export const ViewScheduledRuns: React.FC = () => {
         <p className="page-description">
           {isLIRFOrAdmin ? 'Book runs and manage your LIRF assignments' : 'Book your place on upcoming club runs'}
         </p>
-      </div>
+    </div>
 
       {/* Urgent Vacancies Alert - LIRFs/Admins only */}
       {isLIRFOrAdmin && urgentVacancies > 0 && (

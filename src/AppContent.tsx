@@ -8,10 +8,16 @@ import { ManageScheduledRuns } from './modules/admin/components/ManageScheduledR
 import { ProfilePage } from './modules/membership/components/ProfilePage';
 import { MemberList } from './modules/admin/components/MemberList';
 import { CreateRunPage } from './modules/admin/components/CreateRunPage';
+import { LeadYourRun } from './modules/activeruns/components/LeadYourRun';
+import { RunAttendance } from './modules/activeruns/components/RunAttendance';
 
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
+  
+  // State for attendance navigation
+  const [attendanceRunId, setAttendanceRunId] = useState<string | null>(null);
+  const [attendanceRunTitle, setAttendanceRunTitle] = useState<string>('');
 
   if (state.loading) {
     return (
@@ -36,10 +42,37 @@ export const AppContent: React.FC = () => {
       onNavigate={setCurrentPage}
     >
       {currentPage === 'dashboard' && <DashboardContent onNavigate={setCurrentPage} />}
+      
       {currentPage === 'scheduled-runs' && <ViewScheduledRuns />}
+      
+      {currentPage === 'lead-your-run' && (
+        <LeadYourRun 
+          onNavigateToAttendance={(runId: string, runTitle: string) => {
+            setAttendanceRunId(runId);
+            setAttendanceRunTitle(runTitle);
+            setCurrentPage('run-attendance');
+          }}
+        />
+      )}
+      
+      {currentPage === 'run-attendance' && attendanceRunId && (
+        <RunAttendance 
+          runId={attendanceRunId}
+          runTitle={attendanceRunTitle}
+          onBack={() => {
+            setCurrentPage('lead-your-run');
+            setAttendanceRunId(null);
+            setAttendanceRunTitle('');
+          }}
+        />
+      )}
+      
       {currentPage === 'manage-runs' && <ManageScheduledRuns />}
+      
       {currentPage === 'profile' && <ProfilePage />}
+      
       {currentPage === 'members' && <MemberList />}
+      
       {currentPage === 'create-run' && (
         <CreateRunPage
           onSuccess={() => {

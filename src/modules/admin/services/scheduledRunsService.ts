@@ -8,6 +8,9 @@ export interface ScheduledRun {
   meeting_point: string;
   approximate_distance?: string;
   max_participants: number;
+    run_status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';  // ← Add this
+  started_at?: string;        // ← Add this
+  completed_at?: string;      // ← Add this
   description?: string;
   is_recurring: boolean;
   weekly_recurrences: number;
@@ -19,6 +22,7 @@ export interface ScheduledRun {
   created_by: string;
   created_at: string;
   updated_at: string;
+  bookings_count?: number;  // ← Add this
 }
 
 export interface CreateScheduledRunData {
@@ -218,4 +222,21 @@ static async getScheduledRun(runId: string): Promise<ScheduledRun> {
       throw error;
     }
   }
+  // Add to ScheduledRunsService
+static async updateRunStatus(runId: string, status: 'in_progress' | 'completed'): Promise<void> {
+  const updateData: any = { run_status: status };
+  
+  if (status === 'in_progress') {
+    updateData.started_at = new Date().toISOString();
+  } else if (status === 'completed') {
+    updateData.completed_at = new Date().toISOString();
+  }
+
+  const { error } = await supabase
+    .from('scheduled_runs')
+    .update(updateData)
+    .eq('id', runId);
+
+  if (error) throw new Error(error.message);
+}
 }

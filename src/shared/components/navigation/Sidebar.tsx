@@ -17,12 +17,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     { id: 'profile', name: 'My Profile', icon: '👤' },
   ]
 
-  // Add LIRF-specific navigation
-  if (state.user?.accessLevel === 'lirf' || state.user?.accessLevel === 'admin') {
-    navigation.push(
-      { id: 'manage-runs', name: 'Manage Scheduled Runs', icon: '📅' },
-    )
-  }
+// Add LIRF-specific navigation
+if (state.user?.accessLevel === 'lirf' || state.user?.accessLevel === 'admin') {
+  navigation.push(
+    { id: 'manage-runs', name: 'Manage Scheduled Runs', icon: '📅' },
+    { id: 'lead-your-run', name: 'Lead Your Runs', icon: '🎯' }  // ← Add this
+  )
+}
 
 // Add admin-specific navigation
 if (state.user?.accessLevel === 'admin') {
