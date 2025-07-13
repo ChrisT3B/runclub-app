@@ -88,18 +88,20 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
   const calculateEndDate = (startDate: string, recurrences: number): string => {
     if (!startDate || recurrences <= 1) return startDate;
     
-    const start = new Date(startDate);
+    const [year, month, day] = startDate.split('-').map(Number);
+    const start = new Date(year, month - 1, day);
     const weeksToAdd = (recurrences - 1) * 7;
-    const endDate = new Date(start.getTime() + (weeksToAdd * 24 * 60 * 60 * 1000));
+    const endDate = new Date(year, month - 1, day + weeksToAdd);
     return endDate.toISOString().split('T')[0];
   };
 
   // Generate individual runs for weekly recurrence
   const generateWeeklyRuns = (baseData: ScheduledRunData) => {
     const runs = [];
-      if (!state.user?.id) {
-         throw new Error('User must be logged in to create runs');
-      }
+    if (!state.user?.id) {
+       throw new Error('User must be logged in to create runs');
+    }
+    
     if (!baseData.is_recurring) {
       // Single run
       return [{
@@ -109,17 +111,18 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
       }];
     }
 
-    // Generate individual runs for each week
-    const startDate = new Date(baseData.run_date);
+    // Parse date properly to avoid timezone issues
+    const [year, month, day] = baseData.run_date.split('-').map(Number);
     
     for (let week = 0; week < baseData.weekly_recurrences; week++) {
-      const runDate = new Date(startDate);
-      runDate.setDate(startDate.getDate() + (week * 7));
+      // Create new date for each week
+      const runDate = new Date(year, month - 1, day + (week * 7));
+      const formattedDate = runDate.toISOString().split('T')[0];
       
       runs.push({
         ...baseData,
-        run_date: runDate.toISOString().split('T')[0],
-        end_date: runDate.toISOString().split('T')[0],
+        run_date: formattedDate,
+        end_date: formattedDate,
         created_by: state.user?.id
       });
     }
@@ -361,7 +364,7 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
                             fontSize: '14px'
                           }}>
                             <strong>{run.run_title}</strong>
-                            <span>{new Date(run.run_date).toLocaleDateString()} at {run.run_time}</span>
+                            <span>{new Date(run.run_date + 'T00:00:00').toLocaleDateString()} at {run.run_time}</span>
                           </div>
                         ))}
                         {previewRuns().length > 5 && (

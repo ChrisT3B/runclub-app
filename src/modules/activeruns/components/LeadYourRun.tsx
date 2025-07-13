@@ -31,13 +31,30 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
       // Get all runs and filter for assigned ones
       const allRuns = await ScheduledRunsService.getScheduledRuns();
       
+      console.log('🔍 Current user ID:', state.user.id);
+      console.log('🔍 Current user access level:', state.user.accessLevel);
+      
       // Filter runs where current user is assigned as LIRF
-      const myAssignedRuns = allRuns.filter(run => 
-        run.assigned_lirf_1 === state.user.id ||
-        run.assigned_lirf_2 === state.user.id ||
-        run.assigned_lirf_3 === state.user.id
-      );
+      const myAssignedRuns = allRuns.filter(run => {
+        const isAssigned = run.assigned_lirf_1 === state.user.id ||
+                            run.assigned_lirf_2 === state.user.id ||
+                            run.assigned_lirf_3 === state.user.id;
 
+        console.log('🔍 Checking run assignment:', {
+            title: run.run_title,
+            runId: run.id,
+            lirf1: run.assigned_lirf_1,
+            lirf2: run.assigned_lirf_2,
+            lirf3: run.assigned_lirf_3,
+            currentUserId: state.user.id,
+            isMatch: isAssigned
+        });
+
+        return isAssigned;
+      });
+
+      console.log('🔍 Found assigned runs:', myAssignedRuns.length);
+      
       // Add booking counts to each run
       console.log('🔍 Starting booking fetch for', myAssignedRuns.length, 'runs');
       
@@ -87,17 +104,35 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
+      console.log('🔍 Today MANUAL OVERRIDE:', '2025-07-13'); //console.log('🔍 Today for comparison:', today.toISOString().split('T')[0]);
+      
       const relevantRuns = runsWithBookings.filter(run => {
         const runDate = new Date(run.run_date);
         runDate.setHours(0, 0, 0, 0);
         
-        const isToday = runDate.getTime() === today.getTime();
-        const isFuture = runDate > today;
+        const isToday = run.run_date === '2025-07-13';
+        const isFuture = run.run_date > '2025-07-13';
+        //const isToday = runDate.getTime() === today.getTime();
+       // const isFuture = runDate > today;
         const isInProgress = run.run_status === 'in_progress';
         const isCompletedToday = run.run_status === 'completed' && isToday;
         
-        // Show if it's future, in progress, or completed today
-        return isFuture || isInProgress || isCompletedToday;
+        const shouldShow = isFuture || isInProgress || isCompletedToday || isToday;
+        
+        console.log('🔍 Date filtering:', {
+          title: run.run_title,
+          runDate: run.run_date,
+          runDateParsed: runDate.toISOString().split('T')[0],
+          today: today.toISOString().split('T')[0],
+          status: run.run_status,
+          isToday,
+          isFuture,
+          isInProgress,
+          isCompletedToday,
+          shouldShow
+        });
+        
+        return shouldShow;
       });
 
       // Sort by date and time
@@ -107,7 +142,7 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
         return dateA.getTime() - dateB.getTime();
       });
 
-      console.log('🔍 Assigned runs loaded:', relevantRuns.map(run => ({
+      console.log('🔍 Final assigned runs loaded:', relevantRuns.map(run => ({
         id: run.id,
         title: run.run_title,
         date: run.run_date,
@@ -202,25 +237,11 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
     const runDate = new Date(dateString);
     const today = new Date();
     const result = runDate.toDateString() === today.toDateString();
-    console.log('🔍 isRunToday check:', {
-      dateString,
-      runDate: runDate.toDateString(),
-      today: today.toDateString(),
-      isToday: result
-    });
     return result;
   };
 
   const canStartRun = (run: ScheduledRun) => {
     const result = run.run_status === 'scheduled' && isRunToday(run.run_date);
-    console.log('🔍 canStartRun check:', {
-      runId: run.id,
-      title: run.run_title,
-      status: run.run_status,
-      date: run.run_date,
-      isToday: isRunToday(run.run_date),
-      canStart: result
-    });
     return result;
   };
 
