@@ -58,7 +58,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
     <>
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
-        <p className="page-description">Welcome to your RunClub member portal</p>
+        <p className="page-description">Welcome to your Run Alcester member portal</p>
       </div>
       
       {/* Quick Stats Card */}

@@ -27,7 +27,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <div className="sidebar-mobile-overlay" onClick={() => setSidebarOpen(false)}>
           <div className="sidebar-mobile" onClick={(e) => e.stopPropagation()}>
             <div className="sidebar-mobile-header">
-              <span className="sidebar-logo">RunClub</span>
+              <span className="sidebar-logo">Run Alcester</span>
               <button 
                 className="sidebar-close-btn"
                 onClick={() => setSidebarOpen(false)}
