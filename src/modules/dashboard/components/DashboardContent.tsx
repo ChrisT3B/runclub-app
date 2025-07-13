@@ -1,18 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../modules/auth/hooks/useAuth';
 import { BookingService } from '../../../modules/admin/services/bookingService';
+import { supabase } from '../../../services/supabase';
 
 interface DashboardContentProps {
   onNavigate?: (page: string) => void;
+}
+
+interface UserStats {
+  attendanceCount: number;
+  memberSince: string;
+  membershipStatus: string;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }) => {
   const { state } = useAuth();
   const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
+  const [userStats, setUserStats] = useState<UserStats>({
+    attendanceCount: 0,
+    memberSince: '',
+    membershipStatus: 'Active'
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
   
   useEffect(() => {
-    loadUpcomingBookings();
+    if (state.user?.id) {
+      loadUpcomingBookings();
+      loadUserStats();
+    }
   }, [state.user]);
   
   const loadUpcomingBookings = async () => {
@@ -38,6 +54,56 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
       setLoadingBookings(false);
     }
   };
+
+  const loadUserStats = async () => {
+    if (!state.user?.id) {
+      setLoadingStats(false);
+      return;
+    }
+
+    try {
+      // Get attendance count
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from('run_attendance')
+        .select('id')
+        .eq('member_id', state.user.id)
+        .eq('attended', true);
+
+      if (attendanceError) {
+        console.error('Error fetching attendance count:', attendanceError);
+      }
+
+      // Get user creation date and membership status
+      const { data: userData, error: userError } = await supabase
+        .from('members')
+        .select('created_at, membership_status')
+        .eq('id', state.user.id)
+        .single();
+
+      if (userError) {
+        console.error('Error fetching user data:', userError);
+      }
+
+      // Format member since date
+      let memberSince = 'Unknown';
+      if (userData?.created_at) {
+        memberSince = new Date(userData.created_at).toLocaleDateString('en-GB', {
+          month: 'short',
+          year: 'numeric'
+        });
+      }
+
+      setUserStats({
+        attendanceCount: attendanceData?.length || 0,
+        memberSince,
+        membershipStatus: userData?.membership_status || 'Active'
+      });
+    } catch (error) {
+      console.error('Failed to load user stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
       
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
@@ -52,6 +118,19 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const getMembershipStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return { background: '#dcfce7', color: '#166534' };
+      case 'pending':
+        return { background: '#fef3c7', color: '#92400e' };
+      case 'expired':
+        return { background: '#fecaca', color: '#991b1b' };
+      default:
+        return { background: '#f3f4f6', color: '#374151' };
+    }
   };
   
   return (
@@ -76,13 +155,13 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--red-primary)', marginBottom: '4px' }}>
-                12
+                {loadingStats ? '...' : userStats.attendanceCount}
               </div>
-              <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Events Attended</div>
+              <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Runs Attended</div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--red-primary)', marginBottom: '4px' }}>
-                Dec 2024
+                {loadingStats ? '...' : userStats.memberSince}
               </div>
               <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Member Since</div>
             </div>
@@ -213,14 +292,13 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
               <div>
                 <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Status:</div>
                 <span style={{ 
-                  background: '#dcfce7', 
-                  color: '#166534', 
+                  ...getMembershipStatusColor(userStats.membershipStatus),
                   padding: '4px 8px', 
                   borderRadius: '12px', 
                   fontSize: '12px', 
                   fontWeight: '500' 
                 }}>
-                  {state.user?.membershipStatus || 'Pending'}
+                  {loadingStats ? '...' : userStats.membershipStatus}
                 </span>
               </div>
             </div>
