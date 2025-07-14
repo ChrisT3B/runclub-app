@@ -34,7 +34,6 @@ export const ManageScheduledRuns: React.FC = () => {
     loadScheduledRuns(); // Refresh the list
   };
 
-  // FIX #1: Added missing 'c' in 'const'
   const handleEditSuccess = () => {
     setShowEditForm(false);
     setEditingRunId(null);
@@ -104,12 +103,14 @@ export const ManageScheduledRuns: React.FC = () => {
         <p className="page-description">Create and manage running sessions for club members</p>
       </div>
 
-      {/* Action Bar */}
+      {/* Action Bar - Mobile Responsive */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        marginBottom: '24px'
+        marginBottom: '24px',
+        flexWrap: 'wrap',
+        gap: '12px'
       }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
@@ -119,10 +120,16 @@ export const ManageScheduledRuns: React.FC = () => {
         <button 
           onClick={() => setShowCreateForm(true)}
           className="btn btn-primary"
-          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            whiteSpace: 'nowrap'
+          }}
         >
           <span>🏃‍♂️</span>
-          Schedule a Run
+          <span style={{ display: window.innerWidth > 480 ? 'inline' : 'none' }}>Schedule a Run</span>
+          <span style={{ display: window.innerWidth <= 480 ? 'inline' : 'none' }}>Schedule</span>
         </button>
       </div>
 
@@ -168,7 +175,14 @@ export const ManageScheduledRuns: React.FC = () => {
           {runs.map((run) => (
             <div key={run.id} className="card">
               <div className="card-content">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                {/* Mobile-first responsive layout */}
+                <div style={{ 
+                  display: 'flex', 
+                  flexDirection: window.innerWidth <= 768 ? 'column' : 'row',
+                  justifyContent: 'space-between', 
+                  alignItems: window.innerWidth <= 768 ? 'stretch' : 'flex-start',
+                  gap: '16px'
+                }}>
                   <div style={{ flex: 1 }}>
                     <h3 style={{ 
                       margin: '0 0 8px 0', 
@@ -181,7 +195,7 @@ export const ManageScheduledRuns: React.FC = () => {
                     
                     <div style={{ 
                       display: 'grid', 
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                      gridTemplateColumns: window.innerWidth <= 480 ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', 
                       gap: '16px',
                       marginBottom: '16px'
                     }}>
@@ -238,21 +252,37 @@ export const ManageScheduledRuns: React.FC = () => {
                         padding: '4px 8px',
                         borderRadius: '12px',
                         fontSize: '12px',
-                        fontWeight: '500'
+                        fontWeight: '500',
+                        marginBottom: window.innerWidth <= 768 ? '16px' : '0'
                       }}>
                         🔄 Recurring ({run.weekly_recurrences} weeks)
                       </div>
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', marginLeft: '16px' }}>
-                    {/* FIX #2: Corrected the Edit button onClick */}
+                  {/* Mobile-responsive action buttons */}
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: window.innerWidth <= 768 ? 'row' : 'column',
+                    gap: '8px',
+                    flexWrap: window.innerWidth <= 480 ? 'wrap' : 'nowrap',
+                    justifyContent: window.innerWidth <= 768 ? 'space-between' : 'flex-start',
+                    alignItems: 'stretch',
+                    minWidth: window.innerWidth <= 768 ? '100%' : 'auto'
+                  }}>
                     <button
                       onClick={() => handleEditRun(run.id)}
                       className="btn btn-secondary"
-                      style={{ fontSize: '12px', padding: '6px 12px' }}
+                      style={{ 
+                        fontSize: '12px', 
+                        padding: '8px 12px',
+                        flex: window.innerWidth <= 480 ? '1' : 'none',
+                        minWidth: window.innerWidth <= 480 ? '0' : 'auto',
+                        whiteSpace: 'nowrap'
+                      }}
                     >
-                      ✏️ Edit
+                      <span style={{ display: window.innerWidth <= 480 ? 'none' : 'inline' }}>✏️ </span>
+                      Edit
                     </button>
                     
                     <button
@@ -261,9 +291,16 @@ export const ManageScheduledRuns: React.FC = () => {
                         console.log('Manage bookings:', run.id);
                       }}
                       className="btn btn-secondary"
-                      style={{ fontSize: '12px', padding: '6px 12px' }}
+                      style={{ 
+                        fontSize: '12px', 
+                        padding: '8px 12px',
+                        flex: window.innerWidth <= 480 ? '1' : 'none',
+                        minWidth: window.innerWidth <= 480 ? '0' : 'auto',
+                        whiteSpace: 'nowrap'
+                      }}
                     >
-                      📋 Bookings
+                      <span style={{ display: window.innerWidth <= 480 ? 'none' : 'inline' }}>📋 </span>
+                      Bookings
                     </button>
                     
                     <button
@@ -271,13 +308,17 @@ export const ManageScheduledRuns: React.FC = () => {
                       className="btn btn-secondary"
                       style={{ 
                         fontSize: '12px', 
-                        padding: '6px 12px',
+                        padding: '8px 12px',
                         background: '#fef2f2',
                         borderColor: '#fecaca',
-                        color: '#dc2626'
+                        color: '#dc2626',
+                        flex: window.innerWidth <= 480 ? '1' : 'none',
+                        minWidth: window.innerWidth <= 480 ? '0' : 'auto',
+                        whiteSpace: 'nowrap'
                       }}
                     >
-                      🗑️ Delete
+                      <span style={{ display: window.innerWidth <= 480 ? 'none' : 'inline' }}>🗑️ </span>
+                      Delete
                     </button>
                   </div>
                 </div>
