@@ -108,7 +108,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               lineHeight: '1.6',
               marginBottom: '16px' 
             }}>
-              Thank you for registering with RunClub! We've sent a verification email to:
+              Thank you for registering with Run Alcester! We've sent a verification email to:
             </p>
             <div style={{
               background: 'var(--gray-50)',
@@ -218,7 +218,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           color: 'var(--red-primary)', 
           margin: '0 0 8px 0' 
         }}>
-          Join RunClub
+          Join Run Alcester
         </h1>
         <p style={{ 
           color: 'var(--gray-600)', 
@@ -498,7 +498,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   animation: 'spin 1s linear infinite'
                 }}></div>
               )}
-              {state.loading ? 'Creating Account...' : '🏃‍♂️ Join RunClub'}
+              {state.loading ? 'Creating Account...' : '🏃‍♂️ Join Run Alcester'}
             </button>
 
             <div style={{ 
@@ -532,7 +532,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         color: 'var(--gray-500)',
         fontSize: '12px'
       }}>
-        <p>© 2025 RunClub. All rights reserved.</p>
+        <p>© 2025 Run Alcester. All rights reserved.</p>
         <p>Questions? Contact us at runalcester@gmail.com</p>
       </div>
 

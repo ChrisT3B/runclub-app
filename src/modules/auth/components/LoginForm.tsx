@@ -71,7 +71,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           color: 'var(--red-primary)', 
           margin: '0 0 8px 0' 
         }}>
-          RunClub
+          RunAlcester
         </h1>
         <p style={{ 
           color: 'var(--gray-600)', 
@@ -224,7 +224,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         color: 'var(--gray-500)',
         fontSize: '12px'
       }}>
-        <p>© 2025 RunClub. All rights reserved.</p>
+        <p>© 2025 Run Alcester. All rights reserved.</p>
         <p>Questions? Contact us at runalcester@gmail.com</p>
       </div>
 

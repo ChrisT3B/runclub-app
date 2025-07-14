@@ -43,7 +43,14 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
       // Filter for upcoming runs that aren't cancelled
       const upcoming = bookings.filter(booking => {
         const isNotCancelled = !booking.cancelled_at;
-        const isFuture = new Date(booking.run_date) >= new Date();
+        
+        // Create date objects for comparison
+        const runDateTime = new Date(`${booking.run_date}T${booking.run_time}`);
+        const now = new Date();
+        
+        // Check if run is in the future (including later today)
+        const isFuture = runDateTime > now;
+        
         return isNotCancelled && isFuture;
       }).slice(0, 3); // Show max 3 upcoming
       
