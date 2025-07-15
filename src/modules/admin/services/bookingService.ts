@@ -26,6 +26,18 @@ export interface BookingWithRunDetails extends RunBooking {
   max_participants: number;
 }
 
+// Custom error types for different modal handling
+export class BookingError extends Error {
+  constructor(
+    message: string, 
+    public type: 'LIRF_CONFLICT' | 'ALREADY_BOOKED' | 'RUN_FULL' | 'GENERAL' = 'GENERAL',
+    public title?: string
+  ) {
+    super(message);
+    this.name = 'BookingError';
+  }
+}
+
 export class BookingService {
   /**
    * Check if a member is assigned as LIRF to a specific run
@@ -94,13 +106,21 @@ export class BookingService {
       }
 
       if (existingBooking) {
-        throw new Error('You have already booked this run');
+        throw new BookingError(
+          'You have already booked this run. Check your dashboard to manage your existing bookings.',
+          'ALREADY_BOOKED',
+          'Already Booked'
+        );
       }
 
-      // NEW: Check if member is a LIRF assigned to this run
+      // Check if member is a LIRF assigned to this run
       const isAssignedLirf = await this.isMemberAssignedAsLirf(bookingData.member_id, bookingData.run_id);
       if (isAssignedLirf) {
-        throw new Error('LIRFs cannot book runs they are assigned to lead. Please unassign yourself as LIRF and message on the LIRF chat if you need to step down from leading this run.');
+        throw new BookingError(
+          'As a LIRF assigned to lead this run, you cannot book yourself as a participant. If you need to step down from leading this run, please message on the LIRF chat.',
+          'LIRF_CONFLICT',
+          'LIRF Assignment Conflict'
+        );
       }
 
       // Check if run is at capacity
@@ -114,14 +134,18 @@ export class BookingService {
 
       const { data: runData, error: runError } = await supabase
         .from('scheduled_runs')
-        .select('max_participants')
+        .select('max_participants, run_title')
         .eq('id', bookingData.run_id)
         .single();
 
       if (runError) throw runError;
 
       if (currentBookings.length >= runData.max_participants) {
-        throw new Error('This run is full. Please try another run or contact the organizers.');
+        throw new BookingError(
+          `"${runData.run_title}" is already full with ${runData.max_participants} participants. Please try another run or contact the organizers if you think there's been an error.`,
+          'RUN_FULL',
+          'Run Full'
+        );
       }
 
       // Create the booking
@@ -137,7 +161,11 @@ export class BookingService {
 
       if (error) {
         console.error('Failed to create booking:', error);
-        throw new Error(error.message);
+        throw new BookingError(
+          'Failed to create your booking. Please try again or contact support if the problem persists.',
+          'GENERAL',
+          'Booking Failed'
+        );
       }
 
       return data;

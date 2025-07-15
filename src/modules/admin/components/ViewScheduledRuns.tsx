@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { ScheduledRunsService, ScheduledRun } from '../services/scheduledRunsService';
-import { BookingService } from '../services/bookingService';
+import { BookingService, BookingError } from '../services/bookingService';
+import { ErrorModal } from '../../../shared/components/ui/ErrorModal';
 import { Share2 } from 'lucide-react';
 
 interface RunWithAllInfo extends ScheduledRun {
@@ -29,6 +30,17 @@ export const ViewScheduledRuns: React.FC = () =>  {
   const [filter, setFilter] = useState<'all' | 'available' | 'my-bookings' | 'my-assignments'>('all');
   const [urgentVacancies, setUrgentVacancies] = useState(0);
   const [showShareMenu, setShowShareMenu] = useState<string | null>(null);
+  
+  // Error Modal State
+  const [errorModal, setErrorModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: ''
+  });
 
   const isLIRFOrAdmin = state.user?.accessLevel === 'lirf' || state.user?.accessLevel === 'admin';
 
@@ -167,7 +179,11 @@ export const ViewScheduledRuns: React.FC = () =>  {
 
   const handleBookRun = async (runId: string) => {
     if (!state.user?.id) {
-      setError('Please log in to book a run');
+      setErrorModal({
+        isOpen: true,
+        title: 'Login Required',
+        message: 'Please log in to book a run.'
+      });
       return;
     }
 
@@ -178,13 +194,35 @@ export const ViewScheduledRuns: React.FC = () =>  {
         member_id: state.user.id
       });
 
+      // Success! Reload the runs and clear any errors
       await loadScheduledRuns();
       setError('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to book run');
+      
+    } catch (err) {
+      console.error('Booking error:', err);
+      
+      // Handle different error types with appropriate modal messages
+      if (err instanceof BookingError) {
+        setErrorModal({
+          isOpen: true,
+          title: err.title || 'Booking Error',
+          message: err.message
+        });
+      } else {
+        // Generic error fallback
+        setErrorModal({
+          isOpen: true,
+          title: 'Booking Failed',
+          message: 'An unexpected error occurred while booking. Please try again or contact support if the problem persists.'
+        });
+      }
     } finally {
       setBookingLoading(null);
     }
+  };
+
+  const closeErrorModal = () => {
+    setErrorModal({ isOpen: false, title: '', message: '' });
   };
 
   const handleCancelBooking = async (runId: string, bookingId: string) => {
@@ -990,6 +1028,14 @@ export const ViewScheduledRuns: React.FC = () =>  {
           })}
         </div>
       )}
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        onClose={closeErrorModal}
+      />
     </div>
   );
 };
