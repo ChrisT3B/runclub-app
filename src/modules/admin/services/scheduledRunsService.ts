@@ -94,7 +94,7 @@ export class ScheduledRunsService {
             .single();
 
           const lirfName = lirfData?.full_name || 'LIRF';
-          throw new Error(`Cannot assign ${lirfName} as LIRF - they are already booked as a participant for this run. Please ask them to cancel their booking first.`);
+          throw new Error(` ${lirfName}, you cannot assign yourself as LIRF - you are already booked as a participant for this run. Please cancel your booking first.`);
         }
       }
     }

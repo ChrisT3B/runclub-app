@@ -100,7 +100,7 @@ export class BookingService {
       // NEW: Check if member is a LIRF assigned to this run
       const isAssignedLirf = await this.isMemberAssignedAsLirf(bookingData.member_id, bookingData.run_id);
       if (isAssignedLirf) {
-        throw new Error('LIRFs cannot book runs they are assigned to lead. Please contact an admin if you need to step down from leading this run.');
+        throw new Error('LIRFs cannot book runs they are assigned to lead. Please unassign yourself as LIRF and message on the LIRF chat if you need to step down from leading this run.');
       }
 
       // Check if run is at capacity
