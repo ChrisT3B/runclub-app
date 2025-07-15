@@ -9,28 +9,35 @@ interface DashboardLayoutProps {
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
-  children, 
+  children,
   currentPage = 'dashboard',
-  onNavigate
+  onNavigate 
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="dashboard-layout">
-      {/* Desktop Sidebar - Always visible */}
+      {/* Desktop Sidebar - Always visible on desktop, hidden on mobile */}
       <div className="sidebar-desktop">
         <Sidebar currentPage={currentPage} onNavigate={onNavigate} />
       </div>
 
-      {/* Mobile Sidebar Overlay */}
+      {/* Mobile Sidebar Overlay - Only shows when sidebarOpen is true */}
       {sidebarOpen && (
-        <div className="sidebar-mobile-overlay" onClick={() => setSidebarOpen(false)}>
-          <div className="sidebar-mobile" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="sidebar-mobile-overlay" 
+          onClick={() => setSidebarOpen(false)}
+        >
+          <div 
+            className="sidebar-mobile" 
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="sidebar-mobile-header">
               <span className="sidebar-logo">Run Alcester</span>
               <button 
                 className="sidebar-close-btn"
                 onClick={() => setSidebarOpen(false)}
+                aria-label="Close sidebar"
               >
                 ✕
               </button>
@@ -46,17 +53,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </div>
       )}
 
-        {/* Main Content Area */}
-        <div className="main-content">
-        <Header   
-        onMenuClick={() => setSidebarOpen(true)}
-     />
+      {/* Main Content Area */}
+      <div className="main-content">
+        <Header 
+          onMenuClick={() => setSidebarOpen(true)}
+        />
         
         {/* Content Area */}
         <div className="content-area">
-            {children}
+          {children}
         </div>
-        </div>
+      </div>
     </div>
   )
 }

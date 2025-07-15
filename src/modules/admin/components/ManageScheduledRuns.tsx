@@ -31,13 +31,13 @@ export const ManageScheduledRuns: React.FC = () => {
 
   const handleCreateSuccess = () => {
     setShowCreateForm(false);
-    loadScheduledRuns(); // Refresh the list
+    loadScheduledRuns();
   };
 
   const handleEditSuccess = () => {
     setShowEditForm(false);
     setEditingRunId(null);
-    loadScheduledRuns(); // Refresh the list
+    loadScheduledRuns();
   };
 
   const handleEditRun = (runId: string) => {
@@ -52,7 +52,7 @@ export const ManageScheduledRuns: React.FC = () => {
 
     try {
       await ScheduledRunsService.deleteScheduledRun(runId);
-      loadScheduledRuns(); // Refresh the list
+      loadScheduledRuns();
     } catch (err: any) {
       setError(err.message || 'Failed to delete scheduled run');
     }
@@ -98,20 +98,13 @@ export const ManageScheduledRuns: React.FC = () => {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-header mobile-center">
         <h1 className="page-title">Manage Scheduled Runs</h1>
         <p className="page-description">Create and manage running sessions for club members</p>
       </div>
 
-      {/* Action Bar - Mobile Responsive */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-        gap: '12px'
-      }}>
+      {/* Action Bar with responsive classes */}
+      <div className="responsive-header">
         <div>
           <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
             Upcoming Runs ({runs.length})
@@ -120,16 +113,11 @@ export const ManageScheduledRuns: React.FC = () => {
         <button 
           onClick={() => setShowCreateForm(true)}
           className="btn btn-primary"
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '8px',
-            whiteSpace: 'nowrap'
-          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
         >
           <span>🏃‍♂️</span>
-          <span style={{ display: window.innerWidth > 480 ? 'inline' : 'none' }}>Schedule a Run</span>
-          <span style={{ display: window.innerWidth <= 480 ? 'inline' : 'none' }}>Schedule</span>
+          <span className="mobile-hide-text">Schedule a Run</span>
+          <span className="mobile-show-text">Schedule</span>
         </button>
       </div>
 
@@ -175,14 +163,8 @@ export const ManageScheduledRuns: React.FC = () => {
           {runs.map((run) => (
             <div key={run.id} className="card">
               <div className="card-content">
-                {/* Mobile-first responsive layout */}
-                <div style={{ 
-                  display: 'flex', 
-                  flexDirection: window.innerWidth <= 768 ? 'column' : 'row',
-                  justifyContent: 'space-between', 
-                  alignItems: window.innerWidth <= 768 ? 'stretch' : 'flex-start',
-                  gap: '16px'
-                }}>
+                {/* Using responsive CSS classes instead of inline breakpoint checks */}
+                <div className="responsive-card-layout">
                   <div style={{ flex: 1 }}>
                     <h3 style={{ 
                       margin: '0 0 8px 0', 
@@ -193,12 +175,8 @@ export const ManageScheduledRuns: React.FC = () => {
                       {run.run_title}
                     </h3>
                     
-                    <div style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: window.innerWidth <= 480 ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', 
-                      gap: '16px',
-                      marginBottom: '16px'
-                    }}>
+                    {/* Responsive info grid */}
+                    <div className="responsive-info-grid">
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-600)' }}>
                           📅 {formatDate(run.run_date)}
@@ -252,72 +230,43 @@ export const ManageScheduledRuns: React.FC = () => {
                         padding: '4px 8px',
                         borderRadius: '12px',
                         fontSize: '12px',
-                        fontWeight: '500',
-                        marginBottom: window.innerWidth <= 768 ? '16px' : '0'
-                      }}>
+                        fontWeight: '500'
+                      }} className="mobile-mb-4">
                         🔄 Recurring ({run.weekly_recurrences} weeks)
                       </div>
                     )}
                   </div>
 
-                  {/* Mobile-responsive action buttons */}
-                  <div style={{ 
-                    display: 'flex', 
-                    flexDirection: window.innerWidth <= 768 ? 'row' : 'column',
-                    gap: '8px',
-                    flexWrap: window.innerWidth <= 480 ? 'wrap' : 'nowrap',
-                    justifyContent: window.innerWidth <= 768 ? 'space-between' : 'flex-start',
-                    alignItems: 'stretch',
-                    minWidth: window.innerWidth <= 768 ? '100%' : 'auto'
-                  }}>
+                  {/* Responsive action buttons using CSS classes */}
+                  <div className="responsive-card-actions">
                     <button
                       onClick={() => handleEditRun(run.id)}
-                      className="btn btn-secondary"
-                      style={{ 
-                        fontSize: '12px', 
-                        padding: '8px 12px',
-                        flex: window.innerWidth <= 480 ? '1' : 'none',
-                        minWidth: window.innerWidth <= 480 ? '0' : 'auto',
-                        whiteSpace: 'nowrap'
-                      }}
+                      className="btn btn-secondary btn-responsive"
                     >
-                      <span style={{ display: window.innerWidth <= 480 ? 'none' : 'inline' }}>✏️ </span>
+                      <span className="mobile-hide-text">✏️ </span>
                       Edit
                     </button>
                     
                     <button
                       onClick={() => {
-                        // TODO: Implement manage bookings
                         console.log('Manage bookings:', run.id);
                       }}
-                      className="btn btn-secondary"
-                      style={{ 
-                        fontSize: '12px', 
-                        padding: '8px 12px',
-                        flex: window.innerWidth <= 480 ? '1' : 'none',
-                        minWidth: window.innerWidth <= 480 ? '0' : 'auto',
-                        whiteSpace: 'nowrap'
-                      }}
+                      className="btn btn-secondary btn-responsive"
                     >
-                      <span style={{ display: window.innerWidth <= 480 ? 'none' : 'inline' }}>📋 </span>
+                      <span className="mobile-hide-text">📋 </span>
                       Bookings
                     </button>
                     
                     <button
                       onClick={() => handleDeleteRun(run.id, run.run_title)}
-                      className="btn btn-secondary"
+                      className="btn btn-secondary btn-responsive"
                       style={{ 
-                        fontSize: '12px', 
-                        padding: '8px 12px',
                         background: '#fef2f2',
                         borderColor: '#fecaca',
-                        color: '#dc2626',
-                        flex: window.innerWidth <= 480 ? '1' : 'none',
-                        minWidth: window.innerWidth <= 480 ? '0' : 'auto',
-                        whiteSpace: 'nowrap'
+                        color: '#dc2626'
                       }}
                     >
-                      <span style={{ display: window.innerWidth <= 480 ? 'none' : 'inline' }}>🗑️ </span>
+                      <span className="mobile-hide-text">🗑️ </span>
                       Delete
                     </button>
                   </div>
