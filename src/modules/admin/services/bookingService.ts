@@ -28,6 +28,54 @@ export interface BookingWithRunDetails extends RunBooking {
 
 export class BookingService {
   /**
+   * Check if a member is assigned as LIRF to a specific run
+   */
+  static async isMemberAssignedAsLirf(memberId: string, runId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_runs')
+        .select('assigned_lirf_1, assigned_lirf_2, assigned_lirf_3')
+        .eq('id', runId)
+        .single();
+
+      if (error) {
+        console.error('Failed to check LIRF assignment:', error);
+        throw new Error(error.message);
+      }
+
+      return data.assigned_lirf_1 === memberId || 
+             data.assigned_lirf_2 === memberId || 
+             data.assigned_lirf_3 === memberId;
+    } catch (error) {
+      console.error('BookingService.isMemberAssignedAsLirf error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a member is a LIRF (has lirf or admin access level)
+   */
+  static async isMemberLirf(memberId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('access_level')
+        .eq('id', memberId)
+        .single();
+
+      if (error) {
+        console.error('Failed to check member access level:', error);
+        throw new Error(error.message);
+      }
+
+      return data.access_level === 'lirf' || data.access_level === 'admin';
+    } catch (error) {
+      console.error('BookingService.isMemberLirf error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Create a new booking for a run
    */
   static async createBooking(bookingData: CreateBookingData): Promise<RunBooking> {
@@ -47,6 +95,12 @@ export class BookingService {
 
       if (existingBooking) {
         throw new Error('You have already booked this run');
+      }
+
+      // NEW: Check if member is a LIRF assigned to this run
+      const isAssignedLirf = await this.isMemberAssignedAsLirf(bookingData.member_id, bookingData.run_id);
+      if (isAssignedLirf) {
+        throw new Error('LIRFs cannot book runs they are assigned to lead. Please contact an admin if you need to step down from leading this run.');
       }
 
       // Check if run is at capacity

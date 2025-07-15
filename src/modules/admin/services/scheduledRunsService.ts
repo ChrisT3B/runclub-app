@@ -8,9 +8,9 @@ export interface ScheduledRun {
   meeting_point: string;
   approximate_distance?: string;
   max_participants: number;
-    run_status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';  // ← Add this
-  started_at?: string;        // ← Add this
-  completed_at?: string;      // ← Add this
+  run_status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  started_at?: string;
+  completed_at?: string;
   description?: string;
   is_recurring: boolean;
   weekly_recurrences: number;
@@ -22,7 +22,7 @@ export interface ScheduledRun {
   created_by: string;
   created_at: string;
   updated_at: string;
-  bookings_count?: number;  // ← Add this
+  bookings_count?: number;
 }
 
 export interface CreateScheduledRunData {
@@ -45,11 +45,68 @@ export interface CreateScheduledRunData {
 
 export class ScheduledRunsService {
   /**
+   * Check if a LIRF is already booked as a participant for a specific run
+   */
+  static async isLirfAlreadyBooked(lirfId: string, runId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('run_bookings')
+        .select('id')
+        .eq('member_id', lirfId)
+        .eq('run_id', runId)
+        .is('cancelled_at', null)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('ScheduledRunsService.isLirfAlreadyBooked error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Validate LIRF assignments before creating/updating a run
+   */
+  static async validateLirfAssignments(runId: string, lirfAssignments: {
+    assigned_lirf_1?: string;
+    assigned_lirf_2?: string;
+    assigned_lirf_3?: string;
+  }): Promise<void> {
+    const lirfIds = [
+      lirfAssignments.assigned_lirf_1,
+      lirfAssignments.assigned_lirf_2,
+      lirfAssignments.assigned_lirf_3
+    ].filter(Boolean); // Remove null/undefined values
+
+    for (const lirfId of lirfIds) {
+      if (lirfId) {
+        const isAlreadyBooked = await this.isLirfAlreadyBooked(lirfId, runId);
+        if (isAlreadyBooked) {
+          // Get LIRF name for better error message
+          const { data: lirfData } = await supabase
+            .from('members')
+            .select('full_name')
+            .eq('id', lirfId)
+            .single();
+
+          const lirfName = lirfData?.full_name || 'LIRF';
+          throw new Error(`Cannot assign ${lirfName} as LIRF - they are already booked as a participant for this run. Please ask them to cancel their booking first.`);
+        }
+      }
+    }
+  }
+
+  /**
    * Create a new scheduled run
    */
   static async createScheduledRun(runData: CreateScheduledRunData): Promise<ScheduledRun> {
     try {
-      const { data, error } = await supabase
+      // First create the run to get the ID
+      const { data: newRun, error: createError } = await supabase
         .from('scheduled_runs')
         .insert({
           run_title: runData.run_title,
@@ -63,20 +120,48 @@ export class ScheduledRunsService {
           weekly_recurrences: runData.weekly_recurrences,
           end_date: runData.end_date || null,
           lirfs_required: runData.lirfs_required,
-          assigned_lirf_1: runData.assigned_lirf_1 || null,
-          assigned_lirf_2: runData.assigned_lirf_2 || null,
-          assigned_lirf_3: runData.assigned_lirf_3 || null,
+          assigned_lirf_1: null, // Set to null initially
+          assigned_lirf_2: null,
+          assigned_lirf_3: null,
           created_by: runData.created_by
         })
         .select()
         .single();
 
-      if (error) {
-        console.error('Failed to create scheduled run:', error);
-        throw new Error(error.message);
+      if (createError) {
+        console.error('Failed to create scheduled run:', createError);
+        throw new Error(createError.message);
       }
 
-      return data;
+      // Now validate and assign LIRFs if any were provided
+      if (runData.assigned_lirf_1 || runData.assigned_lirf_2 || runData.assigned_lirf_3) {
+        await this.validateLirfAssignments(newRun.id, {
+          assigned_lirf_1: runData.assigned_lirf_1,
+          assigned_lirf_2: runData.assigned_lirf_2,
+          assigned_lirf_3: runData.assigned_lirf_3
+        });
+
+        // Update the run with LIRF assignments
+        const { data: updatedRun, error: updateError } = await supabase
+          .from('scheduled_runs')
+          .update({
+            assigned_lirf_1: runData.assigned_lirf_1 || null,
+            assigned_lirf_2: runData.assigned_lirf_2 || null,
+            assigned_lirf_3: runData.assigned_lirf_3 || null
+          })
+          .eq('id', newRun.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Failed to update run with LIRF assignments:', updateError);
+          throw new Error(updateError.message);
+        }
+
+        return updatedRun;
+      }
+
+      return newRun;
     } catch (error) {
       console.error('ScheduledRunsService.createScheduledRun error:', error);
       throw error;
@@ -131,28 +216,30 @@ export class ScheduledRunsService {
       throw error;
     }
   }
-/**
- * Get a single scheduled run by ID
- */
-static async getScheduledRun(runId: string): Promise<ScheduledRun> {
-  try {
-    const { data, error } = await supabase
-      .from('scheduled_runs')
-      .select('*')
-      .eq('id', runId)
-      .single();
 
-    if (error) {
-      console.error('Failed to fetch scheduled run:', error);
-      throw new Error(error.message);
+  /**
+   * Get a single scheduled run by ID
+   */
+  static async getScheduledRun(runId: string): Promise<ScheduledRun> {
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_runs')
+        .select('*')
+        .eq('id', runId)
+        .single();
+
+      if (error) {
+        console.error('Failed to fetch scheduled run:', error);
+        throw new Error(error.message);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('ScheduledRunsService.getScheduledRun error:', error);
+      throw error;
     }
-
-    return data;
-  } catch (error) {
-    console.error('ScheduledRunsService.getScheduledRun error:', error);
-    throw error;
   }
-}
+
   /**
    * Get available LIRFs (users with lirf or admin access level)
    */
@@ -181,6 +268,18 @@ static async getScheduledRun(runId: string): Promise<ScheduledRun> {
    */
   static async updateScheduledRun(runId: string, updates: Partial<CreateScheduledRunData>): Promise<ScheduledRun> {
     try {
+      // If updating LIRF assignments, validate them first
+      if (updates.assigned_lirf_1 !== undefined || 
+          updates.assigned_lirf_2 !== undefined || 
+          updates.assigned_lirf_3 !== undefined) {
+        
+        await this.validateLirfAssignments(runId, {
+          assigned_lirf_1: updates.assigned_lirf_1,
+          assigned_lirf_2: updates.assigned_lirf_2,
+          assigned_lirf_3: updates.assigned_lirf_3
+        });
+      }
+
       const { data, error } = await supabase
         .from('scheduled_runs')
         .update({
@@ -222,21 +321,24 @@ static async getScheduledRun(runId: string): Promise<ScheduledRun> {
       throw error;
     }
   }
-  // Add to ScheduledRunsService
-static async updateRunStatus(runId: string, status: 'in_progress' | 'completed'): Promise<void> {
-  const updateData: any = { run_status: status };
-  
-  if (status === 'in_progress') {
-    updateData.started_at = new Date().toISOString();
-  } else if (status === 'completed') {
-    updateData.completed_at = new Date().toISOString();
+
+  /**
+   * Update run status
+   */
+  static async updateRunStatus(runId: string, status: 'in_progress' | 'completed'): Promise<void> {
+    const updateData: any = { run_status: status };
+    
+    if (status === 'in_progress') {
+      updateData.started_at = new Date().toISOString();
+    } else if (status === 'completed') {
+      updateData.completed_at = new Date().toISOString();
+    }
+
+    const { error } = await supabase
+      .from('scheduled_runs')
+      .update(updateData)
+      .eq('id', runId);
+
+    if (error) throw new Error(error.message);
   }
-
-  const { error } = await supabase
-    .from('scheduled_runs')
-    .update(updateData)
-    .eq('id', runId);
-
-  if (error) throw new Error(error.message);
-}
 }
