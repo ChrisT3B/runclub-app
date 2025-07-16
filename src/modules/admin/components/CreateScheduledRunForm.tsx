@@ -146,7 +146,7 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
         }
       }
 
-      console.log('Creating scheduled runs:', runsToCreate);
+      //console.log('Creating scheduled runs:', runsToCreate);
       
       // Create each run individually
       for (const runData of runsToCreate) {

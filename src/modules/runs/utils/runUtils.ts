@@ -162,6 +162,6 @@ export const handleRunShare = (run: any, platform: string): void => {
       break;
       
     default:
-      console.log('Unknown sharing platform:', platform);
+      //console.log('Unknown sharing platform:', platform);
   }
 };

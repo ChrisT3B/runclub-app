@@ -37,7 +37,7 @@ static async login(credentials: LoginCredentials) {
 
     // IMPORTANT: Get the member profile data
     const memberData = await this.getMemberProfile(data.user.email!)
-    console.log('=== Login getMemberProfile returned ===', memberData); // DEBUG
+    //console.log('=== Login getMemberProfile returned ===', memberData); // DEBUG
     
     const finalUser = {
       ...data.user,
@@ -51,7 +51,7 @@ static async login(credentials: LoginCredentials) {
       joined_at: memberData.joined_at
     };
     
-    console.log('=== Login final user ===', finalUser); // DEBUG
+    //console.log('=== Login final user ===', finalUser); // DEBUG
     
     return finalUser;
   } catch (error) {
@@ -130,7 +130,7 @@ static async login(credentials: LoginCredentials) {
    * Get current user with member profile
    */
   static async getCurrentUser() {
-    console.log('=== AuthService.getCurrentUser() called ===');
+    //console.log('=== AuthService.getCurrentUser() called ===');
     try {
       const { data: { user }, error } = await supabase.auth.getUser()
 
@@ -139,21 +139,21 @@ static async login(credentials: LoginCredentials) {
       }
 
       if (!user) {
-        console.log('No user found'); // DEBUG
+        //console.log('No user found'); // DEBUG
         return null
       }
-      console.log('Auth user:', user); // DEBUG
-      console.log('Getting member profile for:', user.email); // DEBUG
+      //console.log('Auth user:', user); // DEBUG
+      //console.log('Getting member profile for:', user.email); // DEBUG
       
       // Get member profile with RLS protection
       const memberData = await this.getMemberProfile(user.email!)
-      console.log('Member data returned:', memberData); // DEBUG
+      //console.log('Member data returned:', memberData); // DEBUG
       const finalUser = {
       ...user,
       ...memberData
       };
     
-      console.log('Final user object:', finalUser); // DEBUG
+      //console.log('Final user object:', finalUser); // DEBUG
       return {
         ...user,
         ...memberData
@@ -169,16 +169,16 @@ static async login(credentials: LoginCredentials) {
    */
   static async getMemberProfile(email: string) {
     try {
-      console.log('Getting member profile for:', email); // DEBUG
+      //console.log('Getting member profile for:', email); // DEBUG
       const { data, error } = await supabase
         .from('members')
         .select('*')
         .eq('email', email)
         .single()
-      console.log('Query result - data:', data, 'error:', error); // DEBUG
+      //console.log('Query result - data:', data, 'error:', error); // DEBUG
 
       if (error) {
-         console.log('Error code:', error.code, 'Error message:', error.message); // DEBUG
+         //console.log('Error code:', error.code, 'Error message:', error.message); // DEBUG
         // If RLS blocks this, user might not have a profile yet
         if (error.code === 'PGRST116') {
           console.warn('No member profile found for:', email)
@@ -200,7 +200,7 @@ static async login(credentials: LoginCredentials) {
         
         throw new Error(error.message)
       }
-      console.log('Loaded member data:', data); // DEBUG
+      //console.log('Loaded member data:', data); // DEBUG
       return {
         id: data.id,
         full_name: data.full_name,
@@ -214,7 +214,7 @@ static async login(credentials: LoginCredentials) {
       }
     } catch (error) {
       console.error('AuthService.getMemberProfile error:', error)
-      console.log('Returning default member data due to error'); // DEBUG
+      //console.log('Returning default member data due to error'); // DEBUG
       // Return default data if profile fetch fails
       return {
         full_name: 'Unknown User',

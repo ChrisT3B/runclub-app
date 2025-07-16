@@ -128,7 +128,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       ...(state.user?.id && state.user.id.trim() !== '' && { updated_by: state.user.id })
     };
 
-    console.log('Clean update data:', updateData);
+    //console.log('Clean update data:', updateData);
     
     await ScheduledRunsService.updateScheduledRun(runId, updateData);
     

@@ -1,4 +1,5 @@
 import { supabase } from '../../../services/supabase';
+import { BookingError } from './bookingService';
 
 export interface ScheduledRun {
   id: string;
@@ -43,7 +44,209 @@ export interface CreateScheduledRunData {
   created_by: string;
 }
 
+export interface RunWithDetails extends ScheduledRun {
+  booking_count: number;
+  is_booked: boolean;
+  user_booking_id?: string;
+  is_full: boolean;
+  lirf_vacancies: number;
+  user_is_assigned_lirf: boolean;
+  assigned_lirfs: Array<{
+    id: string;
+    name: string;
+    position: number;
+  }>;
+  active_bookings: Array<{
+    id: string;
+    member_id: string;
+    booked_at: string;
+    member_name?: string;
+  }>;
+}
+
 export class ScheduledRunsService {
+  // Cache for LIRF details to avoid repeated queries
+  private static lirfCache: Map<string, { id: string; full_name: string }> = new Map();
+  private static lirfCacheExpiry: number = 0;
+  private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  /**
+   * Get all LIRFs with caching
+   */
+  static async getAvailableLirfs(): Promise<Array<{id: string, full_name: string}>> {
+    const now = Date.now();
+    
+    // Return cached data if still valid
+    if (now < this.lirfCacheExpiry && this.lirfCache.size > 0) {
+      return Array.from(this.lirfCache.values());
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('id, full_name')
+        .in('access_level', ['lirf', 'admin'])
+        .order('full_name', { ascending: true });
+
+      if (error) {
+        console.error('Failed to fetch LIRFs:', error);
+        throw new Error(error.message);
+      }
+
+      // Update cache
+      this.lirfCache.clear();
+      (data || []).forEach(lirf => {
+        this.lirfCache.set(lirf.id, lirf);
+      });
+      this.lirfCacheExpiry = now + this.CACHE_DURATION;
+
+      return data || [];
+    } catch (error) {
+      console.error('ScheduledRunsService.getAvailableLirfs error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * ULTRA-OPTIMIZED: Get all scheduled runs with minimal queries
+   */
+  static async getScheduledRunsWithDetails(userId?: string): Promise<RunWithDetails[]> {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // 1. Get runs with a more specific query
+      const { data: runs, error: runsError } = await supabase
+        .from('scheduled_runs')
+        .select('*')
+        .gte('run_date', today)
+        .eq('run_status', 'scheduled')
+        .order('run_date', { ascending: true })
+        .order('run_time', { ascending: true })
+        .limit(50); // Limit to prevent massive queries
+
+      if (runsError) {
+        console.error('Failed to fetch scheduled runs:', runsError);
+        throw new Error(runsError.message);
+      }
+
+      if (!runs || runs.length === 0) {
+        return [];
+      }
+
+      const runIds = runs.map(run => run.id);
+
+      // 2. Get only active bookings with better query
+      const { data: allBookings, error: bookingsError } = await supabase
+        .from('run_bookings')
+        .select('id, run_id, member_id, booked_at')
+        .in('run_id', runIds)
+        .is('cancelled_at', null);
+
+      if (bookingsError) {
+        console.error('Failed to fetch bookings:', bookingsError);
+        throw new Error(bookingsError.message);
+      }
+
+      // 3. Get user's specific bookings if needed
+      let userBookingsMap: Record<string, string> = {};
+      if (userId && runIds.length > 0) {
+        const { data: userBookings, error: userError } = await supabase
+          .from('run_bookings')
+          .select('id, run_id')
+          .eq('member_id', userId)
+          .in('run_id', runIds)
+          .is('cancelled_at', null);
+
+        if (!userError && userBookings) {
+          userBookingsMap = Object.fromEntries(
+            userBookings.map(booking => [booking.run_id, booking.id])
+          );
+        }
+      }
+
+      // 4. Get LIRF data (with better caching)
+      const lirfs = await this.getAvailableLirfs();
+      const lirfMap = new Map(lirfs.map(lirf => [lirf.id, lirf]));
+
+      // 5. Process everything in memory - much faster
+      const runsWithDetails: RunWithDetails[] = runs.map(run => {
+        const runBookings = (allBookings || []).filter(booking => booking.run_id === run.id);
+        const bookingCount = runBookings.length;
+        
+        // User booking info
+        const userBookingId = userBookingsMap[run.id];
+        const isBooked = !!userBookingId;
+
+        // LIRF assignments
+        const assignedLirfs: Array<{id: string, name: string, position: number}> = [];
+        let userIsAssignedLirf = false;
+
+        [
+          { id: run.assigned_lirf_1, pos: 1 },
+          { id: run.assigned_lirf_2, pos: 2 },
+          { id: run.assigned_lirf_3, pos: 3 }
+        ].forEach(({ id, pos }) => {
+          if (id) {
+            const lirf = lirfMap.get(id);
+            if (lirf) {
+              assignedLirfs.push({ id: lirf.id, name: lirf.full_name, position: pos });
+            }
+            if (id === userId) userIsAssignedLirf = true;
+          }
+        });
+
+        return {
+          ...run,
+          booking_count: bookingCount,
+          is_booked: isBooked,
+          user_booking_id: userBookingId,
+          is_full: bookingCount >= run.max_participants,
+          lirf_vacancies: run.lirfs_required - assignedLirfs.length,
+          user_is_assigned_lirf: userIsAssignedLirf,
+          assigned_lirfs: assignedLirfs,
+          active_bookings: runBookings.map(booking => ({
+            id: booking.id,
+            member_id: booking.member_id,
+            booked_at: booking.booked_at,
+            member_name: 'Member' // Simplified - get names only when needed
+          }))
+        };
+      });
+
+      return runsWithDetails;
+
+    } catch (error) {
+      console.error('ScheduledRunsService.getScheduledRunsWithDetails error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   */
+  static async getScheduledRuns(): Promise<ScheduledRun[]> {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data, error } = await supabase
+        .from('scheduled_runs')
+        .select('*')
+        .gte('run_date', today)
+        .order('run_date', { ascending: true })
+        .order('run_time', { ascending: true });
+
+      if (error) {
+        console.error('Failed to fetch scheduled runs:', error);
+        throw new Error(error.message);
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('ScheduledRunsService.getScheduledRuns error:', error);
+      throw error;
+    }
+  }
+
   /**
    * Check if a LIRF is already booked as a participant for a specific run
    */
@@ -86,15 +289,26 @@ export class ScheduledRunsService {
       if (lirfId) {
         const isAlreadyBooked = await this.isLirfAlreadyBooked(lirfId, runId);
         if (isAlreadyBooked) {
-          // Get LIRF name for better error message
-          const { data: lirfData } = await supabase
-            .from('members')
-            .select('full_name')
-            .eq('id', lirfId)
-            .single();
+          // Get LIRF name from cache first, then database
+          let lirfName = 'LIRF';
+          const cachedLirf = this.lirfCache.get(lirfId);
+          
+          if (cachedLirf) {
+            lirfName = cachedLirf.full_name;
+          } else {
+            const { data: lirfData } = await supabase
+              .from('members')
+              .select('full_name')
+              .eq('id', lirfId)
+              .single();
+            lirfName = lirfData?.full_name || 'LIRF';
+          }
 
-          const lirfName = lirfData?.full_name || 'LIRF';
-          throw new Error(` ${lirfName}, you cannot assign yourself as LIRF - you are already booked as a participant for this run. Please cancel your booking first.`);
+          throw new BookingError(
+            `${lirfName}, you cannot assign yourself as LIRF - you are already booked as a participant for this run. Please cancel your booking first.`,
+            'LIRF_CONFLICT',
+            'LIRF Assignment Conflict'
+          );
         }
       }
     }
@@ -169,32 +383,6 @@ export class ScheduledRunsService {
   }
 
   /**
-   * Get all scheduled runs (future and current)
-   */
-  static async getScheduledRuns(): Promise<ScheduledRun[]> {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      
-      const { data, error } = await supabase
-        .from('scheduled_runs')
-        .select('*')
-        .gte('run_date', today)
-        .order('run_date', { ascending: true })
-        .order('run_time', { ascending: true });
-
-      if (error) {
-        console.error('Failed to fetch scheduled runs:', error);
-        throw new Error(error.message);
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('ScheduledRunsService.getScheduledRuns error:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Get scheduled runs created by a specific user
    */
   static async getRunsByCreator(creatorId: string): Promise<ScheduledRun[]> {
@@ -236,29 +424,6 @@ export class ScheduledRunsService {
       return data;
     } catch (error) {
       console.error('ScheduledRunsService.getScheduledRun error:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get available LIRFs (users with lirf or admin access level)
-   */
-  static async getAvailableLirfs(): Promise<Array<{id: string, full_name: string}>> {
-    try {
-      const { data, error } = await supabase
-        .from('members')
-        .select('id, full_name')
-        .in('access_level', ['lirf', 'admin'])
-        .order('full_name', { ascending: true });
-
-      if (error) {
-        console.error('Failed to fetch LIRFs:', error);
-        throw new Error(error.message);
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('ScheduledRunsService.getAvailableLirfs error:', error);
       throw error;
     }
   }
@@ -340,5 +505,13 @@ export class ScheduledRunsService {
       .eq('id', runId);
 
     if (error) throw new Error(error.message);
+  }
+
+  /**
+   * Clear LIRF cache (useful for testing or when data changes)
+   */
+  static clearCache(): void {
+    this.lirfCache.clear();
+    this.lirfCacheExpiry = 0;
   }
 }

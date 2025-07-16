@@ -10,7 +10,7 @@ export const Header: React.FC<HeaderProps> = ({
   title = "Run Alcester App",
   onMenuClick,
 }) => {
-  console.log('Simple header working!');
+  //console.log('Simple header working!');
   
   return (
     <header className="header">
@@ -46,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
         <div className="header-right">
           <button onClick={() => {
-            console.log('Logout clicked!');
+            //console.log('Logout clicked!');
             localStorage.clear();
             window.location.reload();
           }}>

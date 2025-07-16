@@ -104,7 +104,7 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      console.log('🔍 Today MANUAL OVERRIDE:', '2025-07-13'); //console.log('🔍 Today for comparison:', today.toISOString().split('T')[0]);
+      console.log('🔍 Today MANUAL OVERRIDE:', '2025-07-13'); //console\.log\('🔍 Today for comparison:', today.toISOString().split('T')[0]);
       
       const relevantRuns = runsWithBookings.filter(run => {
         const runDate = new Date(run.run_date);

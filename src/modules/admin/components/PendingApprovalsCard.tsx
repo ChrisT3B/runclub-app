@@ -15,8 +15,8 @@ export const PendingApprovalsCard: React.FC = () => {
       setLoading(true);
       const allMembers = await AdminService.getAllMembers();
       const pending = allMembers.filter(member => member.membership_status === 'pending');
-        console.log('All members:', allMembers);
-        console.log('Pending members:', pending);
+        console\.log\('All members:', allMembers);
+        console\.log\('Pending members:', pending);
       setPendingMembers(pending);
     } catch (error) {
       console.error('Failed to load pending members:', error);
@@ -179,7 +179,7 @@ export const PendingApprovalsCard: React.FC = () => {
               onClick={(e) => {
                 e.preventDefault();
                 // TODO: Navigate to full members page
-                console.log('Navigate to members page');
+                console\.log\('Navigate to members page');
               }}
               style={{ 
                 color: 'var(--red-primary)', 

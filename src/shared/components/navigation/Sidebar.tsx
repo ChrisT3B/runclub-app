@@ -8,8 +8,8 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
   const { state } = useAuth()
-    console.log('Current user:', state.user);
-    console.log('Access level:', state.user?.access_level);
+    //console.log('Current user:', state.user);
+    //console.log('Access level:', state.user?.access_level);
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: '🏠' },

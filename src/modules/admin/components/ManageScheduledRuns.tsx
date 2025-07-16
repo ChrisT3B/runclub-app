@@ -249,7 +249,7 @@ export const ManageScheduledRuns: React.FC = () => {
                     
                     <button
                       onClick={() => {
-                        console.log('Manage bookings:', run.id);
+                        //console.log('Manage bookings:', run.id);
                       }}
                       className="btn btn-secondary btn-responsive"
                     >

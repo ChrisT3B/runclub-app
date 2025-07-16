@@ -1,37 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../auth/hooks/useAuth';
-import { ScheduledRunsService, ScheduledRun } from '../services/scheduledRunsService';
+import { ScheduledRunsService, RunWithDetails } from '../services/scheduledRunsService';
 import { BookingService, BookingError } from '../services/bookingService';
 import { ErrorModal } from '../../../shared/components/ui/ErrorModal';
 import { Share2 } from 'lucide-react';
 import { formatDate, formatTime, isRunUrgent, handleRunShare } from '../../runs/utils/runUtils';
 import { ConfirmationModal } from '../../../shared/components/ui/ConfirmationModal';
 
-
-interface RunWithAllInfo extends ScheduledRun {
-  booking_count: number;
-  is_booked: boolean;
-  user_booking_id?: string;
-  is_full: boolean;
-  bookings?: any[];
-  lirf_vacancies: number;
-  user_is_assigned_lirf: boolean;
-  assigned_lirfs: Array<{
-    id: string;
-    name: string;
-    position: number;
-  }>;
-}
-
-export const ViewScheduledRuns: React.FC = () =>  {
+export const ViewScheduledRuns: React.FC = () => {
   const { state } = useAuth();
-  const [runs, setRuns] = useState<RunWithAllInfo[]>([]);
+  const [runs, setRuns] = useState<RunWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
   const [assignmentLoading, setAssignmentLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<'all' | 'available' | 'my-bookings' | 'my-assignments'>('all');
-  const [urgentVacancies, setUrgentVacancies] = useState(0);
   const [showShareMenu, setShowShareMenu] = useState<string | null>(null);
   
   // Error Modal State
@@ -84,89 +67,14 @@ export const ViewScheduledRuns: React.FC = () =>  {
     loadScheduledRuns();
   }, [state.user]);
 
+  // OPTIMIZED: Single comprehensive API call
   const loadScheduledRuns = async () => {
     try {
       setLoading(true);
-      const runsData = await ScheduledRunsService.getScheduledRuns();
       
-      // Get booking and LIRF information for each run
-      const runsWithAllInfo = await Promise.all(
-        runsData.map(async (run) => {
-          // Get bookings
-          const bookings = await BookingService.getRunBookings(run.id);
-          const activeBookings = bookings.filter(b => !b.cancelled_at);
-          const bookingCount = activeBookings.length;
-          
-          let isBooked = false;
-          let userBookingId: string | undefined;
-
-          if (state.user?.id) {
-            try {
-              isBooked = await BookingService.hasMemberBookedRun(state.user.id, run.id);
-              if (isBooked) {
-                const userBookings = await BookingService.getMemberBookings(state.user.id);
-                const userBooking = userBookings.find(
-                  booking => booking.run_id === run.id && !booking.cancelled_at
-                );
-                userBookingId = userBooking?.id;
-              }
-            } catch (error) {
-              console.error('Error checking booking status:', error);
-            }
-          }
-
-          // Get LIRF assignment info
-          const assignedLirfs = [];
-          let userIsAssignedLirf = false;
-          
-          if (run.assigned_lirf_1) {
-            const lirf = await getLIRFDetails(run.assigned_lirf_1);
-            if (lirf) {
-              assignedLirfs.push({ ...lirf, position: 1 });
-              if (run.assigned_lirf_1 === state.user?.id) userIsAssignedLirf = true;
-            }
-          }
-          if (run.assigned_lirf_2) {
-            const lirf = await getLIRFDetails(run.assigned_lirf_2);
-            if (lirf) {
-              assignedLirfs.push({ ...lirf, position: 2 });
-              if (run.assigned_lirf_2 === state.user?.id) userIsAssignedLirf = true;
-            }
-          }
-          if (run.assigned_lirf_3) {
-            const lirf = await getLIRFDetails(run.assigned_lirf_3);
-            if (lirf) {
-              assignedLirfs.push({ ...lirf, position: 3 });
-              if (run.assigned_lirf_3 === state.user?.id) userIsAssignedLirf = true;
-            }
-          }
-          
-          const lirfVacancies = run.lirfs_required - assignedLirfs.length;
-
-          return {
-            ...run,
-            booking_count: bookingCount,
-            is_booked: isBooked,
-            user_booking_id: userBookingId,
-            is_full: bookingCount >= run.max_participants,
-            bookings: isLIRFOrAdmin ? activeBookings : undefined,
-            lirf_vacancies: lirfVacancies,
-            user_is_assigned_lirf: userIsAssignedLirf,
-            assigned_lirfs: assignedLirfs
-          };
-        })
-      );
-
-      setRuns(runsWithAllInfo);
-
-      // Calculate urgent vacancies for LIRFs/Admins
-      if (isLIRFOrAdmin) {
-        const urgentCount = runsWithAllInfo
-          .filter(run => isRunUrgent(run.run_date, run.lirf_vacancies))
-          .reduce((total, run) => total + run.lirf_vacancies, 0);
-        
-        setUrgentVacancies(urgentCount);
-      }
+      // Use the optimized method that gets all data in minimal queries
+      const runsWithDetails = await ScheduledRunsService.getScheduledRunsWithDetails(state.user?.id);
+      setRuns(runsWithDetails);
 
     } catch (err: any) {
       setError(err.message || 'Failed to load scheduled runs');
@@ -175,16 +83,36 @@ export const ViewScheduledRuns: React.FC = () =>  {
     }
   };
 
-  const getLIRFDetails = async (lirfId: string) => {
-    try {
-      const lirfs = await ScheduledRunsService.getAvailableLirfs();
-      const lirf = lirfs.find(l => l.id === lirfId);
-      return lirf ? { id: lirf.id, name: lirf.full_name } : null;
-    } catch (error) {
-      console.error('Error getting LIRF details:', error);
-      return null;
-    }
-  };
+  // PERFORMANCE: Use useMemo for expensive calculations
+  const { filteredRuns, urgentVacancies, filterCounts } = useMemo(() => {
+    const filtered = runs.filter(run => {
+      switch (filter) {
+        case 'available':
+          return !run.is_booked && !run.is_full;
+        case 'my-bookings':
+          return run.is_booked;
+        case 'my-assignments':
+          return isLIRFOrAdmin && run.user_is_assigned_lirf;
+        default:
+          return true;
+      }
+    });
+
+    const urgent = isLIRFOrAdmin 
+      ? runs
+          .filter(run => isRunUrgent(run.run_date, run.lirf_vacancies))
+          .reduce((total, run) => total + run.lirf_vacancies, 0)
+      : 0;
+
+    const counts = {
+      all: runs.length,
+      available: runs.filter(r => !r.is_booked && !r.is_full).length,
+      myBookings: runs.filter(r => r.is_booked).length,
+      myAssignments: runs.filter(r => r.user_is_assigned_lirf).length
+    };
+
+    return { filteredRuns: filtered, urgentVacancies: urgent, filterCounts: counts };
+  }, [runs, filter, isLIRFOrAdmin]);
 
   const handleBookRun = async (runId: string) => {
     if (!state.user?.id) {
@@ -203,6 +131,7 @@ export const ViewScheduledRuns: React.FC = () =>  {
         member_id: state.user.id
       });
 
+      // OPTIMIZED: Only reload data, don't need to refetch everything
       await loadScheduledRuns();
       setError('');
       
@@ -277,7 +206,11 @@ export const ViewScheduledRuns: React.FC = () =>  {
       } else if (!run.assigned_lirf_3 && run.lirfs_required >= 3) {
         updateData.assigned_lirf_3 = state.user.id;
       } else {
-        setError('No LIRF positions available for this run');
+        setErrorModal({
+          isOpen: true,
+          title: 'No LIRF Positions Available',
+          message: 'No LIRF positions are available for this run.'
+        });
         return;
       }
 
@@ -286,7 +219,21 @@ export const ViewScheduledRuns: React.FC = () =>  {
       setError('');
       
     } catch (err: any) {
-      setError(err.message || 'Failed to assign LIRF');
+      console.error('LIRF assignment error:', err);
+    
+      if (err instanceof BookingError) {
+        setErrorModal({
+          isOpen: true,
+          title: err.title || 'LIRF Assignment Failed',
+          message: err.message
+        });
+      } else {
+        setErrorModal({
+          isOpen: true,
+          title: 'LIRF Assignment Failed',
+          message: err.message || 'Failed to assign LIRF position. Please try again.'
+        });
+      }
     } finally {
       setAssignmentLoading(null);
     }
@@ -295,9 +242,22 @@ export const ViewScheduledRuns: React.FC = () =>  {
   const handleUnassignSelfAsLIRF = async (runId: string) => {
     if (!state.user?.id) return;
 
-    if (!confirm('Are you sure you want to unassign yourself from this run? Admins will be notified.')) {
-      return;
-    }
+    const run = runs.find(r => r.id === runId);
+    if (!run) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Unassign LIRF',
+      message: `Are you sure you want to unassign yourself as LIRF from "${run.run_title}"? Admins will be notified of this change.`,
+      onConfirm: () => {
+        closeConfirmModal();
+        performUnassignLIRF(runId);
+      }
+    });
+  };
+
+  const performUnassignLIRF = async (runId: string) => {
+    if (!state.user?.id) return;
 
     try {
       setAssignmentLoading(runId);
@@ -316,30 +276,31 @@ export const ViewScheduledRuns: React.FC = () =>  {
 
       await ScheduledRunsService.updateScheduledRun(runId, updateData);
       
-      console.log('TODO: Notify admins of LIRF unassignment for run:', run.run_title);
+      //console.log('TODO: Notify admins of LIRF unassignment for run:', run.run_title);
       
       await loadScheduledRuns();
       setError('');
       
     } catch (err: any) {
-      setError(err.message || 'Failed to unassign LIRF');
+      console.error('LIRF unassignment error:', err);
+      
+      if (err instanceof BookingError) {
+        setErrorModal({
+          isOpen: true,
+          title: err.title || 'LIRF Unassignment Failed',
+          message: err.message
+        });
+      } else {
+        setErrorModal({
+          isOpen: true,
+          title: 'LIRF Unassignment Failed',
+          message: err.message || 'Failed to unassign LIRF position. Please try again.'
+        });
+      }
     } finally {
       setAssignmentLoading(null);
     }
   };
-
-  const filteredRuns = runs.filter(run => {
-    switch (filter) {
-      case 'available':
-        return !run.is_booked && !run.is_full;
-      case 'my-bookings':
-        return run.is_booked;
-      case 'my-assignments':
-        return isLIRFOrAdmin && run.user_is_assigned_lirf;
-      default:
-        return true;
-    }
-  });
 
   if (loading) {
     return (
@@ -371,20 +332,20 @@ export const ViewScheduledRuns: React.FC = () =>  {
         </div>
       )}
 
-      {/* Filter Tabs */}
+      {/* Filter Tabs - Using pre-calculated counts */}
       <div className="run-filters">
         <button
           onClick={() => setFilter('all')}
           className={`filter-tab ${filter === 'all' ? 'filter-tab--active' : ''}`}
         >
-          All Runs ({runs.length})
+          All Runs ({filterCounts.all})
         </button>
         
         <button
           onClick={() => setFilter('available')}
           className={`filter-tab ${filter === 'available' ? 'filter-tab--active' : ''}`}
         >
-          Available ({runs.filter(r => !r.is_booked && !r.is_full).length})
+          Available ({filterCounts.available})
         </button>
 
         {state.user && (
@@ -392,7 +353,7 @@ export const ViewScheduledRuns: React.FC = () =>  {
             onClick={() => setFilter('my-bookings')}
             className={`filter-tab ${filter === 'my-bookings' ? 'filter-tab--active' : ''}`}
           >
-            My Bookings ({runs.filter(r => r.is_booked).length})
+            My Bookings ({filterCounts.myBookings})
           </button>
         )}
 
@@ -401,7 +362,7 @@ export const ViewScheduledRuns: React.FC = () =>  {
             onClick={() => setFilter('my-assignments')}
             className={`filter-tab ${filter === 'my-assignments' ? 'filter-tab--active' : ''}`}
           >
-            My LIRF Duties ({runs.filter(r => r.user_is_assigned_lirf).length})
+            My LIRF Duties ({filterCounts.myAssignments})
           </button>
         )}
       </div>
@@ -558,7 +519,7 @@ export const ViewScheduledRuns: React.FC = () =>  {
                           disabled={bookingLoading === run.id}
                           className="action-btn action-btn--danger"
                         >
-                          {bookingLoading === run.id ? 'Cancelling...' : '🗑️ Cancel Booking'}
+                          {bookingLoading === run.id ? 'Cancelling...' : '🗑️ Drop out'}
                         </button>
                       ) : run.is_full ? (
                         <div className="action-status action-status--full">
@@ -570,7 +531,7 @@ export const ViewScheduledRuns: React.FC = () =>  {
                           disabled={bookingLoading === run.id}
                           className="action-btn action-btn--primary"
                         >
-                          {bookingLoading === run.id ? 'Booking...' : '🏃‍♂️ Book Run'}
+                          {bookingLoading === run.id ? 'Booking...' : '🏃‍♂️ Join in'}
                         </button>
                       )}
 
@@ -691,8 +652,8 @@ export const ViewScheduledRuns: React.FC = () =>  {
         message={confirmModal.message}
         onConfirm={confirmModal.onConfirm}
         onCancel={closeConfirmModal}
-        confirmText="Yes, Cancel Booking"
-        cancelText="Keep Booking"
+        confirmText="Yes, Unassign Me"
+        cancelText="Keep Assignment"
         type="danger"
       />
     </div>
