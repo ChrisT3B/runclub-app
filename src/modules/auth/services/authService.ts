@@ -147,13 +147,13 @@ static async login(credentials: LoginCredentials) {
       
       // Get member profile with RLS protection
       const memberData = await this.getMemberProfile(user.email!)
-      console.log('Member data returned:', memberData); // DEBUG
+     
       const finalUser = {
       ...user,
       ...memberData
       };
     
-      console.log('Final user object:', finalUser); // DEBUG
+      //console.log('Final user object:', finalUser); // DEBUG
       return {
         ...user,
         ...memberData

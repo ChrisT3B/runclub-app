@@ -12,7 +12,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-console.log('Current user object:', state.user);
+//console.log('Current user object:', state.user);
 // Form state
 const [formData, setFormData] = useState({
   fullName: state.user?.fullName || '',
