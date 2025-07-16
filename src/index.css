@@ -1,4 +1,18 @@
 /* RunClub App - Complete CSS Styles */
+
+/* ==============================================
+   COMPONENT IMPORTS - MUST BE FIRST
+   ============================================== */
+
+/* Import component-specific styles */
+@import url('./styles/components/Buttons.css');
+@import url('./styles/components/StatusBadges.css');
+@import url('./styles/components/RunCard.css');
+
+/* ==============================================
+   RESET AND BASE STYLES
+   ============================================== */
+
 /* Reset and Base Styles */
 * {
   box-sizing: border-box;
@@ -628,45 +642,47 @@ html, body {
     padding: 16px;
   }
   
-  /* Responsive utilities - Tablet */
+  /* FORCE Responsive utilities - Tablet */
   .responsive-card-layout {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
   }
   
   .responsive-card-actions {
-    flex-direction: row;
-    justify-content: space-between;
-    width: 100%;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    margin-left: 0 !important;
   }
   
-  .responsive-card-actions .btn {
-    flex: 1;
-    min-width: 0;
+  .responsive-card-actions .btn,
+  .responsive-card-actions .action-btn {
+    flex: 1 !important;
+    min-width: 0 !important;
   }
   
   .responsive-info-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    gap: 12px !important;
   }
   
   .responsive-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
   }
   
   .responsive-header > div:first-child {
-    text-align: center;
+    text-align: center !important;
   }
   
   .desktop-only {
-    display: none;
+    display: none !important;
   }
   
   .mobile-only {
-    display: block;
+    display: block !important;
   }
 }
 
@@ -686,10 +702,6 @@ html, body {
     gap: 12px;
   }
   
-  /* Button adjustments */
-  .btn-responsive {
-    padding: 10px 8px;
-    font-size: 11px;
   }
   
   /* Tighter spacing */
@@ -734,7 +746,7 @@ html, body {
     padding: 12px 16px;
     font-size: 14px;
   }
-}
+
 
 /* Focus states for accessibility */
 .user-menu-trigger:focus,
@@ -749,4 +761,183 @@ html, body {
   outline: none;
   background: var(--red-light);
   color: var(--red-primary);
+}
+
+/* ==============================================
+   ADDITIONAL SHARED COMPONENTS
+   ============================================== */
+
+/* Filter Container */
+.run-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--gray-200);
+  padding-bottom: 16px;
+  width: 100%;
+}
+
+.filter-tab {
+  flex: 1;
+  padding: 8px 4px;
+  border: 1px solid var(--gray-300);
+  background: white;
+  color: var(--gray-700);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 400;
+  transition: all 0.15s ease;
+  font-size: 12px;
+  font-family: var(--font-heading);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.filter-tab--active {
+  border: 2px solid var(--red-primary);
+  background: var(--red-light);
+  color: var(--red-primary);
+  font-weight: 600;
+}
+
+/* Urgent Alert */
+.urgent-alert {
+  background: #fef2f2;
+  border: 2px solid #fecaca;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.urgent-alert__icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.urgent-alert__content {
+  flex: 1;
+}
+
+.urgent-alert__title {
+  font-weight: 600;
+  color: #dc2626;
+  margin: 0 0 4px 0;
+}
+
+.urgent-alert__description {
+  font-size: 14px;
+  color: #7f1d1d;
+  margin: 0;
+}
+
+/* Empty State */
+.empty-state {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 40px;
+  text-align: center;
+  color: var(--gray-500);
+}
+
+.empty-state__icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state__title {
+  margin: 0 0 8px 0;
+  color: var(--gray-700);
+}
+
+.empty-state__description {
+  margin: 0;
+}
+
+/* Error Banner */
+.error-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--gray-500);
+}
+
+/* Share Dropdown */
+.share-menu {
+  position: relative;
+}
+
+.share-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  min-width: 200px;
+  margin-top: 4px;
+}
+
+.share-dropdown__content {
+  padding: 8px 0;
+}
+
+.share-dropdown__item {
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.share-dropdown__item:hover {
+  background: #f3f4f6;
+}
+
+/* Mobile adjustments for filters */
+@media (max-width: 768px) {
+  .run-filters {
+    gap: 6px;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .filter-tab {
+    padding: 8px 2px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .run-filters {
+    gap: 4px;
+  }
+  
+  .filter-tab {
+    padding: 8px 1px;
+    font-size: 10px;
+  }
 }

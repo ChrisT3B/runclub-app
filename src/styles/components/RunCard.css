@@ -1,0 +1,216 @@
+/* 📁 src/styles/components/RunCard.css */
+
+/* ==============================================
+   RUN CARD COMPONENT STYLES
+   ============================================== */
+
+.runs-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.run-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease;
+}
+
+.run-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.run-card--urgent {
+  border: 2px solid #fecaca;
+  background: #fef2f2;
+}
+
+.run-card__content {
+  padding: 24px;
+}
+
+.run-card__layout {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.run-card__info {
+  flex: 1;
+}
+
+.run-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: 16px;
+  min-width: 140px;
+}
+
+.run-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.run-card__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--red-primary);
+  flex: 1;
+}
+
+.run-card__badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Run Info Grid */
+.run-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.run-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.run-info-item__primary {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-600);
+}
+
+.run-info-item__secondary {
+  font-size: 14px;
+  color: var(--gray-500);
+}
+
+.run-info-item__highlight {
+  font-size: 14px;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* Run Sections */
+.run-description {
+  background: var(--gray-50);
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--gray-700);
+}
+
+.lirf-info {
+  background: var(--gray-50);
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.lirf-info__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 8px;
+}
+
+.lirf-info__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lirf-info__item {
+  font-size: 14px;
+  color: var(--gray-600);
+}
+
+.lirf-info__vacancy {
+  font-size: 14px;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.lirf-info__empty {
+  font-size: 14px;
+  color: #dc2626;
+}
+
+/* ==============================================
+   MOBILE RESPONSIVE - CARDS
+   ============================================== */
+
+/* Tablet and below */
+@media (max-width: 768px) {
+  .run-card__layout {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+  
+  .run-card__actions {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    margin-left: 0 !important;
+    min-width: auto !important;
+    width: 100% !important;
+  }
+  
+  .run-card__actions .action-btn {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  
+  .run-info-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    gap: 12px !important;
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 480px) {
+  .run-info-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  .run-card__content {
+    padding: 16px !important;
+  }
+  
+  .run-card__actions {
+    gap: 6px !important;
+  }
+  
+  .run-card__header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  
+  .run-card__badges {
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+  
+  /* Ensure buttons stack properly on very small screens */
+  .run-card__actions {
+    flex-wrap: wrap !important;
+  }
+  
+  .run-card__actions .action-btn {
+    min-width: 100px !important;
+  }
+}

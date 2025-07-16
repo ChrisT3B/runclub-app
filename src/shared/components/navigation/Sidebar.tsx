@@ -9,7 +9,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
   const { state } = useAuth()
     console.log('Current user:', state.user);
-    console.log('Access level:', state.user?.accessLevel);
+    console.log('Access level:', state.user?.access_level);
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
@@ -18,7 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
   ]
 
 // Add LIRF-specific navigation
-if (state.user?.accessLevel === 'lirf' || state.user?.accessLevel === 'admin') {
+if (state.user?.access_level === 'lirf' || state.user?.access_level === 'admin') {
   navigation.push(
     { id: 'manage-runs', name: 'Manage Scheduled Runs', icon: '📅' },
     { id: 'lead-your-run', name: 'Lead Your Runs', icon: '🎯' }  // ← Add this
@@ -26,7 +26,7 @@ if (state.user?.accessLevel === 'lirf' || state.user?.accessLevel === 'admin') {
 }
 
 // Add admin-specific navigation
-if (state.user?.accessLevel === 'admin') {
+if (state.user?.access_level === 'admin') {
   navigation.push(
     { id: 'members', name: 'Members', icon: '👥' },
       { id: 'communications', name: 'Communications', icon: '📧' }

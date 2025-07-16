@@ -90,18 +90,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState)
 
   // Initialize auth state
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const user = await AuthService.getCurrentUser()
-        dispatch({ type: 'SET_USER', payload: user })
-      } catch (error) {
-        dispatch({ type: 'SET_ERROR', payload: 'Failed to initialize authentication' })
-      }
-    }
+useEffect(() => {
+  console.log('=== AuthContext useEffect triggered ==='); // This should always show
 
-    initializeAuth()
-  }, [])
+  const initializeAuth = async () => {
+    try {
+      console.log('=== initializeAuth function called ===');
+      console.log('AuthService object:', AuthService); // Check if AuthService exists
+      
+      const user = await AuthService.getCurrentUser()
+      console.log('=== AuthService.getCurrentUser returned ===', user);
+      
+      dispatch({ type: 'SET_USER', payload: user })
+      console.log('=== Dispatched SET_USER ===');
+    } catch (error) {
+      console.error('=== AUTH INITIALIZATION ERROR ===', error); // Changed to console.error
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to initialize authentication' })
+    }
+  }
+
+  initializeAuth()
+}, [])
 
   // Login function
   const login = async (credentials: LoginCredentials) => {
@@ -110,10 +119,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       const user = await AuthService.login(credentials)
+      console.log('=== Login returned user ===', user); // DEBUG
       dispatch({ type: 'SET_USER', payload: user })
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Login failed' })
-      throw error
+     throw error
     }
   }
 

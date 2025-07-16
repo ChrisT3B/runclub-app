@@ -1,0 +1,90 @@
+/* 📁 src/styles/components/StatusBadges.css */
+
+/* ==============================================
+   REUSABLE STATUS BADGES
+   ============================================== */
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Status Types */
+.status-badge--booked {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge--confirmed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge--cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.status-badge--lirf-assigned {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge--full {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.status-badge--urgent {
+  background: #fecaca;
+  color: #dc2626;
+  font-weight: 600;
+  animation: urgentPulse 2s infinite;
+}
+
+.status-badge--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge--expired {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.status-badge--suspended {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Animations */
+@keyframes urgentPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Size Variants */
+.status-badge--small {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+.status-badge--large {
+  padding: 6px 12px;
+  font-size: 14px;
+}

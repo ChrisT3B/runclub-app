@@ -30,7 +30,7 @@ export interface BookingWithRunDetails extends RunBooking {
 export class BookingError extends Error {
   constructor(
     message: string, 
-    public type: 'LIRF_CONFLICT' | 'ALREADY_BOOKED' | 'RUN_FULL' | 'GENERAL' = 'GENERAL',
+    public type: 'LIRF_CONFLICT' | 'ALREADY_BOOKED' | 'RUN_FULL' | 'GENERAL' | 'AUTH_ERROR' = 'GENERAL',
     public title?: string
   ) {
     super(message);
@@ -39,6 +39,15 @@ export class BookingError extends Error {
 }
 
 export class BookingService {
+  /**
+   * Check if user is authenticated and get current user
+   */
+  static async getCurrentUser() {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) throw new Error('Failed to get current user');
+    return user;
+  }
+
   /**
    * Check if a member is assigned as LIRF to a specific run
    */
@@ -92,6 +101,16 @@ export class BookingService {
    */
   static async createBooking(bookingData: CreateBookingData): Promise<RunBooking> {
     try {
+      // Check authentication first
+      const user = await this.getCurrentUser();
+      if (!user) {
+        throw new BookingError(
+          'You must be logged in to book a run. Please sign in and try again.',
+          'AUTH_ERROR',
+          'Authentication Required'
+        );
+      }
+
       // Check if user already has an active booking for this run
       const { data: existingBooking, error: checkError } = await supabase
         .from('run_bookings')
@@ -102,6 +121,14 @@ export class BookingService {
         .single();
 
       if (checkError && checkError.code !== 'PGRST116') {
+        // Handle RLS permission errors
+        if (checkError.code === 'PGRST301') {
+          throw new BookingError(
+            'You do not have permission to access booking information.',
+            'AUTH_ERROR',
+            'Permission Denied'
+          );
+        }
         throw checkError;
       }
 
@@ -117,7 +144,7 @@ export class BookingService {
       const isAssignedLirf = await this.isMemberAssignedAsLirf(bookingData.member_id, bookingData.run_id);
       if (isAssignedLirf) {
         throw new BookingError(
-          'As a LIRF assigned to lead this run, you cannot book yourself as a participant. If you need to step down from leading this run, please message on the LIRF chat.',
+          'As a LIRF assigned to lead this run, you cannot book yourself as a participant. If you need to step down from leading this run, please contact an admin.',
           'LIRF_CONFLICT',
           'LIRF Assignment Conflict'
         );
@@ -130,7 +157,16 @@ export class BookingService {
         .eq('run_id', bookingData.run_id)
         .is('cancelled_at', null);
 
-      if (countError) throw countError;
+      if (countError) {
+        if (countError.code === 'PGRST301') {
+          throw new BookingError(
+            'You do not have permission to access booking information.',
+            'AUTH_ERROR',
+            'Permission Denied'
+          );
+        }
+        throw countError;
+      }
 
       const { data: runData, error: runError } = await supabase
         .from('scheduled_runs')
@@ -138,7 +174,16 @@ export class BookingService {
         .eq('id', bookingData.run_id)
         .single();
 
-      if (runError) throw runError;
+      if (runError) {
+        if (runError.code === 'PGRST301') {
+          throw new BookingError(
+            'You do not have permission to access run information.',
+            'AUTH_ERROR',
+            'Permission Denied'
+          );
+        }
+        throw runError;
+      }
 
       if (currentBookings.length >= runData.max_participants) {
         throw new BookingError(
@@ -161,6 +206,15 @@ export class BookingService {
 
       if (error) {
         console.error('Failed to create booking:', error);
+        
+        if (error.code === 'PGRST301') {
+          throw new BookingError(
+            'You do not have permission to create bookings. Please contact an admin.',
+            'AUTH_ERROR',
+            'Permission Denied'
+          );
+        }
+        
         throw new BookingError(
           'Failed to create your booking. Please try again or contact support if the problem persists.',
           'GENERAL',
@@ -180,6 +234,11 @@ export class BookingService {
    */
   static async getMemberBookings(memberId: string): Promise<BookingWithRunDetails[]> {
     try {
+      const user = await this.getCurrentUser();
+      if (!user) {
+        throw new Error('You must be logged in to view bookings');
+      }
+
       const { data, error } = await supabase
         .from('run_bookings')
         .select(`
@@ -198,6 +257,11 @@ export class BookingService {
 
       if (error) {
         console.error('Failed to fetch member bookings:', error);
+        
+        if (error.code === 'PGRST301') {
+          throw new Error('You do not have permission to access these bookings');
+        }
+        
         throw new Error(error.message);
       }
 
@@ -222,6 +286,11 @@ export class BookingService {
    */
   static async getRunBookings(runId: string): Promise<RunBooking[]> {
     try {
+      const user = await this.getCurrentUser();
+      if (!user) {
+        throw new Error('You must be logged in to view run bookings');
+      }
+
       const { data, error } = await supabase
         .from('run_bookings')
         .select('*')
@@ -230,6 +299,11 @@ export class BookingService {
 
       if (error) {
         console.error('Failed to fetch run bookings:', error);
+        
+        if (error.code === 'PGRST301') {
+          throw new Error('You do not have permission to access these bookings');
+        }
+        
         throw new Error(error.message);
       }
 
@@ -245,6 +319,11 @@ export class BookingService {
    */
   static async cancelBooking(bookingId: string, cancellationReason?: string): Promise<RunBooking> {
     try {
+      const user = await this.getCurrentUser();
+      if (!user) {
+        throw new Error('You must be logged in to cancel bookings');
+      }
+
       const { data, error } = await supabase
         .from('run_bookings')
         .update({
@@ -257,6 +336,11 @@ export class BookingService {
 
       if (error) {
         console.error('Failed to cancel booking:', error);
+        
+        if (error.code === 'PGRST301') {
+          throw new Error('You do not have permission to cancel this booking');
+        }
+        
         throw new Error(error.message);
       }
 
@@ -280,6 +364,12 @@ export class BookingService {
 
       if (error) {
         console.error('Failed to get booking count:', error);
+        
+        if (error.code === 'PGRST301') {
+          // If no permission to see bookings, return 0
+          return 0;
+        }
+        
         throw new Error(error.message);
       }
 
@@ -295,22 +385,35 @@ export class BookingService {
    */
   static async hasMemberBookedRun(memberId: string, runId: string): Promise<boolean> {
     try {
+      const user = await this.getCurrentUser();
+      if (!user) {
+        return false;
+      }
+
       const { data, error } = await supabase
         .from('run_bookings')
         .select('id')
         .eq('member_id', memberId)
         .eq('run_id', runId)
-        .is('cancelled_at', null)
-        .single();
+        .is('cancelled_at', null);
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No rows found
+          return false;
+        }
+        if (error.code === 'PGRST301') {
+          // No permission to see bookings
+          return false;
+        }
         throw error;
       }
 
-      return !!data;
+      // Check if we have any active bookings
+      return !!(data && data.length > 0);
     } catch (error) {
       console.error('BookingService.hasMemberBookedRun error:', error);
-      throw error;
+      return false; // Return false on error rather than throwing
     }
   }
 
@@ -323,6 +426,11 @@ export class BookingService {
     markedByUserId: string
   ): Promise<RunBooking> {
     try {
+      const user = await this.getCurrentUser();
+      if (!user) {
+        throw new Error('You must be logged in to mark attendance');
+      }
+
       const { data, error } = await supabase
         .from('run_bookings')
         .update({
@@ -336,6 +444,11 @@ export class BookingService {
 
       if (error) {
         console.error('Failed to mark attendance:', error);
+        
+        if (error.code === 'PGRST301') {
+          throw new Error('You do not have permission to mark attendance');
+        }
+        
         throw new Error(error.message);
       }
 

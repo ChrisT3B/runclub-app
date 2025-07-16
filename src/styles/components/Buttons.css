@@ -1,0 +1,120 @@
+/* 📁 src/styles/components/Buttons.css */
+
+/* ==============================================
+   REUSABLE BUTTON COMPONENTS
+   ============================================== */
+
+/* Action Buttons - Can be used across modules */
+.action-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  font-weight: 500;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-heading);
+}
+
+.action-btn--primary {
+  background: var(--red-primary);
+  color: white;
+  border-color: var(--red-primary);
+}
+
+.action-btn--primary:hover:not(:disabled) {
+  background: var(--red-dark);
+}
+
+.action-btn--secondary {
+  background: white;
+  color: var(--gray-700);
+  border-color: var(--gray-300);
+}
+
+.action-btn--secondary:hover:not(:disabled) {
+  background: var(--gray-50);
+}
+
+.action-btn--danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.action-btn--danger:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Status Display - Can be used for any status */
+.action-status {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.action-status--unavailable {
+  background: var(--gray-100);
+  color: var(--gray-500);
+}
+
+.action-status--full {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.action-status--assigned {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Filter Tabs - Can be used across modules */
+.filter-tab {
+  padding: 8px 16px;
+  border: 1px solid var(--gray-300);
+  background: white;
+  color: var(--gray-700);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 400;
+  transition: all 0.15s ease;
+  font-size: 14px;
+  font-family: var(--font-heading);
+}
+
+.filter-tab--active {
+  border: 2px solid var(--red-primary);
+  background: var(--red-light);
+  color: var(--red-primary);
+  font-weight: 600;
+}
+
+.filter-tab:hover:not(.filter-tab--active) {
+  background: var(--gray-50);
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .action-btn {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  
+  .filter-tab {
+    text-align: center;
+    padding: 10px 12px;
+  }
+}
