@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { ScheduledRunsService, RunWithDetails } from '../services/scheduledRunsService';
 import { BookingService, BookingError } from '../services/bookingService';
@@ -43,6 +43,35 @@ export const ViewScheduledRuns: React.FC = () => {
 
   const isLIRFOrAdmin = state.user?.access_level === 'lirf' || state.user?.access_level === 'admin';
 
+  // Helper function to get responsive button text
+  const getButtonText = useCallback((fullText: string, shortText: string, loading: boolean, loadingText: string) => {
+    if (loading) return loadingText;
+    
+    // Use shorter text on mobile
+    if (window.innerWidth <= 768) {
+      return shortText;
+    }
+    
+    return fullText;
+  }, []);
+
+  // OPTIMIZED: Single comprehensive API call
+  const loadScheduledRuns = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Use the ultra-optimized method
+      const runsWithDetails = await ScheduledRunsService.getScheduledRunsWithDetails(state.user?.id);
+      setRuns(runsWithDetails);
+
+    } catch (err: any) {
+      console.error('Failed to load runs:', err);
+      setError(err.message || 'Failed to load scheduled runs');
+    } finally {
+      setLoading(false);
+    }
+  }, [state.user?.id]);
+
   // Close share menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -63,25 +92,10 @@ export const ViewScheduledRuns: React.FC = () => {
     };
   }, [showShareMenu]);
 
+  // Load runs when user changes
   useEffect(() => {
     loadScheduledRuns();
-  }, [state.user]);
-
-  // OPTIMIZED: Single comprehensive API call
-  const loadScheduledRuns = async () => {
-    try {
-      setLoading(true);
-      
-      // Use the optimized method that gets all data in minimal queries
-      const runsWithDetails = await ScheduledRunsService.getScheduledRunsWithDetails(state.user?.id);
-      setRuns(runsWithDetails);
-
-    } catch (err: any) {
-      setError(err.message || 'Failed to load scheduled runs');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [loadScheduledRuns]);
 
   // PERFORMANCE: Use useMemo for expensive calculations
   const { filteredRuns, urgentVacancies, filterCounts } = useMemo(() => {
@@ -276,7 +290,7 @@ export const ViewScheduledRuns: React.FC = () => {
 
       await ScheduledRunsService.updateScheduledRun(runId, updateData);
       
-      //console.log('TODO: Notify admins of LIRF unassignment for run:', run.run_title);
+      console.log('TODO: Notify admins of LIRF unassignment for run:', run.run_title);
       
       await loadScheduledRuns();
       setError('');
@@ -519,7 +533,7 @@ export const ViewScheduledRuns: React.FC = () => {
                           disabled={bookingLoading === run.id}
                           className="action-btn action-btn--danger"
                         >
-                          {bookingLoading === run.id ? 'Cancelling...' : '🗑️ Drop out'}
+                          {getButtonText('🗑️ Drop out', '🗑️ Drop', bookingLoading === run.id, 'Dropping...')}
                         </button>
                       ) : run.is_full ? (
                         <div className="action-status action-status--full">
@@ -531,7 +545,7 @@ export const ViewScheduledRuns: React.FC = () => {
                           disabled={bookingLoading === run.id}
                           className="action-btn action-btn--primary"
                         >
-                          {bookingLoading === run.id ? 'Booking...' : '🏃‍♂️ Join in'}
+                          {getButtonText('🏃‍♂️ Join in', '🏃‍♂️ Join', bookingLoading === run.id, 'Booking...')}
                         </button>
                       )}
 
@@ -612,7 +626,7 @@ export const ViewScheduledRuns: React.FC = () => {
                             disabled={assignmentLoading === run.id}
                             className="action-btn action-btn--danger"
                           >
-                            {assignmentLoading === run.id ? 'Unassigning...' : '👨‍🏫 Unassign LIRF'}
+                            {getButtonText('👨‍🏫 Unassign LIRF', '👨‍🏫 Unassign', assignmentLoading === run.id, 'Unassigning...')}
                           </button>
                         ) : run.lirf_vacancies > 0 ? (
                           <button
@@ -620,7 +634,7 @@ export const ViewScheduledRuns: React.FC = () => {
                             disabled={assignmentLoading === run.id}
                             className="action-btn action-btn--secondary"
                           >
-                            {assignmentLoading === run.id ? 'Assigning...' : '👨‍🏫 Assign Me as LIRF'}
+                            {getButtonText('👨‍🏫 Assign Me as LIRF', '👨‍🏫 Assign Me', assignmentLoading === run.id, 'Assigning...')}
                           </button>
                         ) : (
                           <div className="action-status action-status--assigned">
