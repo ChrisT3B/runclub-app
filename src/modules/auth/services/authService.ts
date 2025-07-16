@@ -51,7 +51,7 @@ static async login(credentials: LoginCredentials) {
       joined_at: memberData.joined_at
     };
     
-    //console.log('=== Login final user ===', finalUser); // DEBUG
+    console.log('=== Login final user ===', finalUser); // DEBUG
     
     return finalUser;
   } catch (error) {
@@ -147,13 +147,13 @@ static async login(credentials: LoginCredentials) {
       
       // Get member profile with RLS protection
       const memberData = await this.getMemberProfile(user.email!)
-      //console.log('Member data returned:', memberData); // DEBUG
+      console.log('Member data returned:', memberData); // DEBUG
       const finalUser = {
       ...user,
       ...memberData
       };
     
-      //console.log('Final user object:', finalUser); // DEBUG
+      console.log('Final user object:', finalUser); // DEBUG
       return {
         ...user,
         ...memberData
