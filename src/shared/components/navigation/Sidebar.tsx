@@ -36,8 +36,8 @@ if (state.user?.access_level === 'admin') {
 
   return (
     <div className="sidebar">
-      <div className="sidebar-header">
-        <div className="sidebar-logo">Run Alcester</div>
+      <div className="sidebar-header sidebar-header--desktop-only">
+      <div className="sidebar-logo">Run Alcester</div>
       </div>
       
       <nav className="sidebar-nav">

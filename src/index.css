@@ -318,6 +318,11 @@ html, body {
   margin-right: 12px;
 }
 
+@media (max-width: 768px) {
+  .sidebar-header--desktop-only {
+    display: none;
+  }
+}
 /* Card Components */
 .card {
   background: white;
@@ -939,4 +944,5 @@ html, body {
     padding: 8px 1px;
     font-size: 10px;
   }
+
 }
