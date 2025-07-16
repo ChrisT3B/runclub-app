@@ -533,7 +533,7 @@ export const ViewScheduledRuns: React.FC = () => {
                           disabled={bookingLoading === run.id}
                           className="action-btn action-btn--danger"
                         >
-                          {getButtonText('🗑️ Drop out', '🗑️ Drop', bookingLoading === run.id, 'Dropping...')}
+                          {getButtonText('🗑️ Drop out', '🗑️ Cancel', bookingLoading === run.id, 'Dropping...')}
                         </button>
                       ) : run.is_full ? (
                         <div className="action-status action-status--full">
