@@ -20,52 +20,58 @@ export class AuthService {
   /**
    * Login user
    */
-static async login(credentials: LoginCredentials) {
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: credentials.email,
-      password: credentials.password,
-    })
+  static async login(credentials: LoginCredentials) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password,
+      })
 
-    if (error) {
-      throw new Error(error.message)
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      if (!data.user) {
+        throw new Error('Login failed - no user data received')
+      }
+
+      // Get the member profile data
+      const memberData = await this.getMemberProfile(data.user.email!)
+      
+      // Explicitly construct user object (no spread operator issues)
+      const finalUser = {
+        id: data.user.id,
+        aud: data.user.aud,
+        role: data.user.role,
+        email: data.user.email,
+        email_confirmed_at: data.user.email_confirmed_at,
+        created_at: data.user.created_at,
+        updated_at: data.user.updated_at,
+        last_sign_in_at: data.user.last_sign_in_at,
+        // Member profile data
+        access_level: memberData.access_level,
+        full_name: memberData.full_name,
+        membership_status: memberData.membership_status,
+        phone: memberData.phone,
+        emergency_contact_name: memberData.emergency_contact_name,
+        emergency_contact_phone: memberData.emergency_contact_phone,
+        health_conditions: memberData.health_conditions,
+        joined_at: memberData.joined_at
+      };
+      
+      return finalUser;
+    } catch (error) {
+      console.error('AuthService.login error:', error)
+      throw error
     }
-
-    if (!data.user) {
-      throw new Error('Login failed - no user data received')
-    }
-
-    // IMPORTANT: Get the member profile data
-    const memberData = await this.getMemberProfile(data.user.email!)
-    //console.log('=== Login getMemberProfile returned ===', memberData); // DEBUG
-    
-    const finalUser = {
-      ...data.user,
-      access_level: memberData.access_level,
-      full_name: memberData.full_name,
-      membership_status: memberData.membership_status,
-      phone: memberData.phone,
-      emergency_contact_name: memberData.emergency_contact_name,
-      emergency_contact_phone: memberData.emergency_contact_phone,
-      health_conditions: memberData.health_conditions,
-      joined_at: memberData.joined_at
-    };
-    
-    console.log('=== Login final user ===', finalUser); // DEBUG
-    
-    return finalUser;
-  } catch (error) {
-    console.error('AuthService.login error:', error)
-    throw error
   }
-}
 
   /**
    * Register user
    */
   static async register(registrationData: RegistrationData) {
     try {
-      // First, register the user with Supabase Auth
+      // Register the user with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: registrationData.email,
         password: registrationData.password,
@@ -86,7 +92,6 @@ static async login(credentials: LoginCredentials) {
       }
 
       // Create member profile record
-      // Note: This will work because new users get a temporary session during signup
       const { error: profileError } = await supabase
         .from('members')
         .insert({
@@ -98,24 +103,29 @@ static async login(credentials: LoginCredentials) {
           emergency_contact_phone: registrationData.emergencyContactPhone || null,
           health_conditions: registrationData.healthConditions || null,
           access_level: 'member',
-          membership_status: 'pending', // Will be activated when email confirmed
+          membership_status: 'pending',
           joined_at: new Date().toISOString(),
         })
 
       if (profileError) {
         console.error('Failed to create member profile:', profileError)
-        // Don't throw here - user auth was successful, profile creation can be retried
+        // Don't throw here - user auth was successful
       }
 
       // Check if email confirmation is required
       if (!data.session) {
-        // Email confirmation required
         throw new Error('Registration successful! Please check your email for a confirmation link.')
       }
 
-      // If we get here, user was confirmed immediately
+      // User was confirmed immediately
       return {
-        ...data.user,
+        id: data.user.id,
+        aud: data.user.aud,
+        role: data.user.role,
+        email: data.user.email,
+        email_confirmed_at: data.user.email_confirmed_at,
+        created_at: data.user.created_at,
+        updated_at: data.user.updated_at,
         full_name: registrationData.fullName,
         access_level: 'member',
         membership_status: 'active'
@@ -130,7 +140,6 @@ static async login(credentials: LoginCredentials) {
    * Get current user with member profile
    */
   static async getCurrentUser() {
-    //console.log('=== AuthService.getCurrentUser() called ===');
     try {
       const { data: { user }, error } = await supabase.auth.getUser()
 
@@ -139,25 +148,34 @@ static async login(credentials: LoginCredentials) {
       }
 
       if (!user) {
-        //console.log('No user found'); // DEBUG
         return null
       }
-      //console.log('Auth user:', user); // DEBUG
-      //console.log('Getting member profile for:', user.email); // DEBUG
-      
-      // Get member profile with RLS protection
+
+      // Get member profile data
       const memberData = await this.getMemberProfile(user.email!)
-     
-      //const finalUser = {
-      //...user,
-     // ...memberData
-      //};
-    
-      //console.log('Final user object:', finalUser); // DEBUG
-      return {
-        ...user,
-        ...memberData
-      }
+      
+      // Explicitly construct final user object
+      const finalUser = {
+        id: user.id,
+        aud: user.aud,
+        role: user.role,
+        email: user.email,
+        email_confirmed_at: user.email_confirmed_at,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        last_sign_in_at: user.last_sign_in_at,
+        // Member profile data
+        access_level: memberData.access_level,
+        full_name: memberData.full_name,
+        membership_status: memberData.membership_status,
+        phone: memberData.phone,
+        emergency_contact_name: memberData.emergency_contact_name,
+        emergency_contact_phone: memberData.emergency_contact_phone,
+        health_conditions: memberData.health_conditions,
+        joined_at: memberData.joined_at
+      };
+
+      return finalUser;
     } catch (error) {
       console.error('AuthService.getCurrentUser error:', error)
       return null
@@ -169,44 +187,54 @@ static async login(credentials: LoginCredentials) {
    */
   static async getMemberProfile(email: string) {
     try {
-      //console.log('Getting member profile for:', email); // DEBUG
       const { data, error } = await supabase
         .from('members')
         .select('*')
         .eq('email', email)
         .single()
-      //console.log('Query result - data:', data, 'error:', error); // DEBUG
 
       if (error) {
-         //console.log('Error code:', error.code, 'Error message:', error.message); // DEBUG
-        // If RLS blocks this, user might not have a profile yet
+        // Handle specific error cases
         if (error.code === 'PGRST116') {
-          console.warn('No member profile found for:', email)
+          // No member profile found
           return {
+            id: null,
             full_name: 'Unknown User',
             access_level: 'member',
-            membership_status: 'pending'
+            membership_status: 'pending',
+            phone: null,
+            emergency_contact_name: null,
+            emergency_contact_phone: null,
+            health_conditions: null,
+            joined_at: null
           }
         }
         
         if (error.code === 'PGRST301') {
-          console.warn('RLS blocked member profile access for:', email)
+          // RLS blocked access
           return {
+            id: null,
             full_name: 'Unknown User',
             access_level: 'member',
-            membership_status: 'pending'
+            membership_status: 'pending',
+            phone: null,
+            emergency_contact_name: null,
+            emergency_contact_phone: null,
+            health_conditions: null,
+            joined_at: null
           }
         }
         
         throw new Error(error.message)
       }
-      //console.log('Loaded member data:', data); // DEBUG
+
+      // Return member profile data
       return {
         id: data.id,
-        full_name: data.full_name,
+        full_name: data.full_name || 'Unknown User',
         phone: data.phone,
-        access_level: data.access_level,
-        membership_status: data.membership_status,
+        access_level: data.access_level || 'member',
+        membership_status: data.membership_status || 'pending',
         emergency_contact_name: data.emergency_contact_name,
         emergency_contact_phone: data.emergency_contact_phone,
         health_conditions: data.health_conditions,
@@ -214,12 +242,18 @@ static async login(credentials: LoginCredentials) {
       }
     } catch (error) {
       console.error('AuthService.getMemberProfile error:', error)
-      //console.log('Returning default member data due to error'); // DEBUG
-      // Return default data if profile fetch fails
+      
+      // Return safe default data on any error
       return {
+        id: null,
         full_name: 'Unknown User',
         access_level: 'member',
-        membership_status: 'pending'
+        membership_status: 'pending',
+        phone: null,
+        emergency_contact_name: null,
+        emergency_contact_phone: null,
+        health_conditions: null,
+        joined_at: null
       }
     }
   }
