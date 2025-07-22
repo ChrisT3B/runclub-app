@@ -1,5 +1,5 @@
 // src/modules/auth/components/EmailVerificationHandler.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ErrorModal } from '../../../shared/components/ui/ErrorModal';
@@ -15,6 +15,7 @@ export const EmailVerificationHandler: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { verifyEmail, verifyEmailMutation } = useAuth();
+  const hasRunRef = useRef(false); // Prevent double execution
   
   const [status, setStatus] = useState<'validating' | 'verifying' | 'success' | 'error'>('validating');
   const [message, setMessage] = useState('');
@@ -90,6 +91,14 @@ export const EmailVerificationHandler: React.FC = () => {
   };
 
   useEffect(() => {
+    // Prevent double execution in React StrictMode
+    if (hasRunRef.current) {
+      console.log('🔍 EmailVerificationHandler already ran, skipping...');
+      return;
+    }
+    hasRunRef.current = true;
+    console.log('🔍 EmailVerificationHandler running for first time');
+
     const handleVerification = async () => {
       // Step 1: Validate the request
       const validation = validateVerificationRequest();
@@ -147,7 +156,7 @@ export const EmailVerificationHandler: React.FC = () => {
     };
 
     handleVerification();
-  }, [searchParams, navigate, verifyEmail]);
+  }, []); // Empty dependency array - run only once
 
   // Loading state during validation
   if (status === 'validating') {
