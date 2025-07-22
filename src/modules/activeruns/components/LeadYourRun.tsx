@@ -103,17 +103,16 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
       // Filter for today and future runs, plus completed runs from today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const todayString = today.toISOString().split('T')[0];
       
-      console.log('🔍 Today MANUAL OVERRIDE:', '2025-07-13'); //console\.log\('🔍 Today for comparison:', today.toISOString().split('T')[0]);
+      console.log('🔍 Today for comparison:', todayString);
       
       const relevantRuns = runsWithBookings.filter(run => {
-        const runDate = new Date(run.run_date);
+        const runDate = new Date(run.run_date + 'T12:00:00'); // Add noon to avoid timezone issues
         runDate.setHours(0, 0, 0, 0);
         
-        const isToday = run.run_date === '2025-07-13';
-        const isFuture = run.run_date > '2025-07-13';
-        //const isToday = runDate.getTime() === today.getTime();
-       // const isFuture = runDate > today;
+        const isToday = run.run_date === todayString;
+        const isFuture = run.run_date > todayString;
         const isInProgress = run.run_status === 'in_progress';
         const isCompletedToday = run.run_status === 'completed' && isToday;
         
@@ -123,7 +122,7 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
           title: run.run_title,
           runDate: run.run_date,
           runDateParsed: runDate.toISOString().split('T')[0],
-          today: today.toISOString().split('T')[0],
+          today: todayString,
           status: run.run_status,
           isToday,
           isFuture,
@@ -194,7 +193,8 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
+    // Add noon time to avoid timezone issues
+    return new Date(dateString + 'T12:00:00').toLocaleDateString('en-GB', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -234,15 +234,13 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
   };
 
   const isRunToday = (dateString: string) => {
-    const runDate = new Date(dateString);
+    const runDate = new Date(dateString + 'T12:00:00'); // Add noon to avoid timezone issues
     const today = new Date();
-    const result = runDate.toDateString() === today.toDateString();
-    return result;
+    return runDate.toDateString() === today.toDateString();
   };
 
   const canStartRun = (run: ScheduledRun) => {
-    const result = run.run_status === 'scheduled' && isRunToday(run.run_date);
-    return result;
+    return run.run_status === 'scheduled' && isRunToday(run.run_date);
   };
 
   const canManageAttendance = (run: ScheduledRun) => {
