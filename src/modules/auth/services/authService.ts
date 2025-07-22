@@ -145,6 +145,8 @@ export const verifyEmail = async (token: string): Promise<EmailVerificationResul
         console.error('Error updating member status:', updateError);
         // Don't fail verification if status update fails
       }
+      console.log('🔍 Email verified successfully, signing out user to require manual login');
+      await supabase.auth.signOut();
     }
 
     return {
