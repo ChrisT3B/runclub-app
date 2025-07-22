@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { useAuth } from '../../auth/context/AuthContext';
 import { ScheduledRunsService, RunWithDetails } from '../services/scheduledRunsService';
 import { BookingService, BookingError } from '../services/bookingService';
 import { ErrorModal } from '../../../shared/components/ui/ErrorModal';
@@ -41,7 +41,7 @@ export const ViewScheduledRuns: React.FC = () => {
     onConfirm: () => {}
   });
 
-  const isLIRFOrAdmin = state.user?.access_level === 'lirf' || state.user?.access_level === 'admin';
+  const isLIRFOrAdmin = state.member?.access_level === 'lirf' || state.member?.access_level === 'admin';
 
   // Helper function to get responsive button text
   const getButtonText = useCallback((fullText: string, shortText: string, loading: boolean, loadingText: string) => {

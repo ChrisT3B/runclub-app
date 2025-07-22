@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { useAuth } from '../../auth/context/AuthContext';
 import { ScheduledRunsService, ScheduledRun } from '../../admin/services/scheduledRunsService';
 import { BookingService } from '../../admin/services/bookingService';
 
@@ -32,13 +32,13 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
       const allRuns = await ScheduledRunsService.getScheduledRuns();
       
       console.log('🔍 Current user ID:', state.user.id);
-      console.log('🔍 Current user access level:', state.user.accessLevel);
+      console.log('🔍 Current user access level:', state.member?.access_level);
       
       // Filter runs where current user is assigned as LIRF
       const myAssignedRuns = allRuns.filter(run => {
-        const isAssigned = run.assigned_lirf_1 === state.user.id ||
-                            run.assigned_lirf_2 === state.user.id ||
-                            run.assigned_lirf_3 === state.user.id;
+        const isAssigned = run.assigned_lirf_1 === state.user?.id ||
+                            run.assigned_lirf_2 === state.user?.id ||
+                            run.assigned_lirf_3 === state.user?.id;
 
         console.log('🔍 Checking run assignment:', {
             title: run.run_title,
@@ -46,7 +46,7 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
             lirf1: run.assigned_lirf_1,
             lirf2: run.assigned_lirf_2,
             lirf3: run.assigned_lirf_3,
-            currentUserId: state.user.id,
+            currentUserId: state.user?.id,
             isMatch: isAssigned
         });
 

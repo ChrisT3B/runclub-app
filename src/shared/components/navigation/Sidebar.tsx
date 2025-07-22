@@ -1,5 +1,5 @@
 import React from 'react'
-import { useAuth } from '../../../modules/auth/hooks/useAuth'
+import { useAuth } from '../../../modules/auth/context/AuthContext'
 
 interface SidebarProps {
   currentPage?: string
@@ -18,7 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
   ]
 
 // Add LIRF-specific navigation
-if (state.user?.access_level === 'lirf' || state.user?.access_level === 'admin') {
+if (state.member?.access_level === 'lirf' || state.member?.access_level === 'admin') {
   navigation.push(
     { id: 'manage-runs', name: 'Manage Scheduled Runs', icon: '📅' },
     { id: 'lead-your-run', name: 'Lead Your Runs', icon: '🎯' }  // ← Add this
@@ -26,7 +26,7 @@ if (state.user?.access_level === 'lirf' || state.user?.access_level === 'admin')
 }
 
 // Add admin-specific navigation
-if (state.user?.access_level === 'admin') {
+if (state.member?.access_level === 'admin') {
   navigation.push(
     { id: 'members', name: 'Members', icon: '👥' },
       { id: 'communications', name: 'Communications', icon: '📧' }

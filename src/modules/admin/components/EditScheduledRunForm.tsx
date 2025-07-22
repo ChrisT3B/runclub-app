@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { useAuth } from '../../auth/context/AuthContext';
 import { ScheduledRunsService } from '../services/scheduledRunsService';
 
 interface EditScheduledRunFormProps {

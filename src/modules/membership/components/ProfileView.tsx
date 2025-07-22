@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { useAuth } from '../../auth/context/AuthContext';
 
 interface ProfileViewProps {
   onEdit: () => void;
@@ -24,7 +24,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
           <div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Name:</div>
-              <div style={{ color: 'var(--gray-900)' }}>{state.user?.fullName || 'Not set'}</div>
+              <div style={{ color: 'var(--gray-900)' }}>{state.member?.full_name || 'Not set'}</div>
             </div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Email:</div>
@@ -32,21 +32,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
             </div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Phone:</div>
-              <div style={{ color: 'var(--gray-900)' }}>{(state.user as any)?.phone || 'Not set'}</div>
+              <div style={{ color: 'var(--gray-900)' }}>{state.member?.phone || 'Not set'}</div>
             </div>
             <div>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Medical Information:</div>
-              <div style={{ color: 'var(--gray-900)' }}>{(state.user as any)?.health_conditions || 'Not set'}</div>
+              <div style={{ color: 'var(--gray-900)' }}>{state.member?.health_conditions || 'Not set'}</div>
             </div>
           </div>
           <div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Emergency Contact:</div>
-              <div style={{ color: 'var(--gray-900)' }}>{(state.user as any)?.emergency_contact_name || 'Not set'}</div>
+              <div style={{ color: 'var(--gray-900)' }}>{state.member?.emergency_contact_name || 'Not set'}</div>
             </div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Emergency Phone:</div>
-              <div style={{ color: 'var(--gray-900)' }}>{(state.user as any)?.emergency_contact_phone || 'Not set'}</div>
+              <div style={{ color: 'var(--gray-900)' }}>{state.member?.emergency_contact_phone || 'Not set'}</div>
             </div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Access Level:</div>
@@ -58,7 +58,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
                 fontSize: '12px', 
                 fontWeight: '500' 
               }}>
-                {state.user?.accessLevel || 'member'}
+                {state.member?.access_level || 'member'}
               </span>
             </div>
             <div>
@@ -71,7 +71,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
                 fontSize: '12px', 
                 fontWeight: '500' 
               }}>
-                {state.user?.membershipStatus || 'Pending'}
+                {state.member?.membership_status || 'Pending'}
               </span>
             </div>
           </div>

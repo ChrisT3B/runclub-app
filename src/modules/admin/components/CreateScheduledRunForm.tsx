@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../../modules/auth/hooks/useAuth';
 import { ScheduledRunsService } from '../services/scheduledRunsService';
+import { useAuth } from '../../auth/context/AuthContext';
 
 interface CreateScheduledRunFormProps {
   onSuccess: () => void;
@@ -162,7 +162,11 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
   };
 
   // Only admins can create recurring runs
-  const canCreateRecurring = state.user?.accessLevel === 'admin';
+//  const canCreateRecurring = state.member?.access_level === 'admin';
+const { permissions } = useAuth();
+
+// Then use permissions instead of state.member checks:
+const canCreateRecurring = permissions.accessLevel === 'admin';
 
   // Preview runs for recurring
   const previewRuns = () => {

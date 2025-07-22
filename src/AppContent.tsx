@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from './modules/auth/hooks/useAuth';
+import { useAuth } from './modules/auth/context/AuthContext';
 import { DashboardLayout } from './shared/layouts/DashboardLayout';
 import { AuthContent } from './modules/auth/components/AuthContent';
 import { DashboardContent } from './modules/dashboard/components/DashboardContent';

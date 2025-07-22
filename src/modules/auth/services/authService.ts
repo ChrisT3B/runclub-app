@@ -1,319 +1,312 @@
 // src/modules/auth/services/authService.ts
-import { supabase } from '../../../services/supabase'
+import { supabase } from '../../../services/supabase';
+import { 
+  LoginCredentials, 
+  RegistrationData, 
+  AuthResponse, 
+  Member,
+  EmailVerificationResult,
+  PasswordResetData,
+  UpdatePasswordData
+} from '../types';
+import { formatSupabaseError } from '../../../utils/validation';
 
-interface LoginCredentials {
-  email: string;
-  password: string;
-}
+// Smart data fetching: Get user with complete member profile in one call
+export const getUserWithProfile = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('members')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-interface RegistrationData {
-  email: string;
-  password: string;
-  fullName: string;
-  phone?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  healthConditions?: string;
-}
-
-export class AuthService {
-  /**
-   * Login user
-   */
-  static async login(credentials: LoginCredentials) {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password,
-      })
-
-      if (error) {
-        throw new Error(error.message)
-      }
-
-      if (!data.user) {
-        throw new Error('Login failed - no user data received')
-      }
-
-      // Get the member profile data
-      const memberData = await this.getMemberProfile(data.user.email!)
-      
-      // Explicitly construct user object (no spread operator issues)
-      const finalUser = {
-        id: data.user.id,
-        aud: data.user.aud,
-        role: data.user.role,
-        email: data.user.email,
-        email_confirmed_at: data.user.email_confirmed_at,
-        created_at: data.user.created_at,
-        updated_at: data.user.updated_at,
-        last_sign_in_at: data.user.last_sign_in_at,
-        // Member profile data
-        access_level: memberData.access_level,
-        full_name: memberData.full_name,
-        membership_status: memberData.membership_status,
-        phone: memberData.phone,
-        emergency_contact_name: memberData.emergency_contact_name,
-        emergency_contact_phone: memberData.emergency_contact_phone,
-        health_conditions: memberData.health_conditions,
-        joined_at: memberData.joined_at
-      };
-      
-      return finalUser;
-    } catch (error) {
-      console.error('AuthService.login error:', error)
-      throw error
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      return { data: null, error };
     }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Unexpected error fetching user profile:', error);
+    return { data: null, error };
   }
+};
 
-  /**
-   * Register user
-   */
-  static async register(registrationData: RegistrationData) {
-    try {
-      // Register the user with Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email: registrationData.email,
-        password: registrationData.password,
-        options: {
-          data: {
-            full_name: registrationData.fullName,
-          },
-          emailRedirectTo: `${window.location.origin}/auth/confirm`
-        }
-      })
+// Login with automatic profile fetching
+export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: credentials.email,
+      password: credentials.password,
+    });
 
-      if (error) {
-        throw new Error(error.message)
-      }
-
-      if (!data.user) {
-        throw new Error('Registration failed - no user data received')
-      }
-
-      // Create member profile record
-      const { error: profileError } = await supabase
-        .from('members')
-        .insert({
-          id: data.user.id,
-          email: registrationData.email,
-          full_name: registrationData.fullName,
-          phone: registrationData.phone || null,
-          emergency_contact_name: registrationData.emergencyContactName || null,
-          emergency_contact_phone: registrationData.emergencyContactPhone || null,
-          health_conditions: registrationData.healthConditions || null,
-          access_level: 'member',
-          membership_status: 'pending',
-          joined_at: new Date().toISOString(),
-        })
-
-      if (profileError) {
-        console.error('Failed to create member profile:', profileError)
-        // Don't throw here - user auth was successful
-      }
-
-      // Check if email confirmation is required
-      if (!data.session) {
-        throw new Error('Registration successful! Please check your email for a confirmation link.')
-      }
-
-      // User was confirmed immediately
+    if (error) {
       return {
-        id: data.user.id,
-        aud: data.user.aud,
-        role: data.user.role,
-        email: data.user.email,
-        email_confirmed_at: data.user.email_confirmed_at,
-        created_at: data.user.created_at,
-        updated_at: data.user.updated_at,
-        full_name: registrationData.fullName,
-        access_level: 'member',
-        membership_status: 'active'
-      }
-    } catch (error) {
-      console.error('AuthService.register error:', error)
-      throw error
+        data: null,
+        error: { message: formatSupabaseError(error) }
+      };
     }
+
+    // If login successful, the auth state change will trigger profile fetching
+    return {
+      data: data.user,
+      error: null
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: { message: formatSupabaseError(error) }
+    };
   }
+};
 
-  /**
-   * Get current user with member profile
-   */
-  static async getCurrentUser() {
-    try {
-      const { data: { user }, error } = await supabase.auth.getUser()
+// Register user with automatic member profile creation
+export const registerUser = async (registerData: RegistrationData): Promise<AuthResponse> => {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: registerData.email,
+      password: registerData.password,
+      options: {
+        data: {
+          full_name: registerData.fullName,
+        },
+        emailRedirectTo: `${window.location.origin}/auth`,
+      },
+    });
 
-      if (error) {
-        throw new Error(error.message)
-      }
+    if (error) {
+      return {
+        data: null,
+        error: { message: formatSupabaseError(error) }
+      };
+    }
 
-      if (!user) {
-        return null
-      }
-
-      // Get member profile data
-      const memberData = await this.getMemberProfile(user.email!)
-      
-      // Explicitly construct final user object
-      const finalUser = {
-        id: user.id,
-        aud: user.aud,
-        role: user.role,
-        email: user.email,
-        email_confirmed_at: user.email_confirmed_at,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-        last_sign_in_at: user.last_sign_in_at,
-        // Member profile data
-        access_level: memberData.access_level,
-        full_name: memberData.full_name,
-        membership_status: memberData.membership_status,
-        phone: memberData.phone,
-        emergency_contact_name: memberData.emergency_contact_name,
-        emergency_contact_phone: memberData.emergency_contact_phone,
-        health_conditions: memberData.health_conditions,
-        joined_at: memberData.joined_at
+    // If user created successfully, create member profile
+    if (data.user) {
+      const memberData: Partial<Member> = {
+        id: data.user.id,
+        email: registerData.email,
+        full_name: registerData.fullName,
+        phone: registerData.phone || '',
+        access_level: 'member',
+        membership_status: 'pending', // Will be updated to 'active' after email verification
+        emergency_contact_name: registerData.emergencyContactName || '',
+        emergency_contact_phone: registerData.emergencyContactPhone || '',
+        health_conditions: registerData.healthConditions || 'None disclosed',
+        joined_at: new Date().toISOString(),
       };
 
-      return finalUser;
-    } catch (error) {
-      console.error('AuthService.getCurrentUser error:', error)
-      return null
-    }
-  }
-
-  /**
-   * Get member profile data with RLS protection
-   */
-  static async getMemberProfile(email: string) {
-    try {
-      const { data, error } = await supabase
+      const { error: memberError } = await supabase
         .from('members')
-        .select('*')
-        .eq('email', email)
-        .single()
+        .insert([memberData]);
 
-      if (error) {
-        // Handle specific error cases
-        if (error.code === 'PGRST116') {
-          // No member profile found
-          return {
-            id: null,
-            full_name: 'Unknown User',
-            access_level: 'member',
-            membership_status: 'pending',
-            phone: null,
-            emergency_contact_name: null,
-            emergency_contact_phone: null,
-            health_conditions: null,
-            joined_at: null
-          }
-        }
-        
-        if (error.code === 'PGRST301') {
-          // RLS blocked access
-          return {
-            id: null,
-            full_name: 'Unknown User',
-            access_level: 'member',
-            membership_status: 'pending',
-            phone: null,
-            emergency_contact_name: null,
-            emergency_contact_phone: null,
-            health_conditions: null,
-            joined_at: null
-          }
-        }
-        
-        throw new Error(error.message)
+      if (memberError) {
+        console.error('Error creating member profile:', memberError);
+        // Don't fail the registration if member creation fails
+        // The user can still log in and we can create the profile later
       }
+    }
 
-      // Return member profile data
+    return {
+      data: data.user,
+      error: null
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: { message: formatSupabaseError(error) }
+    };
+  }
+};
+
+// Email verification
+export const verifyEmail = async (token: string): Promise<EmailVerificationResult> => {
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({
+      token_hash: token,
+      type: 'email',
+    });
+
+    if (error) {
       return {
-        id: data.id,
-        full_name: data.full_name || 'Unknown User',
-        phone: data.phone,
-        access_level: data.access_level || 'member',
-        membership_status: data.membership_status || 'pending',
-        emergency_contact_name: data.emergency_contact_name,
-        emergency_contact_phone: data.emergency_contact_phone,
-        health_conditions: data.health_conditions,
-        joined_at: data.joined_at
+        success: false,
+        message: formatSupabaseError(error)
+      };
+    }
+
+    // Update member status to active after successful email verification
+    if (data.user) {
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({ membership_status: 'active' })
+        .eq('id', data.user.id);
+
+      if (updateError) {
+        console.error('Error updating member status:', updateError);
+        // Don't fail verification if status update fails
       }
-    } catch (error) {
-      console.error('AuthService.getMemberProfile error:', error)
-      
-      // Return safe default data on any error
+    }
+
+    return {
+      success: true,
+      message: 'Email verified successfully! You can now log in.',
+      user: data.user
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatSupabaseError(error)
+    };
+  }
+};
+
+// Resend verification email
+export const resendVerificationEmail = async (email: string): Promise<AuthResponse> => {
+  try {
+    const { data, error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/verify`,
+      }
+    });
+
+    if (error) {
       return {
-        id: null,
-        full_name: 'Unknown User',
-        access_level: 'member',
-        membership_status: 'pending',
-        phone: null,
-        emergency_contact_name: null,
-        emergency_contact_phone: null,
-        health_conditions: null,
-        joined_at: null
-      }
+        data: null,
+        error: { message: formatSupabaseError(error) }
+      };
     }
-  }
 
-  /**
-   * Logout user
-   */
-  static async logout() {
-    try {
-      const { error } = await supabase.auth.signOut()
-      
-      if (error) {
-        throw new Error(error.message)
-      }
-    } catch (error) {
-      console.error('AuthService.logout error:', error)
-      throw error
+    return {
+      data: data,
+      error: null
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: { message: formatSupabaseError(error) }
+    };
+  }
+};
+
+// Password reset request
+export const requestPasswordReset = async (data: PasswordResetData): Promise<AuthResponse> => {
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+
+    if (error) {
+      return {
+        data: null,
+        error: { message: formatSupabaseError(error) }
+      };
     }
+
+    return {
+      data: { email: data.email },
+      error: null
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: { message: formatSupabaseError(error) }
+    };
   }
+};
 
-  /**
-   * Reset password
-   */
-  static async resetPassword(email: string) {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      })
+// Update password
+export const updatePassword = async (data: UpdatePasswordData): Promise<AuthResponse> => {
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: data.password
+    });
 
-      if (error) {
-        throw new Error(error.message)
-      }
-    } catch (error) {
-      console.error('AuthService.resetPassword error:', error)
-      throw error
+    if (error) {
+      return {
+        data: null,
+        error: { message: formatSupabaseError(error) }
+      };
     }
+
+    return {
+      data: { success: true },
+      error: null
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: { message: formatSupabaseError(error) }
+    };
   }
+};
 
-  /**
-   * Update password (after reset)
-   */
-  static async updatePassword(newPassword: string) {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      })
+// Logout
+export const logoutUser = async (): Promise<void> => {
+  try {
+    await supabase.auth.signOut();
+  } catch (error) {
+    console.error('Error during logout:', error);
+  }
+};
 
-      if (error) {
-        throw new Error(error.message)
-      }
-    } catch (error) {
-      console.error('AuthService.updatePassword error:', error)
-      throw error
+// Get current session
+export const getCurrentSession = async () => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('Error getting session:', error);
+      return { data: null, error };
     }
+
+    return { data: data.session, error: null };
+  } catch (error) {
+    console.error('Unexpected error getting session:', error);
+    return { data: null, error };
+  }
+};
+
+// Get current user
+export const getCurrentUser = async () => {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    
+    if (error) {
+      console.error('Error getting user:', error);
+      return { data: null, error };
+    }
+
+    return { data: data.user, error: null };
+  } catch (error) {
+    console.error('Unexpected error getting user:', error);
+    return { data: null, error };
+  }
+};
+
+// Development helper: Clean up test user
+export const cleanupTestUser = async (email: string): Promise<void> => {
+  if (import.meta.env.DEV !== true) {
+    console.warn('cleanupTestUser should only be used in development');
+    return;
   }
 
-  /**
-   * Set up auth state change listener
-   */
-  static onAuthStateChange(callback: (event: string, session: any) => void) {
-    return supabase.auth.onAuthStateChange(callback)
+  try {
+    // Note: This requires admin privileges
+    // In production, you'd use the Admin API
+    console.log(`Cleaning up test user: ${email}`);
+    
+    // Delete from members table first (due to foreign key constraints)
+    const { error: memberError } = await supabase
+      .from('members')
+      .delete()
+      .eq('email', email);
+
+    if (memberError) {
+      console.error('Error cleaning up member:', memberError);
+    }
+  } catch (error) {
+    console.error('Error in cleanupTestUser:', error);
   }
-}
+};

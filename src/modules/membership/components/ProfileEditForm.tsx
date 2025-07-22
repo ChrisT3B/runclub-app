@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../../modules/auth/hooks/useAuth';
+import { useAuth } from '../../../modules/auth/context/AuthContext';
 import { ProfileService } from '../services/profileServices';
 
 interface ProfileEditFormProps {
@@ -15,12 +15,12 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
 //console.log('Current user object:', state.user);
 // Form state
 const [formData, setFormData] = useState({
-  fullName: state.user?.fullName || '',
-  email: state.user?.email || '',
-  phone: (state.user as any)?.phone || '',
-  emergencyContact: (state.user as any)?.emergency_contact_name || '',
-  emergencyPhone: (state.user as any)?.emergency_contact_phone || '', 
-  medicalInfo: (state.user as any)?.health_conditions || ''
+  fullName: state.member?.full_name || '',
+  email: state.user?.email || '', // Email comes from auth user
+  phone: state.member?.phone || '',
+  emergencyContact: state.member?.emergency_contact_name || '',
+  emergencyPhone: state.member?.emergency_contact_phone || '', 
+  medicalInfo: state.member?.health_conditions || ''
 });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
