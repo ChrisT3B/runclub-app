@@ -17,7 +17,6 @@ import {
 import { 
   LoginCredentials, 
   RegistrationData, 
-  PasswordResetData, 
   UpdatePasswordData,
   AuthContextValue
 } from '../types';
