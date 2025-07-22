@@ -130,9 +130,9 @@ export const EmailVerificationHandler: React.FC = () => {
         if (result.success) {
           console.log('✅ Email verification successful');
           setStatus('success');
-          setMessage('Email verified successfully! Your account is now active.');
+          setMessage('Email verified successfully! You can now log in.');
           
-          // Redirect to login after 3 seconds
+          // Redirect to login after 3 seconds - do NOT auto-login
           setTimeout(() => {
             navigate('/', { 
               replace: true,

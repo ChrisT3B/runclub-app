@@ -44,7 +44,6 @@ export interface Member {
   emergency_contact_name: string;
   emergency_contact_phone: string;
   health_conditions: string;
-  joined_at: string;
   created_at: string;
   updated_at: string;
 }

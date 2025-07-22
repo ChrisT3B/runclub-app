@@ -93,7 +93,7 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
         emergency_contact_name: registerData.emergencyContactName || '',
         emergency_contact_phone: registerData.emergencyContactPhone || '',
         health_conditions: registerData.healthConditions || 'None disclosed',
-        joined_at: new Date().toISOString(),
+      
       };
 
       const { error: memberError } = await supabase
