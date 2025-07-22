@@ -8,7 +8,7 @@ import { formatDate, formatTime, isRunUrgent, handleRunShare } from '../../runs/
 import { ConfirmationModal } from '../../../shared/components/ui/ConfirmationModal';
 
 export const ViewScheduledRuns: React.FC = () => {
-  const { state } = useAuth();
+  const { state, permissions } = useAuth(); // ← Added permissions
   const [runs, setRuns] = useState<RunWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
@@ -41,7 +41,8 @@ export const ViewScheduledRuns: React.FC = () => {
     onConfirm: () => {}
   });
 
-  const isLIRFOrAdmin = state.member?.access_level === 'lirf' || state.member?.access_level === 'admin';
+  // Use permissions instead of checking access_level directly
+  const canManageRuns = permissions.canManageRuns; // true for LIRF and admin
 
   // Helper function to get responsive button text
   const getButtonText = useCallback((fullText: string, shortText: string, loading: boolean, loadingText: string) => {
@@ -106,13 +107,13 @@ export const ViewScheduledRuns: React.FC = () => {
         case 'my-bookings':
           return run.is_booked;
         case 'my-assignments':
-          return isLIRFOrAdmin && run.user_is_assigned_lirf;
+          return canManageRuns && run.user_is_assigned_lirf;
         default:
           return true;
       }
     });
 
-    const urgent = isLIRFOrAdmin 
+    const urgent = canManageRuns 
       ? runs
           .filter(run => isRunUrgent(run.run_date, run.lirf_vacancies))
           .reduce((total, run) => total + run.lirf_vacancies, 0)
@@ -126,7 +127,7 @@ export const ViewScheduledRuns: React.FC = () => {
     };
 
     return { filteredRuns: filtered, urgentVacancies: urgent, filterCounts: counts };
-  }, [runs, filter, isLIRFOrAdmin]);
+  }, [runs, filter, canManageRuns]);
 
   const handleBookRun = async (runId: string) => {
     if (!state.user?.id) {
@@ -327,12 +328,12 @@ export const ViewScheduledRuns: React.FC = () => {
       <div className="page-header">
         <h1 className="page-title">Scheduled Runs</h1>
         <p className="page-description">
-          {isLIRFOrAdmin ? 'Book runs and manage your LIRF assignments' : 'Book your place on upcoming club runs'}
+          {canManageRuns ? 'Book runs and manage your LIRF assignments' : 'Book your place on upcoming club runs'}
         </p>
       </div>
 
       {/* Urgent Vacancies Alert - LIRFs/Admins only */}
-      {isLIRFOrAdmin && urgentVacancies > 0 && (
+      {canManageRuns && urgentVacancies > 0 && (
         <div className="urgent-alert">
           <div className="urgent-alert__icon">⚠️</div>
           <div className="urgent-alert__content">
@@ -371,7 +372,7 @@ export const ViewScheduledRuns: React.FC = () => {
           </button>
         )}
 
-        {isLIRFOrAdmin && (
+        {canManageRuns && (
           <button
             onClick={() => setFilter('my-assignments')}
             className={`filter-tab ${filter === 'my-assignments' ? 'filter-tab--active' : ''}`}
@@ -405,7 +406,7 @@ export const ViewScheduledRuns: React.FC = () => {
       ) : (
         <div className="runs-grid">
           {filteredRuns.map((run) => {
-            const isUrgent = isLIRFOrAdmin && isRunUrgent(run.run_date, run.lirf_vacancies);
+            const isUrgent = canManageRuns && isRunUrgent(run.run_date, run.lirf_vacancies);
             
             return (
               <div 
@@ -428,7 +429,7 @@ export const ViewScheduledRuns: React.FC = () => {
                             </div>
                           )}
                           
-                          {isLIRFOrAdmin && run.user_is_assigned_lirf && (
+                          {canManageRuns && run.user_is_assigned_lirf && (
                             <div className="status-badge status-badge--lirf-assigned">
                               👨‍🏫 LIRF Assigned
                             </div>
@@ -473,7 +474,7 @@ export const ViewScheduledRuns: React.FC = () => {
                           <div className="run-info-item__primary">
                             👥 {run.booking_count}/{run.max_participants} booked
                           </div>
-                          {isLIRFOrAdmin && (
+                          {canManageRuns && (
                             <div className="run-info-item__secondary">
                               👨‍🏫 {run.assigned_lirfs.length}/{run.lirfs_required} LIRF{run.lirfs_required > 1 ? 's' : ''}
                               {run.lirf_vacancies > 0 && (
@@ -493,7 +494,7 @@ export const ViewScheduledRuns: React.FC = () => {
                       )}
 
                       {/* LIRF Assignment Info - LIRFs/Admins only */}
-                      {isLIRFOrAdmin && (
+                      {canManageRuns && (
                         <div className="lirf-info">
                           <div className="lirf-info__title">
                             LIRF Assignments
@@ -550,7 +551,7 @@ export const ViewScheduledRuns: React.FC = () => {
                       )}
 
                       {/* Share Button - LIRFs/Admins only */}
-                      {isLIRFOrAdmin && (
+                      {canManageRuns && (
                         <div className="share-menu">
                           <button
                             className="share-button action-btn action-btn--secondary"
@@ -619,7 +620,7 @@ export const ViewScheduledRuns: React.FC = () => {
                       )}
 
                       {/* LIRF Assignment Actions - LIRFs/Admins only */}
-                      {isLIRFOrAdmin && (
+                      {canManageRuns && (
                         run.user_is_assigned_lirf ? (
                           <button
                             onClick={() => handleUnassignSelfAsLIRF(run.id)}

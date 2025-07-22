@@ -7,9 +7,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
-  const { state } = useAuth()
-    //console.log('Current user:', state.user);
-    //console.log('Access level:', state.user?.access_level);
+  const { permissions } = useAuth() // ← Use permissions instead of state.member
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
@@ -17,21 +15,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     { id: 'profile', name: 'My Profile', icon: '👤' },
   ]
 
-// Add LIRF-specific navigation
-if (state.member?.access_level === 'lirf' || state.member?.access_level === 'admin') {
-  navigation.push(
-    { id: 'manage-runs', name: 'Manage Scheduled Runs', icon: '📅' },
-    { id: 'lead-your-run', name: 'Lead Your Runs', icon: '🎯' }  // ← Add this
-  )
-}
+  // Add LIRF-specific navigation using permissions
+  if (permissions.canManageRuns) {
+    navigation.push(
+      { id: 'manage-runs', name: 'Manage Scheduled Runs', icon: '📅' },
+      { id: 'lead-your-run', name: 'Lead Your Runs', icon: '🎯' }
+    )
+  }
 
-// Add admin-specific navigation
-if (state.member?.access_level === 'admin') {
-  navigation.push(
-    { id: 'members', name: 'Members', icon: '👥' },
+  // Add admin-specific navigation using permissions
+  if (permissions.canManageMembers) {
+    navigation.push(
+      { id: 'members', name: 'Members', icon: '👥' },
       { id: 'communications', name: 'Communications', icon: '📧' }
-  )
-
+    )
   }
 
   return (
