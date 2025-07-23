@@ -9,8 +9,8 @@ interface AuthLayoutProps {
 
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ 
   children, 
-  title = "Run Alcester App",
-  subtitle = "Member Portal"
+  title = "",
+subtitle = ""
 }) => {
   return (
     <BaseLayout>

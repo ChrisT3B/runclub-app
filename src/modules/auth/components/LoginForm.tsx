@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { AppLogo } from '../../../shared/components/ui/AppLogo'
 import type { LoginCredentials } from '../types'
 
 interface LoginFormProps {
@@ -48,42 +49,49 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       flexDirection: 'column',
       justifyContent: 'center'
     }}>
-      {/* Header Section */}
+      {/* Enhanced Header Section with Logo */}
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
         <div style={{
-          background: 'var(--red-primary)',
-          color: 'white',
-          width: '80px',
-          height: '80px',
-          borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          margin: '0 auto 20px',
-          fontSize: '32px',
-          fontWeight: 'bold'
+          marginBottom: '24px'
         }}>
-          🏃‍♂️
+          <AppLogo 
+            size="large"
+            style={{
+              width: '120px',
+              height: '120px',
+              objectFit: 'contain'
+            }}
+          />
         </div>
+        
         <h1 style={{ 
-          fontSize: '2rem', 
+          fontSize: '2.5rem', 
           fontWeight: '700', 
           color: 'var(--red-primary)', 
-          margin: '0 0 8px 0' 
+          margin: '0 0 8px 0',
+          fontFamily: 'var(--font-family-sans)',
+          letterSpacing: '-0.025em'
         }}>
-          RunAlcester
+          Run Alcester Bookings
         </h1>
         <p style={{ 
           color: 'var(--gray-600)', 
           fontSize: '16px',
-          margin: '0' 
+          margin: '0',
+          fontWeight: '400'
         }}>
           Welcome back! Sign in to your account
         </p>
       </div>
 
       {/* Login Form Card */}
-      <div className="card" style={{ border: '2px solid var(--red-primary)' }}>
+      <div className="card" style={{ 
+        border: '2px solid var(--red-primary)',
+        boxShadow: '0 10px 25px -5px rgba(220, 38, 38, 0.1), 0 10px 10px -5px rgba(220, 38, 38, 0.04)'
+      }}>
         <div className="card-content">
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -159,7 +167,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px'
+                gap: '8px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (!state.loading) {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(220, 38, 38, 0.25)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!state.loading) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }
               }}
             >
               {state.loading && (
@@ -192,8 +213,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   color: 'var(--red-primary)',
                   textDecoration: 'underline',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  transition: 'color 0.2s ease'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#b91c1c'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--red-primary)'}
               >
                 Forgot Password?
               </button>
@@ -207,8 +231,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   textDecoration: 'underline',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: '600'
+                  fontWeight: '600',
+                  transition: 'color 0.2s ease'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#b91c1c'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--red-primary)'}
               >
                 Create Account →
               </button>
@@ -224,8 +251,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         color: 'var(--gray-500)',
         fontSize: '12px'
       }}>
-        <p>© 2025 Run Alcester. All rights reserved.</p>
-        <p>Questions? Contact us at runalcester@gmail.com</p>
+        <p style={{ margin: '0 0 4px 0' }}>© 2025 Run Alcester. All rights reserved.</p>
+        <p style={{ margin: '0' }}>Questions? Contact us at runalcester@gmail.com</p>
       </div>
 
       {/* CSS Animation */}
