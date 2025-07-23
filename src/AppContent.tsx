@@ -10,6 +10,7 @@ import { MemberList } from './modules/admin/components/MemberList';
 import { CreateRunPage } from './modules/admin/components/CreateRunPage';
 import { LeadYourRun } from './modules/activeruns/components/LeadYourRun';
 import { RunAttendance } from './modules/activeruns/components/RunAttendance';
+import { CommunicationsDashboard } from './modules/communications/components/CommunicationsDashboard';
 
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
@@ -72,6 +73,8 @@ export const AppContent: React.FC = () => {
       {currentPage === 'profile' && <ProfilePage />}
       
       {currentPage === 'members' && <MemberList />}
+      
+      {currentPage === 'communications' && <CommunicationsDashboard onNavigate={setCurrentPage} />}
       
       {currentPage === 'create-run' && (
         <CreateRunPage
