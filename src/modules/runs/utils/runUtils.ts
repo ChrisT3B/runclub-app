@@ -61,9 +61,18 @@ export const getMembershipStatusColor = (status: string) => {
 };
 
 /**
- * Handle sharing functionality
+ * Share callback interface for UI feedback
  */
-export const handleRunShare = (run: any, platform: string): void => {
+export interface ShareCallbacks {
+  onSuccess: (message: string) => void;
+  onError: (message: string) => void;
+  onFacebookGroupShare: (message: string) => void;
+}
+
+/**
+ * Handle sharing functionality with callback support for modals
+ */
+export const handleRunShare = (run: any, platform: string, callbacks?: ShareCallbacks): void => {
   const runUrl = `${window.location.origin}/runs/${run.id}`;
   const runText = `🏃‍♂️ ${run.run_title}\n\n📅 ${formatDate(run.run_date)} at ${formatTime(run.run_time)}\n📍 ${run.meeting_point}\n${run.approximate_distance ? `🏃‍♂️ ${run.approximate_distance}\n` : ''}${run.description ? `\n${run.description}\n` : ''}\n👥 ${run.max_participants - run.booking_count} spaces available!\n\nBook your place now! 👇`;
   
@@ -101,12 +110,15 @@ export const handleRunShare = (run: any, platform: string): void => {
       document.body.removeChild(textArea);
       
       if (successful) {
-        alert('✅ Run details copied to clipboard!');
+        callbacks?.onSuccess('✅ Run details copied to clipboard!') || 
+        console.log('Run details copied to clipboard');
       } else {
-        alert('❌ Copy failed. Please try manually selecting and copying the text.');
+        callbacks?.onError('❌ Copy failed. Please try manually selecting and copying the text.') ||
+        console.error('Copy failed');
       }
     } catch (err) {
-      alert('❌ Copy not supported. Please manually copy the text.');
+      callbacks?.onError('❌ Copy not supported. Please manually copy the text.') ||
+      console.error('Copy not supported');
     }
   };
   
@@ -118,27 +130,25 @@ export const handleRunShare = (run: any, platform: string): void => {
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(runText).then(() => {
           window.open(fbGroupUrl, '_blank');
-          alert('📋 Run details copied to clipboard!\n\nFacebook group is opening - paste the details into a new post.');
+          callbacks?.onFacebookGroupShare('📋 Run details copied to clipboard!\n\nFacebook group is opening - paste the details into a new post.') ||
+          console.log('Shared to Facebook group');
         }).catch(() => {
           copyFallback(runText);
           window.open(fbGroupUrl, '_blank');
-          alert('📋 Run details copied to clipboard!\n\nFacebook group is opening - paste the details into a new post.');
+          callbacks?.onFacebookGroupShare('📋 Run details copied to clipboard!\n\nFacebook group is opening - paste the details into a new post.') ||
+          console.log('Shared to Facebook group (fallback)');
         });
       } else {
         copyFallback(runText);
         window.open(fbGroupUrl, '_blank');
-        alert('📋 Run details copied to clipboard!\n\nFacebook group is opening - paste the details into a new post.');
+        callbacks?.onFacebookGroupShare('📋 Run details copied to clipboard!\n\nFacebook group is opening - paste the details into a new post.') ||
+        console.log('Shared to Facebook group (fallback)');
       }
       break;
       
     case 'facebook':
       const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(runUrl)}&quote=${encodeURIComponent(runText)}`;
       window.open(fbUrl, '_blank');
-      break;
-      
-    case 'twitter':
-      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(runText)}&url=${encodeURIComponent(runUrl)}`;
-      window.open(twitterUrl, '_blank');
       break;
       
     case 'whatsapp':
@@ -152,7 +162,8 @@ export const handleRunShare = (run: any, platform: string): void => {
       // Try modern clipboard API first
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(textToCopy).then(() => {
-          alert('✅ Run details copied to clipboard!');
+          callbacks?.onSuccess('✅ Run details copied to clipboard!') ||
+          console.log('Copied to clipboard');
         }).catch(() => {
           copyFallback(textToCopy);
         });
@@ -162,6 +173,6 @@ export const handleRunShare = (run: any, platform: string): void => {
       break;
       
     default:
-      //console.log('Unknown sharing platform:', platform);
+      console.log('Unknown sharing platform:', platform);
   }
 };

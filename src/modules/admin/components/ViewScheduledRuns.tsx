@@ -4,7 +4,7 @@ import { ScheduledRunsService, RunWithDetails } from '../services/scheduledRunsS
 import { BookingService, BookingError } from '../services/bookingService';
 import { ErrorModal } from '../../../shared/components/ui/ErrorModal';
 import { Share2 } from 'lucide-react';
-import { formatDate, formatTime, isRunUrgent, handleRunShare } from '../../runs/utils/runUtils';
+import { formatDate, formatTime, isRunUrgent, handleRunShare, ShareCallbacks } from '../../runs/utils/runUtils';
 import { ConfirmationModal } from '../../../shared/components/ui/ConfirmationModal';
 
 export const ViewScheduledRuns: React.FC = () => {
@@ -40,7 +40,16 @@ export const ViewScheduledRuns: React.FC = () => {
     message: '',
     onConfirm: () => {}
   });
-
+    // Share Success Modal State
+const [shareModal, setShareModal] = useState<{
+  isOpen: boolean;
+  title: string;
+  message: string;
+}>({
+  isOpen: false,
+  title: '',
+  message: ''
+});
   // Use permissions instead of checking access_level directly
   const canManageRuns = permissions.canManageRuns; // true for LIRF and admin
 
@@ -190,7 +199,34 @@ export const ViewScheduledRuns: React.FC = () => {
       }
     });
   };
+const closeShareModal = () => {
+  setShareModal({ isOpen: false, title: '', message: '' });
+};
 
+// Share callbacks for modal feedback
+const shareCallbacks: ShareCallbacks = {
+  onSuccess: (message: string) => {
+    setShareModal({
+      isOpen: true,
+      title: 'Success!',
+      message
+    });
+  },
+  onError: (message: string) => {
+    setErrorModal({
+      isOpen: true,
+      title: 'Share Failed',
+      message
+    });
+  },
+  onFacebookGroupShare: (message: string) => {
+    setShareModal({
+      isOpen: true,
+      title: 'Shared to Facebook Group',
+      message
+    });
+  }
+};
   const performCancelBooking = async (runId: string, bookingId: string) => {
     try {
       setBookingLoading(runId);
@@ -567,7 +603,7 @@ export const ViewScheduledRuns: React.FC = () => {
                                 <div
                                   className="share-dropdown__item"
                                   onClick={() => {
-                                    handleRunShare(run, 'copy');
+                                    handleRunShare(run, 'copy', shareCallbacks);
                                     setShowShareMenu(null);
                                   }}
                                 >
@@ -577,7 +613,7 @@ export const ViewScheduledRuns: React.FC = () => {
                                 <div
                                   className="share-dropdown__item"
                                   onClick={() => {
-                                    handleRunShare(run, 'facebook-group');
+                                    handleRunShare(run, 'facebook-group', shareCallbacks);
                                     setShowShareMenu(null);
                                   }}
                                 >
@@ -604,15 +640,7 @@ export const ViewScheduledRuns: React.FC = () => {
                                   💬 Share on WhatsApp
                                 </div>
                                 
-                                <div
-                                  className="share-dropdown__item"
-                                  onClick={() => {
-                                    handleRunShare(run, 'twitter');
-                                    setShowShareMenu(null);
-                                  }}
-                                >
-                                  🐦 Share on Twitter/X
-                                </div>
+
                               </div>
                             </div>
                           )}
@@ -671,6 +699,16 @@ export const ViewScheduledRuns: React.FC = () => {
         cancelText="Keep Assignment"
         type="danger"
       />
+{/* Share Success Modal */}
+<ConfirmationModal
+  isOpen={shareModal.isOpen}
+  title={shareModal.title}
+  message={shareModal.message}
+  onConfirm={closeShareModal}
+  onCancel={closeShareModal}
+  confirmText="OK"
+  cancelText=""
+/>
     </div>
   );
 };
