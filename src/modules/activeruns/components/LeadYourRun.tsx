@@ -2,9 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { ScheduledRunsService, ScheduledRun } from '../../admin/services/scheduledRunsService';
 import { BookingService } from '../../admin/services/bookingService';
+import { supabase } from '../../../services/supabase';
 
 interface LeadYourRunProps {
   onNavigateToAttendance?: (runId: string, runTitle: string) => void;
+}
+
+interface BookingWithMember {
+  id: string;
+  member_id: string;
+  booking_date: string;
+  cancelled_at?: string;
+  member_name: string;
+  member_email: string;
+  member_phone?: string;
 }
 
 export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance }) => {
@@ -13,6 +24,8 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
+  const [selectedRunBookings, setSelectedRunBookings] = useState<BookingWithMember[] | null>(null);
+  const [loadingBookings, setLoadingBookings] = useState(false);
 
   useEffect(() => {
     loadAssignedRuns();
@@ -159,6 +172,61 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
     }
   };
 
+  const loadRunBookings = async (runId: string) => {
+    try {
+      setLoadingBookings(true);
+      
+      // Get bookings for the run
+      const bookings = await BookingService.getRunBookings(runId);
+      const activeBookings = bookings.filter((b: any) => !b.cancelled_at);
+      
+      // Get member details for each booking
+      const bookingsWithMembers = await Promise.all(
+        activeBookings.map(async (booking: any) => {
+          try {
+            const { data: member, error } = await supabase
+              .from('members')
+              .select('id, full_name, email, phone')
+              .eq('id', booking.member_id)
+              .single();
+            
+            if (error) {
+              console.error('Error fetching member:', error);
+              return {
+                ...booking,
+                member_name: 'Unknown Member',
+                member_email: '',
+                member_phone: ''
+              };
+            }
+            
+            return {
+              ...booking,
+              member_name: member.full_name || 'Unknown Member',
+              member_email: member.email || '',
+              member_phone: member.phone || ''
+            };
+          } catch (error) {
+            console.error('Error processing member booking:', error);
+            return {
+              ...booking,
+              member_name: 'Unknown Member',
+              member_email: '',
+              member_phone: ''
+            };
+          }
+        })
+      );
+      
+      setSelectedRunBookings(bookingsWithMembers);
+    } catch (error) {
+      console.error('Failed to load run bookings:', error);
+      setError('Failed to load bookings for this run');
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
+
   const updateRunStatus = async (runId: string, newStatus: 'in_progress' | 'completed') => {
     if (!state.user?.id) return;
 
@@ -209,6 +277,15 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
     });
   };
 
+  const formatBookingDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const getRunStatusBadge = (status: string) => {
     const statusConfig = {
       scheduled: { bg: '#f3f4f6', color: '#6b7280', text: 'Scheduled' },
@@ -249,6 +326,10 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
 
   const canCompleteRun = (run: ScheduledRun) => {
     return run.run_status === 'in_progress';
+  };
+
+  const canViewBookings = (run: ScheduledRun) => {
+    return run.run_status === 'scheduled' || run.run_status === 'in_progress';
   };
 
   if (loading) {
@@ -336,6 +417,18 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
 
                 {/* Action Buttons */}
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  {canViewBookings(run) && (
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => loadRunBookings(run.id)}
+                      disabled={loadingBookings}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      {loadingBookings ? '⏳' : '👥'} 
+                      {loadingBookings ? 'Loading...' : `View Bookings (${run.bookings_count || 0})`}
+                    </button>
+                  )}
+
                   {canStartRun(run) && (
                     <button
                       className="btn btn-primary"
@@ -410,6 +503,143 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Bookings Modal */}
+      {selectedRunBookings && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            maxWidth: '600px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '24px 24px 16px 24px',
+              borderBottom: '1px solid var(--gray-200)'
+            }}>
+              <div>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '20px', fontWeight: '600', color: 'var(--gray-900)' }}>
+                  👥 Run Bookings
+                </h3>
+                <p style={{ margin: 0, fontSize: '14px', color: 'var(--gray-600)' }}>
+                  {selectedRunBookings.length} member{selectedRunBookings.length !== 1 ? 's' : ''} booked
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedRunBookings(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--gray-400)',
+                  cursor: 'pointer',
+                  fontSize: '24px',
+                  padding: '4px',
+                  borderRadius: '4px',
+                  transition: 'color 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--gray-600)';
+                  e.currentTarget.style.background = 'var(--gray-100)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--gray-400)';
+                  e.currentTarget.style.background = 'none';
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: '24px' }}>
+              {selectedRunBookings.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--gray-500)' }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>👥</div>
+                  <h4 style={{ marginBottom: '8px', color: 'var(--gray-900)' }}>No Bookings Yet</h4>
+                  <p style={{ margin: 0 }}>No members have booked this run yet.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {selectedRunBookings.map((booking) => (
+                    <div 
+                      key={booking.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '16px',
+                        background: 'var(--gray-50)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--gray-200)'
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '600', color: 'var(--gray-900)', marginBottom: '4px' }}>
+                          {booking.member_name}
+                        </div>
+                        <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>
+                          📧 {booking.member_email}
+                        </div>
+                        {booking.member_phone && (
+                          <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>
+                            📱 {booking.member_phone}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{
+                          background: '#dcfce7',
+                          color: '#166534',
+                          padding: '4px 8px',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          marginBottom: '4px'
+                        }}>
+                          ✅ Booked
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>
+                          {formatBookingDate(booking.booking_date)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Modal Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+                <button
+                  onClick={() => setSelectedRunBookings(null)}
+                  className="btn btn-primary"
+                  style={{ fontSize: '14px' }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
