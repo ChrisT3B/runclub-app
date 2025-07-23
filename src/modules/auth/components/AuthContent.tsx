@@ -1,5 +1,5 @@
-// src/modules/auth/components/AuthContent.tsx - TEMPORARY DEBUG VERSION
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthLayout } from '../../../shared/layouts/AuthLayout';
 import { LoginForm } from '../components/LoginForm';
 import { RegisterForm } from '../components/RegisterForm';
@@ -9,6 +9,7 @@ import { SimpleAuthDebug } from '../../../utils/SimpleAuthDebug';
 
 export const AuthContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<'login' | 'register' | 'forgot' | 'reset' | 'debug'>('login');
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check URL parameters for different auth flows
@@ -26,6 +27,18 @@ export const AuthContent: React.FC = () => {
     }
   }, []);
 
+  const handleLoginSuccess = () => {
+    // Check if there's a stored redirect path
+    const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+    if (redirectPath) {
+      sessionStorage.removeItem('redirectAfterLogin');
+      navigate(redirectPath);
+    } else {
+      // Default redirect to dashboard/home
+      navigate('/');
+    }
+  };
+
   // Show debug component for email verification
   if (currentView === 'debug') {
     return <SimpleAuthDebug />;
@@ -35,7 +48,7 @@ export const AuthContent: React.FC = () => {
     <AuthLayout>
       {currentView === 'login' && (
         <LoginForm 
-          onSuccess={() => console.log('Login successful!')}
+          onSuccess={handleLoginSuccess}
           onForgotPassword={() => setCurrentView('forgot')}
           onRegister={() => setCurrentView('register')}
         />

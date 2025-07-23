@@ -1,10 +1,11 @@
-
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './modules/auth/context/AuthContext';
 import { AppContent } from './AppContent';
-import { EmailVerificationHandler } from './modules/auth/components/EmailVerificationHandler'; // We'll create this
+import { RunDetailsPage } from './modules/admin/components/RunDetailsPage';
+import { ProtectedRoute } from './utils/ProtectedRoute';
+import { EmailVerificationHandler } from './modules/auth/components/EmailVerificationHandler';
 import './styles/fonts.css';
 import './index.css';
 
@@ -28,6 +29,16 @@ function App() {
             {/* Handle email verification specifically */}
             <Route 
               path="/auth" element={<EmailVerificationHandler />} 
+            />
+            
+            {/* Handle shared run links */}
+            <Route 
+              path="/runs/:runId" 
+              element={
+                <ProtectedRoute redirectPath={window.location.pathname}>
+                  <RunDetailsPage />
+                </ProtectedRoute>
+              } 
             />
             
             {/* All other paths go to AppContent */}
