@@ -394,7 +394,7 @@ export const RunDetailsPage: React.FC = () => {
                   style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
                   {bookingLoading ? '⏳' : '🏃‍♂️'} 
-                  {bookingLoading ? 'Booking...' : 'Book Your Place'}
+                  {bookingLoading ? 'Booking...' : 'Join'}
                 </button>
               )}
 

@@ -24,6 +24,7 @@ interface BookingWithMember {
   attendance_marked_by?: string;
   attendance_marked_at?: string;
   member?: Member;
+  is_manual_addition?: boolean; // For manually added runners
 }
 
 interface AttendanceRecord {
@@ -34,6 +35,15 @@ interface AttendanceRecord {
   marked_at?: string;
   marked_by: string;
   notes?: string;
+  is_manual_addition?: boolean;
+}
+
+interface ManualRunner {
+  full_name: string;
+  phone: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  health_conditions: string;
 }
 
 interface RunAttendanceProps {
@@ -46,10 +56,24 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
   const { state } = useAuth();
   const [bookings, setBookings] = useState<BookingWithMember[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  
+  // Add Runner Modal State
+  const [showAddRunner, setShowAddRunner] = useState(false);
+  const [addRunnerType, setAddRunnerType] = useState<'member' | 'manual'>('member');
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+  const [manualRunner, setManualRunner] = useState<ManualRunner>({
+    full_name: '',
+    phone: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    health_conditions: ''
+  });
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadRunData();
@@ -59,6 +83,9 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
     try {
       setLoading(true);
       setError('');
+
+      // Reset bookings first
+      setBookings([]);
 
       // Load bookings for this run
       const runBookings = await BookingService.getRunBookings(runId);
@@ -71,13 +98,15 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
             const member = await getMemberDetails(booking.member_id);
             return {
               ...booking,
-              member
+              member,
+              is_manual_addition: false
             };
           } catch (error) {
             console.error('Error loading member details:', error);
             return {
               ...booking,
-              member: undefined
+              member: undefined,
+              is_manual_addition: false
             };
           }
         })
@@ -85,14 +114,32 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
 
       setBookings(bookingsWithMembers);
 
-      // Load existing attendance records
+      // Load existing attendance records (including manual additions)
       await loadAttendanceRecords();
+
+      // Load all members for the dropdown
+      await loadAllMembers();
 
     } catch (err: any) {
       console.error('Failed to load run data:', err);
       setError(err.message || 'Failed to load run data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAllMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('id, full_name, email, phone, emergency_contact_name, emergency_contact_phone, health_conditions')
+        .eq('membership_status', 'active')
+        .order('full_name');
+      
+      if (error) throw error;
+      setAllMembers(data || []);
+    } catch (error) {
+      console.error('Error loading members:', error);
     }
   };
 
@@ -120,7 +167,38 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
         .eq('run_id', runId);
       
       if (error) throw error;
-      setAttendance(data || []);
+      
+      const attendanceRecords = data || [];
+      setAttendance(attendanceRecords);
+
+      // Add manually added runners that aren't in bookings
+      const manualAttendees = attendanceRecords.filter(record => 
+        record.is_manual_addition && 
+        !bookings.find(booking => booking.member_id === record.member_id)
+      );
+
+      // Get member details for manual attendees
+      const manualBookings: BookingWithMember[] = await Promise.all(
+        manualAttendees.map(async (record) => {
+          const member = await getMemberDetails(record.member_id);
+          return {
+            id: `manual-${record.member_id}`,
+            run_id: runId,
+            member_id: record.member_id,
+            booked_at: record.marked_at || new Date().toISOString(),
+            member,
+            is_manual_addition: true
+          };
+        })
+      );
+
+      // Only add new manual bookings that aren't already in the list
+      setBookings(prev => {
+        const existingIds = prev.map(b => b.member_id);
+        const newManualBookings = manualBookings.filter(mb => !existingIds.includes(mb.member_id));
+        return [...prev, ...newManualBookings];
+      });
+
     } catch (error) {
       console.error('Error loading attendance records:', error);
     }
@@ -142,7 +220,8 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
         marked_present: present,
         marked_at: new Date().toISOString(),
         marked_by: state.user.id,
-        notes: notes || null
+        notes: notes || null,
+        is_manual_addition: existingRecord?.is_manual_addition || false
       };
 
       if (existingRecord) {
@@ -173,6 +252,122 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
     }
   };
 
+  const addExistingMember = async () => {
+    if (!selectedMemberId || !state.user?.id) return;
+
+    try {
+      setSaving('adding-member');
+      setError('');
+
+      // Check if member is already in attendance
+      const isAlreadyAdded = bookings.find(b => b.member_id === selectedMemberId);
+      if (isAlreadyAdded) {
+        setError('This member is already added to the run');
+        return;
+      }
+
+      // Add attendance record as manual addition
+      const attendanceData = {
+        run_id: runId,
+        member_id: selectedMemberId,
+        marked_present: true,
+        marked_at: new Date().toISOString(),
+        marked_by: state.user.id,
+        is_manual_addition: true
+      };
+
+      const { error } = await supabase
+        .from('run_attendance')
+        .insert([attendanceData]);
+      
+      if (error) throw error;
+
+      // Reload data
+      await loadRunData();
+      
+      // Reset form
+      setSelectedMemberId('');
+      setShowAddRunner(false);
+
+    } catch (err: any) {
+      console.error('Failed to add member:', err);
+      setError(err.message || 'Failed to add member');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const addManualRunner = async () => {
+    if (!manualRunner.full_name || !state.user?.id) return;
+
+    try {
+      setSaving('adding-manual');
+      setError('');
+
+      // Create a temporary member record for the manual runner
+      const tempMember = {
+        full_name: manualRunner.full_name,
+        email: `temp-${Date.now()}@runalcester.temp`, // Temporary email
+        phone: manualRunner.phone || null,
+        emergency_contact_name: manualRunner.emergency_contact_name || null,
+        emergency_contact_phone: manualRunner.emergency_contact_phone || null,
+        health_conditions: manualRunner.health_conditions || null,
+        membership_status: 'guest',
+        is_temp_runner: true,
+        date_joined: new Date().toISOString().split('T')[0] // Add required field
+      };
+
+      const { data: newMember, error: memberError } = await supabase
+        .from('members')
+        .insert([tempMember])
+        .select()
+        .single();
+
+      if (memberError) {
+        console.error('Member creation error:', memberError);
+        throw memberError;
+      }
+
+      // Add attendance record
+      const attendanceData = {
+        run_id: runId,
+        member_id: newMember.id,
+        marked_present: true,
+        marked_at: new Date().toISOString(),
+        marked_by: state.user.id,
+        is_manual_addition: true
+      };
+
+      const { error: attendanceError } = await supabase
+        .from('run_attendance')
+        .insert([attendanceData]);
+      
+      if (attendanceError) {
+        console.error('Attendance creation error:', attendanceError);
+        throw attendanceError;
+      }
+
+      // Reload data
+      await loadRunData();
+      
+      // Reset form
+      setManualRunner({
+        full_name: '',
+        phone: '',
+        emergency_contact_name: '',
+        emergency_contact_phone: '',
+        health_conditions: ''
+      });
+      setShowAddRunner(false);
+
+    } catch (err: any) {
+      console.error('Failed to add manual runner:', err);
+      setError(err.message || 'Failed to add runner');
+    } finally {
+      setSaving(null);
+    }
+  };
+
   const getAttendanceStatus = (memberId: string) => {
     const record = attendance.find(a => a.member_id === memberId);
     return record;
@@ -184,6 +379,12 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
       minute: '2-digit'
     });
   };
+
+  // Filter members for search
+  const filteredMembers = allMembers.filter(member => 
+    member.full_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    !bookings.find(booking => booking.member_id === member.id)
+  );
 
   const presentCount = attendance.filter(a => a.marked_present).length;
   const totalCount = bookings.length;
@@ -234,7 +435,7 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
               <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--gray-700)', marginBottom: '4px' }}>
                 {totalCount}
               </div>
-              <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Total Booked</div>
+              <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Total Runners</div>
             </div>
           </div>
         </div>
@@ -253,17 +454,28 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
         </div>
       )}
 
+      {/* Add Runner Button */}
+      <div style={{ marginBottom: '20px' }}>
+        <button
+          onClick={() => setShowAddRunner(true)}
+          className="btn btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          ➕ Add Runner to Attendance
+        </button>
+      </div>
+
       {/* Member List */}
       <div className="card">
         <div className="card-header">
-          <h3 className="card-title">Booked Members</h3>
+          <h3 className="card-title">Runners ({bookings.length})</h3>
         </div>
         <div className="card-content">
           {bookings.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-500)' }}>
               <div style={{ fontSize: '48px', marginBottom: '16px' }}>👥</div>
-              <h3 style={{ margin: '0 0 8px 0' }}>No Members Booked</h3>
-              <p style={{ margin: '0' }}>No one has booked this run yet.</p>
+              <h3 style={{ margin: '0 0 8px 0' }}>No Runners Yet</h3>
+              <p style={{ margin: '0' }}>Add runners to start taking attendance.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -286,8 +498,27 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
                     }}
                   >
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: '600', color: 'var(--gray-900)', marginBottom: '4px' }}>
+                      <div style={{ 
+                        fontWeight: '600', 
+                        color: 'var(--gray-900)', 
+                        marginBottom: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
                         {booking.member?.full_name || 'Unknown Member'}
+                        {booking.is_manual_addition && (
+                          <span style={{
+                            background: '#fef3c7',
+                            color: '#92400e',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '500'
+                          }}>
+                            Added by LIRF
+                          </span>
+                        )}
                       </div>
                       {booking.member?.phone && (
                         <div style={{ fontSize: '14px', color: 'var(--gray-600)', marginBottom: '4px' }}>
@@ -361,6 +592,252 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
           )}
         </div>
       </div>
+
+      {/* Add Runner Modal */}
+      {showAddRunner && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '8px',
+            padding: '24px',
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>➕ Add Runner to Attendance</h3>
+              <button
+                onClick={() => setShowAddRunner(false)}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  fontSize: '20px', 
+                  cursor: 'pointer',
+                  color: 'var(--gray-500)'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Runner Type Selection */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => setAddRunnerType('member')}
+                  className={`btn ${addRunnerType === 'member' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: 1 }}
+                >
+                  👥 Existing Member
+                </button>
+                <button
+                  onClick={() => setAddRunnerType('manual')}
+                  className={`btn ${addRunnerType === 'manual' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: 1 }}
+                >
+                  📝 New Runner
+                </button>
+              </div>
+            </div>
+
+            {addRunnerType === 'member' ? (
+              /* Existing Member Form */
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                    Search Members:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Type to search members..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid var(--gray-300)',
+                      borderRadius: '6px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '20px', maxHeight: '200px', overflow: 'auto' }}>
+                  {filteredMembers.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--gray-500)' }}>
+                      {searchTerm ? 'No members found' : 'Start typing to search for members'}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {filteredMembers.slice(0, 10).map(member => (
+                        <div
+                          key={member.id}
+                          onClick={() => setSelectedMemberId(member.id)}
+                          style={{
+                            padding: '12px',
+                            border: `2px solid ${selectedMemberId === member.id ? 'var(--red-primary)' : 'var(--gray-200)'}`,
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            background: selectedMemberId === member.id ? '#fef2f2' : 'white'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                            {member.full_name}
+                          </div>
+                          <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>
+                            {member.email}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={() => setShowAddRunner(false)}
+                    className="btn btn-secondary"
+                    style={{ flex: 1 }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={addExistingMember}
+                    disabled={!selectedMemberId || saving === 'adding-member'}
+                    className="btn btn-primary"
+                    style={{ flex: 1 }}
+                  >
+                    {saving === 'adding-member' ? '⏳ Adding...' : 'Add Member'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Manual Runner Form */
+              <div>
+                <div style={{ display: 'grid', gap: '16px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={manualRunner.full_name}
+                      onChange={(e) => setManualRunner(prev => ({ ...prev, full_name: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '1px solid var(--gray-300)',
+                        borderRadius: '6px'
+                      }}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={manualRunner.phone}
+                      onChange={(e) => setManualRunner(prev => ({ ...prev, phone: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '1px solid var(--gray-300)',
+                        borderRadius: '6px'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                      Emergency Contact Name
+                    </label>
+                    <input
+                      type="text"
+                      value={manualRunner.emergency_contact_name}
+                      onChange={(e) => setManualRunner(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '1px solid var(--gray-300)',
+                        borderRadius: '6px'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                      Emergency Contact Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={manualRunner.emergency_contact_phone}
+                      onChange={(e) => setManualRunner(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '1px solid var(--gray-300)',
+                        borderRadius: '6px'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                      Health Conditions / Medical Notes
+                    </label>
+                    <textarea
+                      value={manualRunner.health_conditions}
+                      onChange={(e) => setManualRunner(prev => ({ ...prev, health_conditions: e.target.value }))}
+                      placeholder="Any medical conditions, allergies, or other health information..."
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '1px solid var(--gray-300)',
+                        borderRadius: '6px',
+                        minHeight: '80px',
+                        resize: 'vertical'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={() => setShowAddRunner(false)}
+                    className="btn btn-secondary"
+                    style={{ flex: 1 }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={addManualRunner}
+                    disabled={!manualRunner.full_name || saving === 'adding-manual'}
+                    className="btn btn-primary"
+                    style={{ flex: 1 }}
+                  >
+                    {saving === 'adding-manual' ? '⏳ Adding...' : 'Add Runner'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Emergency Contact Modal */}
       {selectedMember && (
