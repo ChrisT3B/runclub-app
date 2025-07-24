@@ -114,10 +114,13 @@ export class NotificationService {
 
       console.log('✅ Recipients created:', recipientResults);
 
-      // Send email notifications if requested
+      // Send email notifications if requested (async - don't wait)
       if (data.send_email !== false) { // Default to true if not specified
-        console.log('📧 Starting email notification process...');
-        await this.sendEmailNotifications(data, recipientIds);
+        console.log('📧 Starting email notification process (background)...');
+        // Fire and forget - don't await email sending
+        this.sendEmailNotifications(data, recipientIds).catch(error => {
+          console.error('📧 Background email sending failed:', error);
+        });
       } else {
         console.log('📧 Email notifications skipped (send_email = false)');
       }
