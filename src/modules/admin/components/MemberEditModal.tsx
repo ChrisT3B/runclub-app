@@ -25,14 +25,17 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
     health_conditions: member.health_conditions || '',
     membership_status: member.membership_status || 'pending',
     access_level: member.access_level || 'member',
-    dbs_expiry_date: member.dbs_expiry_date || ''
+    dbs_expiry_date: member.dbs_expiry_date || '',
+    email_notifications_enabled: member.email_notifications_enabled !== false // Default to true if undefined
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -192,6 +195,67 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
                     onChange={handleInputChange}
                     className="form-input"
                   />
+                </div>
+              </div>
+
+              {/* Communication Preferences */}
+              <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--gray-900)', marginBottom: '16px' }}>
+                  📧 Communication Preferences
+                </h4>
+                
+                <div style={{
+                  padding: '16px',
+                  background: '#f9fafb',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <input
+                      type="checkbox"
+                      id="email_notifications_enabled"
+                      name="email_notifications_enabled"
+                      checked={formData.email_notifications_enabled}
+                      onChange={handleInputChange}
+                      style={{
+                        marginTop: '2px',
+                        width: '18px',
+                        height: '18px',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <label 
+                        htmlFor="email_notifications_enabled" 
+                        style={{
+                          fontWeight: '500',
+                          color: 'var(--gray-900)',
+                          cursor: 'pointer',
+                          display: 'block',
+                          marginBottom: '4px'
+                        }}
+                      >
+                        📨 Receive Email Notifications
+                      </label>
+                      <div style={{ fontSize: '14px', color: 'var(--gray-600)', lineHeight: '1.4' }}>
+                        Get email alerts for run updates, club announcements, and important notifications.
+                        You'll still receive in-app notifications regardless of this setting.
+                      </div>
+                      {!formData.email_notifications_enabled && (
+                        <div style={{
+                          fontSize: '12px',
+                          color: '#dc2626',
+                          marginTop: '8px',
+                          padding: '6px 8px',
+                          background: '#fef2f2',
+                          border: '1px solid #fecaca',
+                          borderRadius: '4px'
+                        }}>
+                          ⚠️ You won't receive email notifications for important run updates
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 

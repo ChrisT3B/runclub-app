@@ -7,6 +7,7 @@ export interface ProfileUpdateData {
   emergencyContact?: string;
   emergencyPhone?: string;
   medicalInfo?: string;
+  email_notifications_enabled?: boolean; // ADD THIS LINE
 }
 
 export class ProfileService {
@@ -24,6 +25,7 @@ export class ProfileService {
           emergency_contact_name: profileData.emergencyContact || null,
           emergency_contact_phone: profileData.emergencyPhone || null,
           health_conditions: profileData.medicalInfo || null,
+           email_notifications_enabled: profileData.email_notifications_enabled, // ADD THIS LINE
           updated_at: new Date().toISOString()
         })
         .eq('id', userId)

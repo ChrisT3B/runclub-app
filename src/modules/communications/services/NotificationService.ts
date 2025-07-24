@@ -1,4 +1,5 @@
 import { supabase } from '../../../services/supabase';
+import { EmailService, EmailNotificationData } from './EmailService';
 
 export interface Notification {
   id: string;
@@ -47,6 +48,7 @@ export interface CreateNotificationData {
   recipient_ids?: string[]; // If not provided, will be determined by type and run_id
   scheduled_for?: string;
   expires_at?: string;
+  send_email?: boolean; // NEW: Whether to send email notifications
 }
 
 export class NotificationService {
@@ -111,11 +113,89 @@ export class NotificationService {
       }
 
       console.log('✅ Recipients created:', recipientResults);
+
+      // Send email notifications if requested
+      if (data.send_email !== false) { // Default to true if not specified
+        console.log('📧 Starting email notification process...');
+        await this.sendEmailNotifications(data, recipientIds);
+      } else {
+        console.log('📧 Email notifications skipped (send_email = false)');
+      }
     } else {
       console.warn('⚠️ No recipients found for notification');
     }
 
     return notification;
+  }
+
+  /**
+   * Send email notifications for a created notification
+   */
+  private static async sendEmailNotifications(
+    data: CreateNotificationData,
+    recipientIds: string[]
+  ): Promise<void> {
+    try {
+      // Get members who have email notifications enabled
+      const emailRecipients = await EmailService.getMembersWithEmailEnabled(recipientIds);
+      
+      if (emailRecipients.length === 0) {
+        console.log('📧 No recipients have email notifications enabled');
+        return;
+      }
+
+      console.log(`📧 Found ${emailRecipients.length} recipients with email enabled`);
+
+      // Get run details if this is a run-specific notification
+      let runDetails = undefined;
+      if (data.type === 'run_specific' && data.run_id) {
+        const { data: runData, error: runError } = await supabase
+          .from('scheduled_runs')
+          .select('run_title, run_date, run_time, meeting_point, approximate_distance')
+          .eq('id', data.run_id)
+          .single();
+
+        if (!runError && runData) {
+          runDetails = runData;
+        }
+      }
+
+      // Prepare email data
+      const emailData: EmailNotificationData = {
+        title: data.title,
+        message: data.message,
+        type: data.type,
+        priority: data.priority || 'normal',
+        runDetails,
+        recipients: emailRecipients
+      };
+
+      // Check if we can send emails (daily limit)
+      const emailStatus = await EmailService.canSendEmails();
+      if (!emailStatus.canSend) {
+        console.warn('📧 Daily email limit reached, skipping email notifications');
+        return;
+      }
+
+      if (emailRecipients.length > emailStatus.remaining) {
+        console.warn(`📧 ${emailRecipients.length} recipients but only ${emailStatus.remaining} emails remaining today`);
+      }
+
+      // Send emails immediately instead of queuing
+      console.log('📧 Sending emails immediately...');
+      const results = await EmailService.sendNotificationEmails(emailData);
+      
+      console.log('📧 Email sending results:', results);
+
+      // Log any errors
+      if (results.errors.length > 0) {
+        console.error('📧 Email sending errors:', results.errors);
+      }
+
+    } catch (error) {
+      console.error('📧 Failed to send email notifications:', error);
+      // Don't throw here - we don't want email failures to break notification creation
+    }
   }
 
   /**
@@ -433,5 +513,16 @@ export class NotificationService {
     }
 
     return count || 0;
+  }
+
+  /**
+   * Get email sending status (for UI feedback)
+   */
+  static async getEmailSendingStatus(): Promise<{
+    canSend: boolean;
+    remaining: number;
+    total: number;
+  }> {
+    return await EmailService.canSendEmails();
   }
 }

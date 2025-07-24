@@ -14,6 +14,7 @@ export interface Member {
   ea_conduct_accepted: boolean;
   access_level: string;
   dbs_expiry_date?: string; // New DBS expiry field
+  email_notifications_enabled?: boolean; // New field for email notifications
   created_at: string;
   updated_at: string;
 }

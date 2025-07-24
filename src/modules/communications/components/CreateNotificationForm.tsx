@@ -16,6 +16,11 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
   const [error, setError] = useState('');
   const [assignedRuns, setAssignedRuns] = useState<any[]>([]);
   const [loadingRuns, setLoadingRuns] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<{
+    canSend: boolean;
+    remaining: number;
+    total: number;
+  }>({ canSend: true, remaining: 500, total: 500 });
   
   const [formData, setFormData] = useState<CreateNotificationData>({
     title: '',
@@ -24,13 +29,15 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
     priority: 'normal',
     run_id: '',
     scheduled_for: '',
-    expires_at: ''
+    expires_at: '',
+    send_email: true // NEW: Default to sending emails
   });
 
   useEffect(() => {
     if (formData.type === 'run_specific') {
       loadAssignedRuns();
     }
+    loadEmailStatus();
   }, [formData.type]);
 
   const loadAssignedRuns = async () => {
@@ -46,12 +53,22 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
     }
   };
 
+  const loadEmailStatus = async () => {
+    try {
+      const status = await NotificationService.getEmailSendingStatus();
+      setEmailStatus(status);
+    } catch (error) {
+      console.error('Failed to load email status:', error);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
 
     // Clear run_id when changing type
@@ -87,7 +104,8 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
         message: formData.message.trim(),
         run_id: formData.type === 'run_specific' ? formData.run_id : undefined,
         scheduled_for: formData.scheduled_for || undefined,
-        expires_at: formData.expires_at || undefined
+        expires_at: formData.expires_at || undefined,
+        send_email: formData.send_email
       });
       
       onSuccess();
@@ -213,6 +231,77 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
             </div>
           )}
 
+          {/* Email Notification Option */}
+          <div className="form-group">
+            <div style={{
+              padding: '16px',
+              background: '#f9fafb',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px' }}>
+                <input
+                  type="checkbox"
+                  id="send_email"
+                  name="send_email"
+                  checked={formData.send_email || false}
+                  onChange={handleInputChange}
+                  style={{
+                    marginTop: '2px',
+                    width: '18px',
+                    height: '18px',
+                    cursor: 'pointer'
+                  }}
+                />
+                <div style={{ flex: 1 }}>
+                  <label 
+                    htmlFor="send_email" 
+                    style={{
+                      fontWeight: '500',
+                      color: 'var(--gray-900)',
+                      cursor: 'pointer',
+                      display: 'block',
+                      marginBottom: '4px'
+                    }}
+                  >
+                    📧 Send Email Notifications
+                  </label>
+                  <div style={{ fontSize: '14px', color: 'var(--gray-600)', lineHeight: '1.4' }}>
+                    Send email alerts to members who have email notifications enabled.
+                    In-app notifications will be sent regardless of this setting.
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Status Info */}
+              <div style={{
+                padding: '8px 12px',
+                background: emailStatus.canSend ? '#f0fdf4' : '#fef2f2',
+                border: `1px solid ${emailStatus.canSend ? '#bbf7d0' : '#fecaca'}`,
+                borderRadius: '6px',
+                fontSize: '12px'
+              }}>
+                <div style={{ 
+                  color: emailStatus.canSend ? '#166534' : '#dc2626',
+                  fontWeight: '500',
+                  marginBottom: '2px'
+                }}>
+                  📊 Email Status: {emailStatus.remaining} of {emailStatus.total} emails remaining today
+                </div>
+                {!emailStatus.canSend && (
+                  <div style={{ color: '#dc2626' }}>
+                    ⚠️ Daily email limit reached. Only in-app notifications will be sent.
+                  </div>
+                )}
+                {formData.send_email && emailStatus.canSend && (
+                  <div style={{ color: '#166534' }}>
+                    ✅ Emails will be sent to members with email notifications enabled
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Priority */}
           <div className="form-group">
             <label className="form-label" htmlFor="priority">Priority</label>
@@ -316,7 +405,6 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
               </div>
             </div>
           </details>
-
           {/* Preview */}
           {formData.title && formData.message && (
             <div style={{ 
@@ -351,6 +439,18 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
                       fontWeight: '500'
                     }}>
                       {currentPriority.toUpperCase()}
+                    </span>
+                  )}
+                  {formData.send_email && (
+                    <span style={{
+                      background: '#e0f2fe',
+                      color: '#0369a1',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: '500'
+                    }}>
+                      📧 EMAIL
                     </span>
                   )}
                 </div>
