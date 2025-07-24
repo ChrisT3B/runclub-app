@@ -1,9 +1,9 @@
 // /api/send-email.js
-// Vercel serverless function for sending emails
+// Vercel serverless function for sending emails (ES6 Module compatible)
 
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // Handle CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -24,11 +24,12 @@ module.exports = async (req, res) => {
 
     // Validate input
     if (!to || !subject || !html) {
+      console.log('❌ Missing required fields:', { to: !!to, subject: !!subject, html: !!html });
       res.status(400).json({ error: 'Missing required fields: to, subject, html' });
       return;
     }
 
-    console.log(`📧 Vercel API: Sending email to ${to}`);
+    console.log(`📧 Vercel API: Attempting to send email to ${to}`);
     console.log(`📧 Vercel API: Subject: ${subject}`);
 
     // Create transporter with Gmail SMTP
@@ -41,6 +42,8 @@ module.exports = async (req, res) => {
         pass: 'bjdx zewa wccs ttbm'
       }
     });
+
+    console.log('📧 Vercel API: Transporter created successfully');
 
     // Send email
     const info = await transporter.sendMail({
@@ -61,9 +64,16 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Vercel API: Email sending failed:', error);
+    console.error('❌ Vercel API: Error details:', {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
+    
     res.status(500).json({ 
       success: false,
-      error: error.message || 'Failed to send email' 
+      error: error.message || 'Failed to send email',
+      details: error.code || 'Unknown error'
     });
   }
-};
+}
