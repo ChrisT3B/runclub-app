@@ -1,9 +1,9 @@
-// /api/send-email.js (or wherever your API routes go)
-// This creates the missing endpoint that GmailSMTP is trying to call
+// /api/send-email.js
+// Vercel serverless function for sending emails
 
-import nodemailer from 'nodemailer';
+const nodemailer = require('nodemailer');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   // Handle CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { to, from, subject, html, text, smtpConfig } = req.body;
+    const { to, from, subject, html, text } = req.body;
 
     // Validate input
     if (!to || !subject || !html) {
@@ -28,11 +28,11 @@ export default async function handler(req, res) {
       return;
     }
 
-    console.log(`📧 API: Sending email to ${to}`);
-    console.log(`📧 API: Subject: ${subject}`);
+    console.log(`📧 Vercel API: Sending email to ${to}`);
+    console.log(`📧 Vercel API: Subject: ${subject}`);
 
     // Create transporter with Gmail SMTP
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
@@ -51,8 +51,8 @@ export default async function handler(req, res) {
       text: text
     });
 
-    console.log(`✅ API: Email sent successfully to ${to}`);
-    console.log(`📧 API: Message ID: ${info.messageId}`);
+    console.log(`✅ Vercel API: Email sent successfully to ${to}`);
+    console.log(`📧 Vercel API: Message ID: ${info.messageId}`);
 
     res.status(200).json({ 
       success: true, 
@@ -60,9 +60,10 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('❌ API: Email sending failed:', error);
+    console.error('❌ Vercel API: Email sending failed:', error);
     res.status(500).json({ 
+      success: false,
       error: error.message || 'Failed to send email' 
     });
   }
-}
+};
