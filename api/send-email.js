@@ -38,8 +38,8 @@ export default async function handler(req, res) {
       port: 465,
       secure: true,
       auth: {
-        user: 'bookings.runalcester@gmail.com',
-        pass: 'bjdx zewa wccs ttbm'
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD
       }
     });
 
