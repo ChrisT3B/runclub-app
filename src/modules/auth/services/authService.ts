@@ -63,6 +63,7 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
 // Register user with automatic member profile creation
 export const registerUser = async (registerData: RegistrationData): Promise<AuthResponse> => {
   try {
+    console.log('🚀 Starting registration for:', registerData.email);
     const { data, error } = await supabase.auth.signUp({
       email: registerData.email,
       password: registerData.password,
@@ -73,8 +74,12 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
         emailRedirectTo: `${window.location.origin}/auth`,
       },
     });
-
+    console.log('📝 Auth signup result:', { 
+      user: data.user?.id, 
+      error: error?.message 
+    });
     if (error) {
+      console.error('❌ Auth signup failed:', error);
       return {
         data: null,
         error: { message: formatSupabaseError(error) }
@@ -83,6 +88,7 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
 
     // If user created successfully, create member profile
     if (data.user) {
+      console.log('👤 Creating member profile for user:', data.user.id);
       const memberData: Partial<Member> = {
         id: data.user.id,
         email: registerData.email,
@@ -95,7 +101,7 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
         health_conditions: registerData.healthConditions || 'None disclosed',
       
       };
-
+      console.log('📋 Member data to insert:', memberData);
       const { error: memberError } = await supabase
         .from('members')
         .insert([memberData]);
@@ -104,6 +110,8 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
         console.error('Error creating member profile:', memberError);
         // Don't fail the registration if member creation fails
         // The user can still log in and we can create the profile later
+              } else {
+        console.log('✅ Member profile created successfully');
       }
     }
 
@@ -112,6 +120,7 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
       error: null
     };
   } catch (error) {
+     console.error('💥 Unexpected registration error:', error);
     return {
       data: null,
       error: { message: formatSupabaseError(error) }
