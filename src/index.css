@@ -944,5 +944,37 @@ html, body {
     padding: 8px 1px;
     font-size: 10px;
   }
+/* ==============================================
+   MOBILE KEYBOARD FIX - ADD TO END OF index.css
+   ============================================== */
 
+/* Fix for mobile keyboard covering login form */
+@media screen and (max-height: 600px) and (max-width: 768px) {
+  /* Target the login form container specifically */
+  .auth-layout,
+  div[style*="minHeight: 100vh"] {
+    min-height: 100dvh !important; /* Dynamic viewport height */
+    justify-content: flex-start !important;
+    padding-top: 1rem !important;
+  }
+  
+  /* Add bottom padding for keyboard space */
+  form {
+    margin-bottom: 2rem;
+  }
+  
+  /* Ensure inputs stay visible */
+  input:focus {
+    transform: translateY(-20px);
+    transition: transform 0.2s ease;
+  }
+}
+
+/* Additional safety for very small screens */
+@media screen and (max-height: 500px) {
+  div[style*="minHeight: 100vh"] {
+    align-items: flex-start !important;
+    padding-top: 0.5rem !important;
+  }
+}
 }
