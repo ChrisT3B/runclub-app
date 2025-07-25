@@ -154,14 +154,15 @@ export const verifyEmail = async (token: string): Promise<EmailVerificationResul
     if (data.user) {
       console.log('👤 Email verified for user:', data.user.id);
       console.log('📋 Moving from pending_members to members table');
-
+      console.log('🔍 About to check for pending member...');
+      console.log('🔍 User ID from verification:', data.user.id);
       // Get pending member data
       const { data: pendingMember, error: fetchError } = await supabase
         .from('pending_members')
         .select('*')
         .eq('id', data.user.id)
         .single();
-
+      console.log('🔍 Pending member query result:', { pendingMember, fetchError });
       if (fetchError) {
         console.error('❌ Error fetching pending member:', fetchError);
         // Continue with verification even if we can't find pending member
