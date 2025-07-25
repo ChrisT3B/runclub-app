@@ -1,0 +1,69 @@
+
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Strong red background gradient for visibility -->
+    <radialGradient id="strongBg192" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" style="stop-color:#dc2626;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#991b1b;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- White logo with subtle shadow for definition -->
+    <filter id="logoGlow192" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.92" stdDeviation="1.536" flood-color="rgba(0,0,0,0.2)"/>
+    </filter>
+  </defs>
+  
+  <!-- Solid red background circle -->
+  <circle cx="96" cy="96" r="96" fill="url(#strongBg192)"/>
+  
+  <!-- White version of your logo, scaled appropriately -->
+  <g transform="translate(15.36, 15.36) scale(0.2016)" filter="url(#logoGlow192)">
+    <!-- Castle silhouette - simplified from your logo -->
+    <g fill="white">
+      <!-- Main castle structure -->
+      <path d="M120 600 L120 200 L200 200 L200 120 L240 120 L240 180 L280 180 L280 80 L320 80 L320 160 L400 160 L400 600 Z" opacity="0.95"/>
+      
+      <!-- Castle tower details -->
+      <rect x="160" y="320" width="80" height="160" fill="rgba(220,38,38,0.3)"/>
+      <rect x="280" y="280" width="60" height="120" fill="rgba(220,38,38,0.3)"/>
+      
+      <!-- Castle battlements -->
+      <rect x="120" y="180" width="20" height="40"/>
+      <rect x="160" y="180" width="20" height="40"/>
+      <rect x="200" y="180" width="20" height="40"/>
+      <rect x="280" y="140" width="15" height="40"/>
+      <rect x="305" y="140" width="15" height="40"/>
+      <rect x="330" y="140" width="15" height="40"/>
+      <rect x="355" y="140" width="15" height="40"/>
+      <rect x="380" y="140" width="15" height="40"/>
+      
+      <!-- Small castle details -->
+      <circle cx="200" cy="260" r="12" fill="rgba(220,38,38,0.4)"/>
+      <circle cx="310" cy="220" r="8" fill="rgba(220,38,38,0.4)"/>
+    </g>
+    
+    <!-- Running shoe - white version -->
+    <g transform="translate(150, 420)" fill="white">
+      <!-- Shoe sole -->
+      <ellipse cx="200" cy="140" rx="180" ry="40" opacity="0.9"/>
+      
+      <!-- Shoe upper -->
+      <path d="M40 140 C40 100, 120 60, 280 80 C320 90, 340 120, 320 140 Z" opacity="0.95"/>
+      
+      <!-- Shoe details (laces/stripes) -->
+      <rect x="100" y="90" width="20" height="40" fill="rgba(220,38,38,0.6)" rx="4"/>
+      <rect x="130" y="95" width="20" height="35" fill="rgba(220,38,38,0.6)" rx="4"/>
+      <rect x="160" y="100" width="20" height="30" fill="rgba(220,38,38,0.6)" rx="4"/>
+      <rect x="190" y="105" width="20" height="25" fill="rgba(220,38,38,0.6)" rx="4"/>
+      <rect x="220" y="110" width="20" height="20" fill="rgba(220,38,38,0.6)" rx="4"/>
+      <rect x="250" y="115" width="20" height="15" fill="rgba(220,38,38,0.6)" rx="4"/>
+    </g>
+  </g>
+  
+  <!-- Add text for larger icons for better recognition -->
+  
+  <text x="96" y="172.8" text-anchor="middle" fill="white" 
+        font-family="Arial, sans-serif" font-weight="bold" font-size="15.36" opacity="0.9">
+    RUN ALCESTER
+  </text>
+</svg>

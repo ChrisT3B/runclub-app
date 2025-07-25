@@ -24,6 +24,8 @@
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.59.0",
     "react-router-dom": "^7.6.3",
+    "vite-plugin-pwa": "^1.0.1",
+    "workbox-window": "^7.3.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {

@@ -6,6 +6,7 @@ import { AppContent } from './AppContent';
 import { RunDetailsPage } from './modules/admin/components/RunDetailsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import { EmailVerificationHandler } from './modules/auth/components/EmailVerificationHandler';
+import { PWAInstallPrompt } from './shared/components/ui/PWAInstallPrompt';
 import './styles/fonts.css';
 import './index.css';
 
@@ -47,6 +48,7 @@ function App() {
         </Router>
       </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
+      <PWAInstallPrompt /> {/* Add this line */}
     </QueryClientProvider>
   );
 }
