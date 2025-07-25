@@ -60,10 +60,11 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
   }
 };
 
-// Register user with automatic member profile creation
+// Register user with secure pending member creation
 export const registerUser = async (registerData: RegistrationData): Promise<AuthResponse> => {
   try {
     console.log('🚀 Starting registration for:', registerData.email);
+    
     const { data, error } = await supabase.auth.signUp({
       email: registerData.email,
       password: registerData.password,
@@ -74,10 +75,12 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
         emailRedirectTo: `${window.location.origin}/auth`,
       },
     });
+
     console.log('📝 Auth signup result:', { 
       user: data.user?.id, 
       error: error?.message 
     });
+
     if (error) {
       console.error('❌ Auth signup failed:', error);
       return {
@@ -86,32 +89,33 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
       };
     }
 
-    // If user created successfully, create member profile
+    // If user created successfully, create PENDING member profile
     if (data.user) {
-      console.log('👤 Creating member profile for user:', data.user.id);
-      const memberData: Partial<Member> = {
+      console.log('👤 Creating pending member profile for user:', data.user.id);
+      
+      const pendingMemberData = {
         id: data.user.id,
         email: registerData.email,
         full_name: registerData.fullName,
         phone: registerData.phone || '',
-        access_level: 'member',
-        membership_status: 'pending', // Will be updated to 'active' after email verification
         emergency_contact_name: registerData.emergencyContactName || '',
         emergency_contact_phone: registerData.emergencyContactPhone || '',
         health_conditions: registerData.healthConditions || 'None disclosed',
-      
       };
-      console.log('📋 Member data to insert:', memberData);
-      const { error: memberError } = await supabase
-        .from('members')
-        .insert([memberData]);
 
-      if (memberError) {
-        console.error('Error creating member profile:', memberError);
-        // Don't fail the registration if member creation fails
-        // The user can still log in and we can create the profile later
-              } else {
-        console.log('✅ Member profile created successfully');
+      console.log('📋 Pending member data to insert:', pendingMemberData);
+
+      const { error: pendingMemberError } = await supabase
+        .from('pending_members')
+        .insert([pendingMemberData]);
+
+      if (pendingMemberError) {
+        console.error('❌ Pending member profile creation failed:', pendingMemberError);
+        console.error('❌ Full error details:', JSON.stringify(pendingMemberError, null, 2));
+        // Don't fail the registration if pending member creation fails
+        // The user can still verify email and we can create the profile then
+      } else {
+        console.log('✅ Pending member profile created successfully');
       }
     }
 
@@ -120,7 +124,7 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
       error: null
     };
   } catch (error) {
-     console.error('💥 Unexpected registration error:', error);
+    console.error('💥 Unexpected registration error:', error);
     return {
       data: null,
       error: { message: formatSupabaseError(error) }
@@ -128,32 +132,95 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
   }
 };
 
-// Email verification
+// Email verification with secure member promotion
 export const verifyEmail = async (token: string): Promise<EmailVerificationResult> => {
   try {
+    console.log('🔍 Starting email verification with token');
+    
     const { data, error } = await supabase.auth.verifyOtp({
       token_hash: token,
       type: 'email',
     });
 
     if (error) {
+      console.error('❌ Email verification failed:', error);
       return {
         success: false,
         message: formatSupabaseError(error)
       };
     }
 
-    // Update member status to active after successful email verification
+    // Move user from pending_members to members table
     if (data.user) {
-      const { error: updateError } = await supabase
-        .from('members')
-        .update({ membership_status: 'active' })
-        .eq('id', data.user.id);
+      console.log('👤 Email verified for user:', data.user.id);
+      console.log('📋 Moving from pending_members to members table');
 
-      if (updateError) {
-        console.error('Error updating member status:', updateError);
-        // Don't fail verification if status update fails
+      // Get pending member data
+      const { data: pendingMember, error: fetchError } = await supabase
+        .from('pending_members')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Error fetching pending member:', fetchError);
+        // Continue with verification even if we can't find pending member
+        // They might have registered before the holding table was implemented
+      } else if (pendingMember) {
+        console.log('📋 Found pending member, creating active member record');
+        
+        // Create real member record with active status
+        const memberData: Partial<Member> = {
+          id: pendingMember.id,
+          email: pendingMember.email,
+          full_name: pendingMember.full_name,
+          phone: pendingMember.phone || '',
+          access_level: 'member',
+          membership_status: 'active', // Now they're verified and active
+          emergency_contact_name: pendingMember.emergency_contact_name || '',
+          emergency_contact_phone: pendingMember.emergency_contact_phone || '',
+          health_conditions: pendingMember.health_conditions || 'None disclosed',
+          email_notifications_enabled: true, // Default to enabled
+        };
+
+        const { error: memberError } = await supabase
+          .from('members')
+          .insert([memberData]);
+
+        if (memberError) {
+          console.error('❌ Error creating member record:', memberError);
+          // Don't fail verification if member creation fails
+        } else {
+          console.log('✅ Member record created successfully');
+          
+          // Delete the pending member record
+          const { error: deleteError } = await supabase
+            .from('pending_members')
+            .delete()
+            .eq('id', data.user.id);
+
+          if (deleteError) {
+            console.error('❌ Error deleting pending member:', deleteError);
+            // Not critical - the pending record will expire naturally
+          } else {
+            console.log('🗑️ Pending member record cleaned up');
+          }
+        }
+      } else {
+        console.log('ℹ️ No pending member found - might be legacy registration');
+        // Handle legacy registrations that went directly to members table
+        const { error: updateError } = await supabase
+          .from('members')
+          .update({ membership_status: 'active' })
+          .eq('id', data.user.id);
+
+        if (updateError) {
+          console.error('❌ Error updating member status:', updateError);
+        } else {
+          console.log('✅ Legacy member status updated to active');
+        }
       }
+
       console.log('🔍 Email verified successfully, signing out user to require manual login');
       await supabase.auth.signOut();
     }
@@ -164,6 +231,7 @@ export const verifyEmail = async (token: string): Promise<EmailVerificationResul
       user: data.user
     };
   } catch (error) {
+    console.error('💥 Unexpected verification error:', error);
     return {
       success: false,
       message: formatSupabaseError(error)
@@ -296,7 +364,7 @@ export const getCurrentUser = async () => {
   }
 };
 
-// Development helper: Clean up test user
+// Development helper: Clean up test user (updated for holding table)
 export const cleanupTestUser = async (email: string): Promise<void> => {
   if (import.meta.env.DEV !== true) {
     console.warn('cleanupTestUser should only be used in development');
@@ -304,18 +372,24 @@ export const cleanupTestUser = async (email: string): Promise<void> => {
   }
 
   try {
-    // Note: This requires admin privileges
-    // In production, you'd use the Admin API
     console.log(`Cleaning up test user: ${email}`);
     
-    // Delete from members table first (due to foreign key constraints)
+    // Delete from both tables (pending and members)
     const { error: memberError } = await supabase
       .from('members')
       .delete()
       .eq('email', email);
 
+    const { error: pendingError } = await supabase
+      .from('pending_members')
+      .delete()
+      .eq('email', email);
+
     if (memberError) {
       console.error('Error cleaning up member:', memberError);
+    }
+    if (pendingError) {
+      console.error('Error cleaning up pending member:', pendingError);
     }
   } catch (error) {
     console.error('Error in cleanupTestUser:', error);

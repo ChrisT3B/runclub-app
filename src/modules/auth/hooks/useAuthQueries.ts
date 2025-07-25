@@ -50,7 +50,7 @@ export const useUserQuery = () => {
   });
 };
 
-// Get user profile query (with caching)
+// Get user profile query (with caching) - UPDATED for holding table
 export const useUserProfileQuery = (userId: string | undefined) => {
   return useQuery({
     queryKey: authQueryKeys.userProfile(userId || ''),
@@ -59,6 +59,8 @@ export const useUserProfileQuery = (userId: string | undefined) => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 1,
+    // Don't throw errors if user has no member profile yet (unverified users)
+    throwOnError: false,
   });
 };
 
@@ -84,7 +86,7 @@ export const useLoginMutation = () => {
   });
 };
 
-// Register mutation
+// Register mutation - UPDATED for holding table
 export const useRegisterMutation = () => {
   const queryClient = useQueryClient();
   
@@ -97,6 +99,8 @@ export const useRegisterMutation = () => {
           data: data.data,
           error: null
         });
+        // DON'T try to fetch user profile yet - they're unverified
+        console.log('✅ Registration successful - user must verify email before accessing member features');
       }
     },
     onError: (error) => {
@@ -105,7 +109,7 @@ export const useRegisterMutation = () => {
   });
 };
 
-// Email verification mutation
+// Email verification mutation - UPDATED for holding table
 export const useVerifyEmailMutation = () => {
   const queryClient = useQueryClient();
   
@@ -113,11 +117,14 @@ export const useVerifyEmailMutation = () => {
     mutationFn: (token: string) => verifyEmail(token),
     onSuccess: (data) => {
       if (data.success && data.user) {
-        // Update user profile cache to reflect active status
+        // After verification, the user now has a member profile
+        // Invalidate to trigger fresh fetch of member data
         queryClient.invalidateQueries({ 
           queryKey: authQueryKeys.userProfile(data.user.id) 
         });
         queryClient.invalidateQueries({ queryKey: authQueryKeys.user });
+        queryClient.invalidateQueries({ queryKey: authQueryKeys.session });
+        console.log('✅ Email verified - member profile now available');
       }
     },
     onError: (error) => {
@@ -173,7 +180,7 @@ export const useLogoutMutation = () => {
   });
 };
 
-// Custom hook for auth state management
+// Custom hook for auth state management - UPDATED for holding table
 export const useAuthState = () => {
   const sessionQuery = useSessionQuery();
   const userQuery = useUserQuery();
@@ -182,12 +189,16 @@ export const useAuthState = () => {
   const isLoading = sessionQuery.isLoading || userQuery.isLoading;
   const isAuthenticated = !!(sessionQuery.data?.data && userQuery.data?.data);
   const user = userQuery.data?.data;
-  const member = userProfileQuery.data?.data;
+  const member = userProfileQuery.data?.data; // This might be null for unverified users
   const session = sessionQuery.data?.data;
+  
+  // Check if user is unverified (has auth record but no member record)
+  const isUnverified = isAuthenticated && !member && !userProfileQuery.isLoading;
   
   return {
     isLoading,
     isAuthenticated,
+    isUnverified, // NEW: indicates user needs email verification
     user,
     member,
     session,
@@ -196,17 +207,19 @@ export const useAuthState = () => {
   };
 };
 
-// Permission calculations
+// Permission calculations - UPDATED for holding table
 export const usePermissions = () => {
-  const { member } = useAuthState();
+  const { member, isUnverified } = useAuthState();
   
-  if (!member) {
+  // Unverified users have no permissions
+  if (isUnverified || !member) {
     return {
       canManageRuns: false,
       canManageMembers: false,
       canViewAllBookings: false,
       canAssignLIRF: false,
-      accessLevel: 'member' as const
+      accessLevel: 'member' as const,
+      isUnverified: isUnverified || false
     };
   }
   
@@ -217,6 +230,7 @@ export const usePermissions = () => {
     canManageMembers: accessLevel === 'admin',
     canViewAllBookings: ['admin', 'lirf'].includes(accessLevel),
     canAssignLIRF: ['admin', 'lirf'].includes(accessLevel),
-    accessLevel
+    accessLevel,
+    isUnverified: false
   };
 };
