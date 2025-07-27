@@ -24,6 +24,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     e.preventDefault()
     
     try {
+         console.log('🔐 Attempting login...'); // Add this line
       await login(credentials)
       onSuccess?.()
     } catch (error) {

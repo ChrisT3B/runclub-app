@@ -46,9 +46,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logoutMutation = useLogoutMutation();
   
   // Action wrappers that return the mutation promises
-  const login = async (credentials: LoginCredentials) => {
-    return loginMutation.mutateAsync(credentials);
-  };
+const login = async (credentials: LoginCredentials) => {
+  const result = await loginMutation.mutateAsync(credentials);
+  
+  // Only throw if there's actually an error message
+  if (result.error && result.error.message) {
+    throw new Error(result.error.message);
+  }
+  
+  return result;
+};
   
   const register = async (data: RegistrationData) => {
     return registerMutation.mutateAsync(data);
@@ -116,7 +123,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       member: authState.member,
       session: authState.session,
       loading: authState.isLoading,
-      error: authState.error?.message || null,
+      error: authState.error?.message || 
+       loginMutation.data?.error?.message || 
+       null,
       isAuthenticated: authState.isAuthenticated,
       isInitialized: authState.isInitialized,
     },
@@ -140,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updatePasswordMutation,
     logoutMutation,
   };
-  
+
   return (
     <AuthContext.Provider value={value}>
       {children}
