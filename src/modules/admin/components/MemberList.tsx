@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AdminService, Member } from '../services/adminService';
 import { MemberEditModal } from './MemberEditModal';
+import MemberProfileModal from '../../membership/components/MemberProfileModal';
 
 export const MemberList: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
@@ -10,6 +11,7 @@ export const MemberList: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAccessLevel, setFilterAccessLevel] = useState('all');
   const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [viewingMember, setViewingMember] = useState<Member | null>(null);
 
   useEffect(() => {
     loadMembers();
@@ -185,10 +187,7 @@ export const MemberList: React.FC = () => {
                             <button
                               className="btn btn-secondary"
                               style={{ fontSize: '12px', padding: '4px 8px' }}
-                              onClick={() => {
-                                // TODO: View member details
-                                console.log('View details:', member.id);
-                              }}
+                              onClick={() => setViewingMember(member)}
                             >
                               👁️ View
                             </button>
@@ -300,6 +299,15 @@ export const MemberList: React.FC = () => {
             ));
             setEditingMember(null);
           }}
+        />
+      )}
+
+      {/* View Profile Modal */}
+      {viewingMember && (
+        <MemberProfileModal
+          member={viewingMember}
+          isOpen={true}
+          onClose={() => setViewingMember(null)}
         />
       )}
     </div>
