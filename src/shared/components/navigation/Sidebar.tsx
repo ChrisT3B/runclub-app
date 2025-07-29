@@ -81,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
           rel="noopener noreferrer"
         >
           <span style={{ marginRight: '12px', fontSize: '16px' }}>🏃‍♀️</span>
-          Join Our Club
+          Full Membership
         </a>
         
         <a
@@ -91,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
           rel="noopener noreferrer"
         >
           <span style={{ marginRight: '12px', fontSize: '16px' }}>📋</span>
-          Governance
+          Club Documents
         </a>
         
         <a

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AdminService, Member } from '../services/adminService';
 import { MemberEditModal } from './MemberEditModal';
-import MemberProfileModal from '../../membership/components/MemberProfileModal';
+import { MemberProfileModal } from '../../membership/components/MemberProfileModal';
 
 export const MemberList: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);

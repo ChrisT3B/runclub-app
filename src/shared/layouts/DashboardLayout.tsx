@@ -1,3 +1,5 @@
+// DashboardLayout.tsx - Enhanced with back button support
+
 import React, { ReactNode, useState } from 'react'
 import { Header } from '../components/navigation/Header'
 import { Sidebar } from '../components/navigation/Sidebar'
@@ -6,12 +8,16 @@ interface DashboardLayoutProps {
   children: ReactNode
   currentPage?: string
   onNavigate?: (page: string) => void
+  canGoBack?: boolean
+  onGoBack?: () => void
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
   children,
   currentPage = 'dashboard',
-  onNavigate 
+  onNavigate,
+  canGoBack = false,
+  onGoBack
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -57,6 +63,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <div className="main-content">
         <Header 
           onMenuClick={() => setSidebarOpen(true)}
+          canGoBack={canGoBack}
+          onGoBack={onGoBack}
         />
         
         {/* Content Area */}
