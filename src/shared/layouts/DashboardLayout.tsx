@@ -8,16 +8,13 @@ interface DashboardLayoutProps {
   children: ReactNode
   currentPage?: string
   onNavigate?: (page: string) => void
-  canGoBack?: boolean
-  onGoBack?: () => void
+  // Remove back button props - we don't need them anymore
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
   children,
   currentPage = 'dashboard',
-  onNavigate,
-  canGoBack = false,
-  onGoBack
+  onNavigate
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -63,8 +60,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <div className="main-content">
         <Header 
           onMenuClick={() => setSidebarOpen(true)}
-          canGoBack={canGoBack}
-          onGoBack={onGoBack}
         />
         
         {/* Content Area */}

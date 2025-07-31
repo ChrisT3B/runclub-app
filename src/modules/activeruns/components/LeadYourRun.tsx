@@ -44,8 +44,8 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
       // Get all runs and filter for assigned ones
       const allRuns = await ScheduledRunsService.getScheduledRuns();
       
-      console.log('🔍 Current user ID:', state.user.id);
-      console.log('🔍 Current user access level:', state.member?.access_level);
+     // console.log('🔍 Current user ID:', state.user.id);
+     // console.log('🔍 Current user access level:', state.member?.access_level);
       
       // Filter runs where current user is assigned as LIRF
       const myAssignedRuns = allRuns.filter(run => {
@@ -53,43 +53,43 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
                             run.assigned_lirf_2 === state.user?.id ||
                             run.assigned_lirf_3 === state.user?.id;
 
-        console.log('🔍 Checking run assignment:', {
-            title: run.run_title,
-            runId: run.id,
-            lirf1: run.assigned_lirf_1,
-            lirf2: run.assigned_lirf_2,
-            lirf3: run.assigned_lirf_3,
-            currentUserId: state.user?.id,
-            isMatch: isAssigned
-        });
+       // console.log('🔍 Checking run assignment:', {
+          //  title: run.run_title,
+          //  runId: run.id,
+          //  lirf1: run.assigned_lirf_1,
+          //  lirf2: run.assigned_lirf_2,
+          //  lirf3: run.assigned_lirf_3,
+          //  currentUserId: state.user?.id,
+          //  isMatch: isAssigned
+        //});
 
         return isAssigned;
       });
 
-      console.log('🔍 Found assigned runs:', myAssignedRuns.length);
+    //  console.log('🔍 Found assigned runs:', myAssignedRuns.length);
       
       // Add booking counts to each run
-      console.log('🔍 Starting booking fetch for', myAssignedRuns.length, 'runs');
+     // console.log('🔍 Starting booking fetch for', myAssignedRuns.length, 'runs');
       
       const runsWithBookings = await Promise.all(
         myAssignedRuns.map(async (run, index) => {
-          console.log(`🔍 Fetching bookings for run ${index + 1}:`, run.id, run.run_title);
+       //   console.log(`🔍 Fetching bookings for run ${index + 1}:`, run.id, run.run_title);
           
           try {
             const bookings = await BookingService.getRunBookings(run.id);
             const activeBookings = bookings.filter(b => !b.cancelled_at);
             
-            console.log('🔍 Booking data for run:', {
-              runId: run.id,
-              title: run.run_title,
-              allBookings: bookings.length,
-              activeBookings: activeBookings.length,
-              bookings: bookings.map(b => ({
-                id: b.id,
-                member_id: b.member_id,
-                cancelled_at: b.cancelled_at
-              }))
-            });
+            //console.log('🔍 Booking data for run:', {
+            //  runId: run.id,
+            //  title: run.run_title,
+            //  allBookings: bookings.length,
+            //  activeBookings: activeBookings.length,
+            //  bookings: bookings.map(b => ({
+            //    id: b.id,
+            //    member_id: b.member_id,
+            //    cancelled_at: b.cancelled_at
+            //  }))
+           // });
             
             return {
               ...run,
@@ -107,18 +107,18 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
         })
       );
       
-      console.log('🔍 Finished booking fetch, final data:', runsWithBookings.map(r => ({
-        id: r.id,
-        title: r.run_title,
-        bookings_count: r.bookings_count
-      })));
+     // console.log('🔍 Finished booking fetch, final data:', runsWithBookings.map(r => ({
+     //   id: r.id,
+     //   title: r.run_title,
+     //   bookings_count: r.bookings_count
+     // })));
 
       // Filter for today and future runs, plus completed runs from today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayString = today.toISOString().split('T')[0];
       
-      console.log('🔍 Today for comparison:', todayString);
+     // console.log('🔍 Today for comparison:', todayString);
       
       const relevantRuns = runsWithBookings.filter(run => {
         const runDate = new Date(run.run_date + 'T12:00:00'); // Add noon to avoid timezone issues
@@ -131,18 +131,18 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
         
         const shouldShow = isFuture || isInProgress || isCompletedToday || isToday;
         
-        console.log('🔍 Date filtering:', {
-          title: run.run_title,
-          runDate: run.run_date,
-          runDateParsed: runDate.toISOString().split('T')[0],
-          today: todayString,
-          status: run.run_status,
-          isToday,
-          isFuture,
-          isInProgress,
-          isCompletedToday,
-          shouldShow
-        });
+       // console.log('🔍 Date filtering:', {
+        //  title: run.run_title,
+        //  runDate: run.run_date,
+        //  runDateParsed: runDate.toISOString().split('T')[0],
+        //  today: todayString,
+        //  status: run.run_status,
+        //  isToday,
+        //  isFuture,
+        //  isInProgress,
+        //  isCompletedToday,
+        //  shouldShow
+       // });
         
         return shouldShow;
       });
@@ -154,14 +154,14 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
         return dateA.getTime() - dateB.getTime();
       });
 
-      console.log('🔍 Final assigned runs loaded:', relevantRuns.map(run => ({
-        id: run.id,
-        title: run.run_title,
-        date: run.run_date,
-        status: run.run_status,
-        bookings_count: run.bookings_count,
-        assigned_lirfs: [run.assigned_lirf_1, run.assigned_lirf_2, run.assigned_lirf_3].filter(Boolean)
-      })));
+      //console.log('🔍 Final assigned runs loaded:', relevantRuns.map(run => ({
+      //  id: run.id,
+       // title: run.run_title,
+      //  date: run.run_date,
+      //  status: run.run_status,
+      //  bookings_count: run.bookings_count,
+      //  assigned_lirfs: [run.assigned_lirf_1, run.assigned_lirf_2, run.assigned_lirf_3].filter(Boolean)
+      //})));
 
       setAssignedRuns(relevantRuns);
     } catch (err: any) {

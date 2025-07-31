@@ -8,7 +8,7 @@ export const MemberList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('members-only');
   const [filterAccessLevel, setFilterAccessLevel] = useState('all');
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
@@ -38,11 +38,32 @@ export const MemberList: React.FC = () => {
     const daysUntilExpiry = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
     if (daysUntilExpiry < 0) {
-      return { status: 'expired', daysUntilExpiry, color: '#dc2626', background: '#fee2e2', text: 'Expired' };
+      return { status: 'expired', daysUntilExpiry, cssClass: 'dbs-badge--expired', text: 'Expired' };
     } else if (daysUntilExpiry <= 30) {
-      return { status: 'expiring', daysUntilExpiry, color: '#92400e', background: '#fef3c7', text: `Expires in ${daysUntilExpiry} days` };
+      return { status: 'expiring', daysUntilExpiry, cssClass: 'dbs-badge--expiring', text: `Expires in ${daysUntilExpiry} days` };
     } else {
-      return { status: 'valid', daysUntilExpiry, color: '#166534', background: '#dcfce7', text: 'Valid' };
+      return { status: 'valid', daysUntilExpiry, cssClass: 'dbs-badge--valid', text: 'Valid' };
+    }
+  };
+
+  // Helper function to get status badge class
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'active': return 'status-badge--active';
+      case 'pending': return 'status-badge--pending';
+      case 'inactive': return 'status-badge--inactive';
+      case 'guest': return 'status-badge--guest';
+      default: return 'status-badge--inactive';
+    }
+  };
+
+  // Helper function to get access level badge class
+  const getAccessBadgeClass = (accessLevel: string) => {
+    switch (accessLevel) {
+      case 'admin': return 'access-badge--admin';
+      case 'lirf': return 'access-badge--lirf';
+      case 'member': return 'access-badge--member';
+      default: return 'access-badge--member';
     }
   };
 
@@ -50,22 +71,42 @@ export const MemberList: React.FC = () => {
   const filteredMembers = members.filter(member => {
     const matchesSearch = member.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || member.membership_status === filterStatus;
+    
+    const matchesStatus = (() => {
+      if (filterStatus === 'members-only') {
+        return member.membership_status !== 'guest';
+      } else if (filterStatus === 'all') {
+        return true;
+      } else {
+        return member.membership_status === filterStatus;
+      }
+    })();
+    
     const matchesAccessLevel = filterAccessLevel === 'all' || member.access_level === filterAccessLevel;
     return matchesSearch && matchesStatus && matchesAccessLevel;
   });
 
+  // Count members by status for filter labels
+  const statusCounts = {
+    membersOnly: members.filter(m => m.membership_status !== 'guest').length,
+    all: members.length,
+    pending: members.filter(m => m.membership_status === 'pending').length,
+    active: members.filter(m => m.membership_status === 'active').length,
+    inactive: members.filter(m => m.membership_status === 'inactive').length,
+    guest: members.filter(m => m.membership_status === 'guest').length
+  };
+
   // Count members by access level for filter labels
   const accessLevelCounts = {
-    all: members.length,
-    member: members.filter(m => m.access_level === 'member').length,
-    lirf: members.filter(m => m.access_level === 'lirf').length,
-    admin: members.filter(m => m.access_level === 'admin').length
+    all: filteredMembers.length,
+    member: filteredMembers.filter(m => m.access_level === 'member').length,
+    lirf: filteredMembers.filter(m => m.access_level === 'lirf').length,
+    admin: filteredMembers.filter(m => m.access_level === 'admin').length
   };
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px' }}>
+      <div className="member-list-loading">
         <div>Loading members...</div>
       </div>
     );
@@ -79,22 +120,17 @@ export const MemberList: React.FC = () => {
       </div>
 
       {error && (
-        <div style={{ 
-          background: '#fef2f2', 
-          border: '1px solid #fecaca', 
-          color: '#dc2626', 
-          padding: '12px', 
-          borderRadius: '6px', 
-          marginBottom: '20px' 
-        }}>
+        <div className="member-list-alert member-list-alert--error">
           {error}
         </div>
       )}
 
+
+
       {/* Search and Filters */}
       <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-content">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          <div className="filter-grid">
             <div className="form-group">
               <label className="form-label">Search Members</label>
               <input
@@ -127,10 +163,12 @@ export const MemberList: React.FC = () => {
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
-                <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="members-only">Club Members Only ({statusCounts.membersOnly})</option>
+                <option value="all">All Including Guests ({statusCounts.all})</option>
+                <option value="pending">Pending ({statusCounts.pending})</option>
+                <option value="active">Active ({statusCounts.active})</option>
+                <option value="inactive">Inactive ({statusCounts.inactive})</option>
+                <option value="guest">Guests Only ({statusCounts.guest})</option>
               </select>
             </div>
           </div>
@@ -142,139 +180,107 @@ export const MemberList: React.FC = () => {
         <div className="card-header">
           <h3 className="card-title">
             {filteredMembers.length} Member{filteredMembers.length !== 1 ? 's' : ''}
+            {filterStatus === 'members-only' && (
+              <span className="card-title__subtitle">(excluding guests)</span>
+            )}
             {filterAccessLevel !== 'all' && (
-              <span style={{ fontSize: '14px', fontWeight: 'normal', color: 'var(--gray-500)', marginLeft: '8px' }}>
-                ({filterAccessLevel}s)
-              </span>
+              <span className="card-title__subtitle">({filterAccessLevel}s)</span>
             )}
           </h3>
         </div>
         <div className="card-content">
           {filteredMembers.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-500)' }}>
+            <div className="member-list-empty">
               No members found matching your criteria
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--gray-200)' }}>
-                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Actions</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Name</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Email</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Status</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Access Level</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>DBS Status</th>
-                    <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>Joined</th>
+            <div className="table-container">
+              <table className="member-table">
+                <thead className="member-table__header">
+                  <tr>
+                    <th className="member-table__header-cell">Actions</th>
+                    <th className="member-table__header-cell">Name</th>
+                    <th className="member-table__header-cell">Email</th>
+                    <th className="member-table__header-cell">Status</th>
+                    <th className="member-table__header-cell">Access Level</th>
+                    <th className="member-table__header-cell">DBS Status</th>
+                    <th className="member-table__header-cell">Joined</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredMembers.map((member) => {
                     const dbsStatus = getDBSStatus(member.dbs_expiry_date);
                     const isLIRFOrAdmin = member.access_level === 'lirf' || member.access_level === 'admin';
+                    const isGuest = member.membership_status === 'guest';
                     
                     return (
-                      <tr key={member.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                        <td style={{ padding: '12px' }}>
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <tr 
+                        key={member.id} 
+                        className={`member-table__row ${isGuest ? 'member-table__row--guest' : ''}`}
+                      >
+                        <td className="member-table__cell">
+                          <div className="member-actions">
                             <button
-                              className="btn btn-secondary"
-                              style={{ fontSize: '12px', padding: '4px 8px' }}
+                              className="btn btn-secondary member-actions__btn"
                               onClick={() => setEditingMember(member)}
                             >
                               📝 Edit
                             </button>
                             <button
-                              className="btn btn-secondary"
-                              style={{ fontSize: '12px', padding: '4px 8px' }}
+                              className="btn btn-secondary member-actions__btn"
                               onClick={() => setViewingMember(member)}
                             >
                               👁️ View
                             </button>
                           </div>
                         </td>
-                        <td style={{ padding: '12px' }}>
-                          <div style={{ fontWeight: '500' }}>{member.full_name || 'No name'}</div>
+                        <td className="member-table__cell">
+                          <div className="member-name">
+                            {member.full_name || 'No name'}
+                            {isGuest && (
+                              <span className="member-name__guest-label">(Guest)</span>
+                            )}
+                          </div>
                           {member.phone && (
-                            <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>
-                              {member.phone}
-                            </div>
+                            <div className="member-phone">{member.phone}</div>
                           )}
                         </td>
-                        <td style={{ padding: '12px', color: 'var(--gray-600)' }}>
+                        <td className="member-table__cell member-table__cell--gray">
                           {member.email}
                         </td>
-                        <td style={{ padding: '12px' }}>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '4px 8px',
-                            borderRadius: '12px',
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            background: member.membership_status === 'active' ? '#dcfce7' : 
-                                       member.membership_status === 'pending' ? '#fef3c7' : '#fee2e2',
-                            color: member.membership_status === 'active' ? '#166534' : 
-                                  member.membership_status === 'pending' ? '#92400e' : '#dc2626'
-                          }}>
+                        <td className="member-table__cell">
+                          <span className={`status-badge ${getStatusBadgeClass(member.membership_status)}`}>
                             {member.membership_status}
                           </span>
                         </td>
-                        <td style={{ padding: '12px' }}>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '4px 8px',
-                            borderRadius: '12px',
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            background: member.access_level === 'admin' ? 'var(--red-light)' :
-                                       member.access_level === 'lirf' ? '#e0e7ff' : '#f3f4f6',
-                            color: member.access_level === 'admin' ? 'var(--red-primary)' :
-                                  member.access_level === 'lirf' ? '#4338ca' : '#6b7280'
-                          }}>
+                        <td className="member-table__cell">
+                          <span className={`access-badge ${getAccessBadgeClass(member.access_level)}`}>
                             {member.access_level}
                           </span>
                         </td>
-                        <td style={{ padding: '12px' }}>
+                        <td className="member-table__cell">
                           {isLIRFOrAdmin ? (
                             dbsStatus ? (
                               <div>
-                                <span style={{
-                                  display: 'inline-block',
-                                  padding: '4px 8px',
-                                  borderRadius: '12px',
-                                  fontSize: '12px',
-                                  fontWeight: '500',
-                                  background: dbsStatus.background,
-                                  color: dbsStatus.color
-                                }}>
+                                <span className={`dbs-badge ${dbsStatus.cssClass}`}>
                                   {dbsStatus.text}
                                 </span>
                                 {member.dbs_expiry_date && (
-                                  <div style={{ fontSize: '11px', color: 'var(--gray-500)', marginTop: '2px' }}>
+                                  <div className="dbs-expiry-date">
                                     Expires: {new Date(member.dbs_expiry_date).toLocaleDateString()}
                                   </div>
                                 )}
                               </div>
                             ) : (
-                              <span style={{
-                                display: 'inline-block',
-                                padding: '4px 8px',
-                                borderRadius: '12px',
-                                fontSize: '12px',
-                                fontWeight: '500',
-                                background: '#fef3c7',
-                                color: '#92400e'
-                              }}>
+                              <span className="dbs-badge dbs-badge--not-set">
                                 Not Set
                               </span>
                             )
                           ) : (
-                            <span style={{ fontSize: '12px', color: 'var(--gray-400)' }}>
-                              N/A
-                            </span>
+                            <span className="member-table__cell--small-gray">N/A</span>
                           )}
                         </td>
-                        <td style={{ padding: '12px', fontSize: '14px', color: 'var(--gray-500)' }}>
+                        <td className="member-table__cell member-table__cell--small-gray">
                           {new Date(member.created_at).toLocaleDateString()}
                         </td>
                       </tr>

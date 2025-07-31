@@ -1,4 +1,4 @@
-// AppContent.tsx - Enhanced with navigation history
+// AppContent.tsx - Clean version without navigation history
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './modules/auth/context/AuthContext';
@@ -13,42 +13,38 @@ import { CreateRunPage } from './modules/admin/components/CreateRunPage';
 import { LeadYourRun } from './modules/activeruns/components/LeadYourRun';
 import { RunAttendance } from './modules/activeruns/components/RunAttendance';
 import { CommunicationsDashboard } from './modules/communications/components/CommunicationsDashboard';
-import { useNavigationHistory } from './shared/hooks/useNavigationHistory';
 
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const { addToHistory, goBack, canGoBack } = useNavigationHistory();
   
   // State for attendance navigation
   const [attendanceRunId, setAttendanceRunId] = useState<string | null>(null);
   const [attendanceRunTitle, setAttendanceRunTitle] = useState<string>('');
 
-  // Enhanced navigation function that tracks history
+  // Simple navigation function
   const handleNavigation = (page: string) => {
-    if (page !== currentPage && currentPage !== 'dashboard') {
-      // Add current page to history (except dashboard)
-      addToHistory(currentPage);
-    }
     setCurrentPage(page);
   };
 
-  // Handle browser back navigation
+  // Initialize browser history to prevent PWA closing
   useEffect(() => {
-    const handleNavigateBack = (event: CustomEvent) => {
-      const previousPage = event.detail.page;
-      setCurrentPage(previousPage);
+    // Add initial history entry if needed
+    if (window.history.length === 1) {
+      window.history.pushState({ page: 'dashboard' }, '', window.location.href);
+    }
+
+    // Handle browser back button
+    const handlePopState = () => {
+      // Prevent PWA from closing by staying on dashboard
+      setCurrentPage('dashboard');
+      // Add another history entry to prevent closing
+      window.history.pushState({ page: 'dashboard' }, '', window.location.href);
     };
 
-    window.addEventListener('navigate-back', handleNavigateBack as EventListener);
-    return () => window.removeEventListener('navigate-back', handleNavigateBack as EventListener);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
-
-  // Handle programmatic back navigation
-  const handleGoBack = () => {
-    const previousPage = goBack();
-    setCurrentPage(previousPage);
-  };
 
   if (state.loading) {
     return (
@@ -71,8 +67,6 @@ export const AppContent: React.FC = () => {
     <DashboardLayout 
       currentPage={currentPage} 
       onNavigate={handleNavigation}
-      canGoBack={canGoBack && currentPage !== 'dashboard'}
-      onGoBack={handleGoBack}
     >
       {currentPage === 'dashboard' && <DashboardContent onNavigate={handleNavigation} />}
       
