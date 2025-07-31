@@ -72,7 +72,7 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
      // console.log('🔍 Starting booking fetch for', myAssignedRuns.length, 'runs');
       
       const runsWithBookings = await Promise.all(
-        myAssignedRuns.map(async (run, index) => {
+        myAssignedRuns.map(async (run) => {
        //   console.log(`🔍 Fetching bookings for run ${index + 1}:`, run.id, run.run_title);
           
           try {
