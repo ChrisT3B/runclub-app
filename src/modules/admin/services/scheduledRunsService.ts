@@ -319,6 +319,12 @@ export class ScheduledRunsService {
    */
   static async createScheduledRun(runData: CreateScheduledRunData): Promise<ScheduledRun> {
     try {
+      // DEBUG: Log the exact data being sent to database
+    console.log('🗄️ DATABASE INSERT - Input data:');
+    console.log('  - run_date (raw):', runData.run_date);
+    console.log('  - run_date (type):', typeof runData.run_date);
+    console.log('  - is_recurring:', runData.is_recurring);
+    console.log('  - Full runData:', JSON.stringify(runData, null, 2));
       // First create the run to get the ID
       const { data: newRun, error: createError } = await supabase
         .from('scheduled_runs')

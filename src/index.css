@@ -1303,3 +1303,134 @@ html, body {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
 }
+/* Add these styles to your existing src/index.css file */
+
+/* ==============================================
+   ENHANCED DESCRIPTION EDITOR STYLES
+   ============================================== */
+
+/* Ensure proper line break preservation in textareas */
+.form-input textarea,
+textarea.form-input {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+/* Enhanced description editor toolbar styles */
+.description-editor-toolbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: var(--gray-50);
+  border-radius: 6px;
+  border: 1px solid var(--gray-200);
+  flex-wrap: wrap;
+}
+
+.description-editor-toolbar button {
+  padding: 6px 8px;
+  background: white;
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--gray-600);
+  transition: all 0.15s ease;
+}
+
+.description-editor-toolbar button:hover {
+  background: var(--gray-100);
+}
+
+.description-editor-toolbar button.active {
+  background: var(--gray-100);
+  border-color: var(--gray-400);
+}
+
+/* Preview area styles */
+.description-preview {
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  padding: 12px;
+  min-height: 120px;
+  background: white;
+  font-family: var(--font-body);
+  line-height: 1.5;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+.description-preview strong {
+  font-weight: 600;
+}
+
+.description-preview em {
+  font-style: italic;
+}
+
+.description-preview li {
+  margin-bottom: 2px;
+}
+
+/* Help text styles */
+.description-help-text {
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .description-editor-toolbar {
+    padding: 6px;
+    gap: 4px;
+  }
+  
+  .description-editor-toolbar button {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+  
+  .description-editor-toolbar button span {
+    display: none; /* Hide text labels on mobile, keep only icons */
+  }
+  
+  .description-help-text {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* Focus states for better accessibility */
+.description-editor-toolbar button:focus {
+  outline: 2px solid var(--red-primary);
+  outline-offset: 2px;
+}
+
+/* Animation for smooth transitions */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.description-preview {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Ensure proper textarea styling within the enhanced editor */
+.enhanced-description-editor textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: var(--font-body);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ScheduledRunsService } from '../services/scheduledRunsService';
 import { useAuth } from '../../auth/context/AuthContext';
+import { EnhancedDescriptionEditor } from './EnhancedDescriptionEditor';
 
 interface CreateScheduledRunFormProps {
   onSuccess: () => void;
@@ -43,13 +44,18 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
     max_participants: 20,
     description: '',
     is_recurring: false,
-    weekly_recurrences: 1,
+    weekly_recurrences: 2, // CHANGED: from 1 to 2 to match dropdown
     lirfs_required: 1,
     assigned_lirf_1: '',
     assigned_lirf_2: '',
     assigned_lirf_3: ''
   });
-
+const handleDescriptionChange = (value: string) => {
+  setFormData(prev => ({
+    ...prev,
+    description: value
+  }));
+};
   // Load available LIRFs
   useEffect(() => {
     loadLirfs();
@@ -87,53 +93,74 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
     }
   };
 
-  const calculateEndDate = (startDate: string, recurrences: number): string => {
-    if (!startDate || recurrences <= 1) return startDate;
-    
-    // Parse the date string directly to avoid timezone issues
-    const startDateObj = new Date(startDate + 'T12:00:00'); // Add noon time to avoid timezone shifts
-    const weeksToAdd = (recurrences - 1) * 7;
-    const endDate = new Date(startDateObj);
-    endDate.setDate(startDateObj.getDate() + weeksToAdd);
-    
-    return endDate.toISOString().split('T')[0];
-  };
+const calculateEndDate = (startDate: string, recurrences: number): string => {
+  if (!startDate || recurrences <= 1) return startDate;
+  
+  console.log('🧮 calculateEndDate called with:', { startDate, recurrences });
+  
+  // Use same local date logic as generateWeeklyRuns
+  const [year, month, day] = startDate.split('-').map(Number);
+  const endDate = new Date(year, month - 1, day);
+  endDate.setDate(endDate.getDate() + ((recurrences - 1) * 7));
+  
+  const result = endDate.getFullYear() + '-' + 
+                 String(endDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                 String(endDate.getDate()).padStart(2, '0');
+  
+  console.log('🧮 calculateEndDate result:', result);
+  return result;
+};
 
   // Generate individual runs for weekly recurrence
-  const generateWeeklyRuns = (baseData: ScheduledRunData) => {
-    const runs = [];
-    if (!state.user?.id) {
-       throw new Error('User must be logged in to create runs');
-    }
-    
-    if (!baseData.is_recurring) {
-      // Single run
-      return [{
-        ...baseData,
-        end_date: baseData.run_date,
-        created_by: state.user?.id
-      }];
-    }
+const generateWeeklyRuns = (baseData: ScheduledRunData) => {
+  const runs = [];
+  if (!state.user?.id) {
+     throw new Error('User must be logged in to create runs');
+  }
+  
+  console.log('🎯 generateWeeklyRuns called with:', {
+    is_recurring: baseData.is_recurring,
+    run_date: baseData.run_date,
+    weekly_recurrences: baseData.weekly_recurrences
+  });
+  
+  // CRITICAL FIX: For single runs, use the original date string without ANY processing
+  if (!baseData.is_recurring) {
+    console.log('✅ Single run - using original date WITHOUT processing:', baseData.run_date);
+    return [{
+      ...baseData,
+      end_date: baseData.run_date, // Use original date exactly as entered
+      created_by: state.user?.id
+    }];
+  }
 
-    // Parse date properly to avoid timezone issues - add noon time
-    const startDateObj = new Date(baseData.run_date + 'T12:00:00');
+  // For recurring runs - use local date construction to avoid timezone issues
+  console.log('🔄 Recurring run - processing dates from:', baseData.run_date);
+  const inputDate = baseData.run_date; // "2025-08-04"
+  
+  for (let week = 0; week < baseData.weekly_recurrences; week++) {
+    // SAFE: Parse as local date components to avoid timezone conversion
+    const [year, month, day] = inputDate.split('-').map(Number);
+    const runDate = new Date(year, month - 1, day); // month is 0-indexed
+    runDate.setDate(runDate.getDate() + (week * 7));
     
-    for (let week = 0; week < baseData.weekly_recurrences; week++) {
-      // Create new date for each week
-      const runDate = new Date(startDateObj);
-      runDate.setDate(startDateObj.getDate() + (week * 7));
-      const formattedDate = runDate.toISOString().split('T')[0];
-      
-      runs.push({
-        ...baseData,
-        run_date: formattedDate,
-        end_date: formattedDate,
-        created_by: state.user?.id
-      });
-    }
+    // SAFE: Manual string formatting to avoid timezone issues
+    const formattedDate = runDate.getFullYear() + '-' + 
+                         String(runDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                         String(runDate.getDate()).padStart(2, '0');
     
-    return runs;
-  };
+    console.log(`📅 Week ${week + 1}: ${formattedDate}`);
+    
+    runs.push({
+      ...baseData,
+      run_date: formattedDate,
+      end_date: formattedDate,
+      created_by: state.user?.id
+    });
+  }
+  
+  return runs;
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,15 +339,13 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
 
               <div className="form-group">
                 <label className="form-label" htmlFor="description">Description</label>
-                <textarea
+                <EnhancedDescriptionEditor
                   id="description"
                   name="description"
                   value={formData.description}
-                  onChange={handleInputChange}
-                  className="form-input"
-                  rows={3}
+                  onChange={handleDescriptionChange}
                   placeholder="Run description, route info, what to bring..."
-                  style={{ resize: 'vertical' }}
+                  rows={6}
                 />
               </div>
             </div>

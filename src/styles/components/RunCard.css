@@ -1,5 +1,7 @@
 /* 📁 src/styles/components/RunCard.css */
 
+/* 📁 src/styles/components/RunCard.css */
+
 /* ==============================================
    RUN CARD COMPONENT STYLES
    ============================================== */
@@ -26,8 +28,21 @@
   background: #fef2f2;
 }
 
+.run-card--booked {
+  border-left: 4px solid #10b981;
+}
+
+.run-card--full {
+  opacity: 0.8;
+}
+
+.run-card--assigned {
+  border-left: 4px solid #3b82f6;
+}
+
+/* FIXED: Proper card content padding */
 .run-card__content {
-  padding: 24px;
+  padding: 20px;
 }
 
 .run-card__layout {
@@ -41,12 +56,18 @@
   flex: 1;
 }
 
+/* FIXED: Action buttons with proper spacing from card edges */
 .run-card__actions {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-left: 16px;
-  min-width: 140px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-100);
+  /* Remove margin-left that was causing edge issues */
+  margin-left: 0;
+  min-width: auto;
+  width: 100%;
 }
 
 .run-card__header {
@@ -79,6 +100,13 @@
   margin-bottom: 16px;
 }
 
+.run-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 .run-info-item {
   display: flex;
   flex-direction: column;
@@ -88,16 +116,16 @@
 .run-info-item__primary {
   font-size: 14px;
   font-weight: 500;
-  color: var(--gray-600);
+  color: var(--gray-700);
 }
 
 .run-info-item__secondary {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--gray-500);
 }
 
 .run-info-item__highlight {
-  font-size: 14px;
+  font-size: 13px;
   color: #dc2626;
   font-weight: 500;
 }
@@ -110,6 +138,26 @@
   margin-bottom: 16px;
   font-size: 14px;
   color: var(--gray-700);
+  white-space: pre-wrap;
+}
+
+.run-description__content {
+  margin-bottom: 8px;
+}
+
+.run-description__toggle {
+  background: none;
+  border: none;
+  color: var(--red-primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.run-description__toggle:hover {
+  color: var(--red-dark);
 }
 
 .lirf-info {
@@ -148,6 +196,57 @@
   color: #dc2626;
 }
 
+/* Share menu styles */
+.share-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.share-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  min-width: 160px;
+  margin-top: 4px;
+}
+
+.share-option {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--gray-700);
+  transition: background-color 0.15s ease;
+}
+
+.share-option:hover {
+  background: var(--gray-50);
+}
+
+.share-option:first-child {
+  border-radius: 6px 6px 0 0;
+}
+
+.share-option:last-child {
+  border-radius: 0 0 6px 6px;
+}
+
+/* LIRF actions container */
+.lirf-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* ==============================================
    MOBILE RESPONSIVE - CARDS
    ============================================== */
@@ -160,12 +259,15 @@
     gap: 16px !important;
   }
   
+  /* FIXED: Mobile actions layout */
   .run-card__actions {
     flex-direction: row !important;
     justify-content: space-between !important;
     margin-left: 0 !important;
     min-width: auto !important;
     width: 100% !important;
+    margin-top: 12px !important;
+    padding-top: 8px !important;
   }
   
   .run-card__actions .action-btn {
@@ -177,6 +279,21 @@
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
     gap: 12px !important;
   }
+  
+  .share-dropdown {
+    right: -8px;
+    min-width: 140px;
+  }
+  
+  .lirf-actions {
+    flex-direction: row;
+    gap: 6px;
+  }
+  
+  .lirf-actions .action-btn {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 /* Mobile phones */
@@ -186,12 +303,16 @@
     gap: 12px !important;
   }
   
+  /* FIXED: Mobile card content padding */
   .run-card__content {
     padding: 16px !important;
   }
   
+  /* FIXED: Mobile actions spacing */
   .run-card__actions {
     gap: 6px !important;
+    margin-top: 12px !important;
+    padding-top: 8px !important;
   }
   
   .run-card__header {
@@ -212,5 +333,10 @@
   
   .run-card__actions .action-btn {
     min-width: 100px !important;
+  }
+  
+  .share-option {
+    padding: 10px 8px;
+    font-size: 12px;
   }
 }

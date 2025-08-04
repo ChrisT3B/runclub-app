@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { ScheduledRunsService } from '../services/scheduledRunsService';
+import { EnhancedDescriptionEditor } from './EnhancedDescriptionEditor';
 
 interface EditScheduledRunFormProps {
   runId: string;
@@ -168,7 +169,12 @@ const handleSubmit = async (e: React.FormEvent) => {
       </div>
     );
   }
-
+const handleDescriptionChange = (value: string) => {
+  setFormData(prev => ({
+    ...prev,
+    description: value
+  }));
+};
   return (
     <div className="card">
       <div className="card-header">
@@ -284,15 +290,13 @@ const handleSubmit = async (e: React.FormEvent) => {
 
             <div className="form-group">
               <label className="form-label" htmlFor="description">Description</label>
-              <textarea
+              <EnhancedDescriptionEditor
                 id="description"
                 name="description"
                 value={formData.description}
-                onChange={handleInputChange}
-                className="form-input"
-                rows={3}
+                onChange={handleDescriptionChange}
                 placeholder="Run description, route info, what to bring..."
-                style={{ resize: 'vertical' }}
+                rows={6}
               />
             </div>
           </div>
