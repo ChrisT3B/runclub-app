@@ -4,6 +4,7 @@ import { BookingService } from '../../../modules/admin/services/bookingService';
 import { NotificationService, Notification } from '../../../modules/communications/services/NotificationService';
 import { NotificationModal } from '../../../shared/components/ui/NotificationModal';
 import { supabase } from '../../../services/supabase';
+import { renderTextWithLinks } from '../../../utils/linkHelper';
 
 interface DashboardContentProps {
   onNavigate?: (page: string) => void;
@@ -366,7 +367,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
                         marginBottom: '8px',
                         lineHeight: '1.4'
                       }}>
-                        {notification.message}
+                        {renderTextWithLinks(notification.message)}
                       </div>
                       <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: 'var(--gray-500)' }}>
                         <span>📅 {formatNotificationDate(notification.sent_at)}</span>

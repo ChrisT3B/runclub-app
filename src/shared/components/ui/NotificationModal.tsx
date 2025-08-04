@@ -1,5 +1,6 @@
 import React from 'react';
 import { Notification } from '../../../modules/communications/services/NotificationService';
+import { renderTextWithLinks } from '../../../utils/linkHelper';
 
 interface NotificationModalProps {
   notification: Notification;
@@ -160,7 +161,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
             marginBottom: '24px',
             whiteSpace: 'pre-wrap'
           }}>
-            {notification.message}
+           {renderTextWithLinks(notification.message)}
           </div>
 
           {/* Run Information */}

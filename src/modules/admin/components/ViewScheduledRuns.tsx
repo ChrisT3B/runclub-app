@@ -6,6 +6,7 @@ import { ErrorModal } from '../../../shared/components/ui/ErrorModal';
 import { Share2 } from 'lucide-react';
 import { formatDate, formatTime, isRunUrgent, handleRunShare, ShareCallbacks } from '../../runs/utils/runUtils';
 import { ConfirmationModal } from '../../../shared/components/ui/ConfirmationModal';
+import { renderTextWithLinks } from '../../../utils/linkHelper';
 
 export const ViewScheduledRuns: React.FC = () => {
   const { state, permissions } = useAuth();
@@ -546,27 +547,27 @@ export const ViewScheduledRuns: React.FC = () => {
                       )}
                     </div>
                   </div>
-
                   {/* Description */}
-                  {run.description && (
-                    <div className="run-description">
-                      <div className="run-description__content">
-                        {shouldTruncate && !isExpanded 
-                          ? truncateText(run.description)
-                          : run.description
-                        }
-                      </div>
-                      {shouldTruncate && (
-                        <button
-                          onClick={() => toggleDescription(run.id)}
-                          className="run-description__toggle"
-                        >
-                          {isExpanded ? 'Show Less' : 'Show More'}
-                        </button>
-                      )}
-                    </div>
-                  )}
-
+                          {run.description && (
+                          <div className="run-description">
+                            <div className="run-description__content">
+                              {(() => {
+                                const textToRender = shouldTruncate && !isExpanded 
+                                  ? truncateText(run.description)
+                                  : run.description;
+                                return renderTextWithLinks(textToRender);
+                              })()}
+                            </div>
+                            {shouldTruncate && (
+                              <button
+                                onClick={() => toggleDescription(run.id)}
+                                className="run-description__toggle"
+                              >
+                                {isExpanded ? 'Show Less' : 'Show More'}
+                              </button>
+                            )}
+                          </div>
+                        )}
                   {/* LIRF Assignment Info - LIRFs/Admins only */}
                   {canManageRuns && (
                     <div className="lirf-info">

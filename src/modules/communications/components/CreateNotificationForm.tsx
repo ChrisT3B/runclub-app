@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { NotificationService, CreateNotificationData } from '../services/NotificationService';
+import { renderTextWithLinks } from '../../../utils/linkHelper'; // Adjust path as needed
 
 interface CreateNotificationFormProps {
   onSuccess: () => void;
@@ -455,7 +456,7 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
                   )}
                 </div>
                 <div style={{ fontSize: '13px', color: 'var(--gray-600)' }}>
-                  {formData.message}
+                  {renderTextWithLinks(formData.message)}
                 </div>
               </div>
             </div>

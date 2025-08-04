@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { NotificationService, Notification } from '../services/NotificationService';
 import { CreateNotificationForm } from './CreateNotificationForm';
+import { renderTextWithLinks } from '../../../utils/linkHelper';
 
 interface CommunicationsDashboardProps {
   onNavigate?: (page: string) => void;
@@ -373,7 +374,7 @@ export const CommunicationsDashboard: React.FC<CommunicationsDashboardProps> = (
                         marginBottom: '12px',
                         fontSize: '14px'
                       }}>
-                        {notification.message}
+                        {renderTextWithLinks(notification.message)}
                       </div>
                       
                       <div style={{ 
