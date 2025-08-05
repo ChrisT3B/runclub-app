@@ -214,7 +214,10 @@ export const ManageScheduledRuns: React.FC = () => {
                         borderRadius: '6px',
                         marginBottom: '16px'
                       }}>
-                        <div style={{ fontSize: '14px', color: 'var(--gray-700)' }}>
+                        <div style={{ fontSize: '14px', color: 'var(--gray-700)',
+                        whiteSpace: 'pre-wrap',    // NEW: Preserve line breaks and formatting
+                        wordBreak: 'break-word',    // NEW: Handle long words gracefully 
+                         }}>
                           {run.description}
                         </div>
                       </div>

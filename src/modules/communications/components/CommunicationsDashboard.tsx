@@ -372,7 +372,12 @@ export const CommunicationsDashboard: React.FC<CommunicationsDashboardProps> = (
                         color: 'var(--gray-700)', 
                         lineHeight: '1.5',
                         marginBottom: '12px',
-                        fontSize: '14px'
+                        fontSize: '14px',
+                        whiteSpace: 'pre-wrap', // Preserve line breaks and formatting
+                        wordWrap: 'break-word',  // Handle long words gracefully
+                        maxHeight: '100px',      // Limit height in list view
+                        overflow: 'hidden',      // Hide overflow
+                        textOverflow: 'ellipsis' // Show ellipsis if text is cut off
                       }}>
                         {renderTextWithLinks(notification.message)}
                       </div>

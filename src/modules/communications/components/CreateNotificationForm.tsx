@@ -352,8 +352,12 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
               className="form-input"
               rows={4}
               placeholder="Enter your message here..."
-              maxLength={500}
-              style={{ resize: 'vertical' }}
+              maxLength={1000}
+                 style={{ 
+                resize: 'vertical',
+                whiteSpace: 'pre-wrap',
+                minHeight: '120px'
+              }}
               required
             />
             <div style={{ fontSize: '12px', color: 'var(--gray-500)', marginTop: '4px' }}>
@@ -455,7 +459,10 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: '13px', color: 'var(--gray-600)' }}>
+                <div style={{ fontSize: '13px', color: 'var(--gray-600)',
+                         whiteSpace: 'pre-wrap',    // NEW: Preserve line breaks and formatting
+                  wordBreak: 'break-word'// NEW: Handle long words gracefully
+                   }}>   
                   {renderTextWithLinks(formData.message)}
                 </div>
               </div>

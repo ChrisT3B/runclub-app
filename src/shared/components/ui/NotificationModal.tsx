@@ -159,7 +159,14 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
             lineHeight: '1.6',
             color: 'var(--gray-700)',
             marginBottom: '24px',
-            whiteSpace: 'pre-wrap'
+            whiteSpace: 'pre-wrap',
+            wordWrap: 'break-word', // Handle long words gracefully
+            maxHeight: '300px',     // Limit height for very long messages
+            overflowY: 'auto',      // Add scroll for very long messages
+            padding: '16px',        // Add padding to scrollable area
+            background: '#f9fafb',  // Light background for content area
+            borderRadius: '8px',    // Rounded corners
+            border: '1px solid #e5e7eb' // Subtle border
           }}>
            {renderTextWithLinks(notification.message)}
           </div>

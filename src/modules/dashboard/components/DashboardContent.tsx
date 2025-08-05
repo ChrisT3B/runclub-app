@@ -365,7 +365,9 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
                         fontSize: '13px', 
                         color: 'var(--gray-600)', 
                         marginBottom: '8px',
-                        lineHeight: '1.4'
+                        lineHeight: '1.4',
+                        whiteSpace: 'pre-wrap', // Preserve line breaks and formatting
+                        wordBreak: 'break-word'  // Handle long words gracefully
                       }}>
                         {renderTextWithLinks(notification.message)}
                       </div>
