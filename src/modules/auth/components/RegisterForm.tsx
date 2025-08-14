@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { RegistrationData } from '../types/index'
-
+import { InputSanitizer } from '../../../utils/inputSanitizer'
 interface RegisterFormProps {
   onSuccess?: () => void
   onLogin?: () => void
@@ -26,9 +26,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+    const cleanFormData = InputSanitizer.sanitizeFormData(formData);
     try {
-      await register(formData)
+      await register(cleanFormData)
       // If we get here, registration was successful (shouldn't happen with email verification)
       setRegisteredEmail(formData.email)
       setShowSuccessMessage(true)

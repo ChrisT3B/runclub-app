@@ -1,5 +1,7 @@
 // src/modules/auth/services/authService.ts
 import { supabase } from '../../../services/supabase';
+import { InputSanitizer } from '../../../utils/inputSanitizer'; // ADD THIS IMPORT
+import { SecureAuthService } from './secureAuthService';
 import { 
   LoginCredentials, 
   RegistrationData, 
@@ -35,22 +37,12 @@ export const getUserWithProfile = async (userId: string) => {
 // Login with automatic profile fetching
 export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: credentials.email,
-      password: credentials.password,
-    });
-
-    if (error) {
-      return {
-        data: null,
-        error: { message: formatSupabaseError(error) }
-      };
-    }
-
-    // If login successful, the auth state change will trigger profile fetching
+    // Use the secure login instead of direct Supabase call
+    const result = await SecureAuthService.secureLogin(credentials);
+    
     return {
-      data: data.user,
-      error: null
+      data: result.data,
+      error: result.error
     };
   } catch (error) {
     return {
@@ -60,17 +52,35 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
   }
 };
 
-// Register user with secure pending member creation
+    // If login successful, the auth state change will trigger profile fetching
+
+
+// Updated registerUser function with timing fix
+// Replace your current registerUser function with this:
+
 export const registerUser = async (registerData: RegistrationData): Promise<AuthResponse> => {
   try {
     console.log('🚀 Starting registration for:', registerData.email);
     
+    // STEP 1: Sanitize the data
+    console.log('🧹 Sanitizing registration data...');
+    const cleanData = InputSanitizer.sanitizeFormData(registerData);
+    
+    const wasModified = JSON.stringify(registerData) !== JSON.stringify(cleanData);
+    if (wasModified) {
+      console.warn('🧹 Registration data was sanitized:', { 
+        original: registerData, 
+        cleaned: cleanData 
+      });
+    }
+
+    // STEP 2: Create auth user
     const { data, error } = await supabase.auth.signUp({
-      email: registerData.email,
-      password: registerData.password,
+      email: cleanData.email,
+      password: cleanData.password,
       options: {
         data: {
-          full_name: registerData.fullName,
+          full_name: cleanData.fullName,
         },
         emailRedirectTo: `${window.location.origin}/auth`,
       },
@@ -89,33 +99,65 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
       };
     }
 
-    // If user created successfully, create PENDING member profile
+    // STEP 3: Wait a moment for auth user to be fully committed
     if (data.user) {
       console.log('👤 Creating pending member profile for user:', data.user.id);
       
+      // Wait 500ms for database consistency
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const pendingMemberData = {
         id: data.user.id,
-        email: registerData.email,
-        full_name: registerData.fullName,
-        phone: registerData.phone || '',
-        emergency_contact_name: registerData.emergencyContactName || '',
-        emergency_contact_phone: registerData.emergencyContactPhone || '',
-        health_conditions: registerData.healthConditions || 'None disclosed',
+        email: cleanData.email,
+        full_name: cleanData.fullName,
+        phone: cleanData.phone || '',
+        emergency_contact_name: cleanData.emergencyContactName || '',
+        emergency_contact_phone: cleanData.emergencyContactPhone || '',
+        health_conditions: cleanData.healthConditions || 'None disclosed',
       };
 
       console.log('📋 Pending member data to insert:', pendingMemberData);
 
-      const { error: pendingMemberError } = await supabase
-        .from('pending_members')
-        .insert([pendingMemberData]);
+      // Retry logic for pending member creation
+      let attempts = 0;
+      let pendingMemberError = null;
+      
+      while (attempts < 3) {
+        const { error } = await supabase
+          .from('pending_members')
+          .insert([pendingMemberData]);
+          
+        if (!error) {
+          console.log('✅ Pending member profile created successfully');
+          pendingMemberError = null;
+          break;
+        }
+        
+        pendingMemberError = error;
+        attempts++;
+        console.log(`⚠️ Attempt ${attempts} failed, retrying...`);
+        
+        if (attempts < 3) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
 
       if (pendingMemberError) {
-        console.error('❌ Pending member profile creation failed:', pendingMemberError);
-        console.error('❌ Full error details:', JSON.stringify(pendingMemberError, null, 2));
-        // Don't fail the registration if pending member creation fails
-        // The user can still verify email and we can create the profile then
-      } else {
-        console.log('✅ Pending member profile created successfully');
+        console.error('❌ Pending member profile creation failed after retries:', pendingMemberError);
+        
+        // IMPORTANT: Clean up the auth user if pending member creation fails
+        try {
+          console.log('🗑️ Cleaning up auth user due to pending member creation failure');
+          // Note: This requires admin API access. In production, you might want to handle this differently
+          // For now, we'll let the orphaned auth user exist but return an error
+        } catch (cleanupError) {
+          console.error('Failed to cleanup auth user:', cleanupError);
+        }
+        
+        return {
+          data: null,
+          error: { message: 'Registration failed. Please try again in a moment.' }
+        };
       }
     }
 

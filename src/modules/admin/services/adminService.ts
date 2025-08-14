@@ -1,4 +1,6 @@
 import { supabase } from '../../../services/supabase';
+import { SQLSecurityValidator, SecureQueryBuilder } from '../../../utils/sqlSecurityValidator';
+import { InputSanitizer } from '../../../utils/inputSanitizer';
 
 export interface Member {
   id: string;
@@ -45,72 +47,165 @@ export class AdminService {
   /**
    * Update member access level
    */
-  static async updateMemberAccess(memberId: string, accessLevel: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('members')
-        .update({ 
-          access_level: accessLevel,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', memberId);
+static async updateMemberAccess(memberId: string, accessLevel: string): Promise<void> {
+  try {
+    // ADD: Validate member ID and access level
+    const cleanMemberId = SecureQueryBuilder.validateUserQuery(memberId);
+    const cleanAccessLevel = SecureQueryBuilder.validateAccessLevel(accessLevel);
 
-      if (error) {
-        console.error('Failed to update member access:', error);
-        throw new Error(error.message);
-      }
-    } catch (error) {
-      console.error('AdminService.updateMemberAccess error:', error);
-      throw error;
+    const { error } = await supabase
+      .from('members')
+      .update({ 
+        access_level: cleanAccessLevel,  // CHANGE: now validated
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', cleanMemberId);  // CHANGE: now validated
+
+    if (error) {
+      console.error('Failed to update member access:', error);
+      throw new Error(error.message);
     }
+
+    console.log('✅ Member access updated securely');
+  } catch (error) {
+    console.error('AdminService.updateMemberAccess error:', error);
+    throw error;
   }
+}
 
-  /**
-   * Update member status
-   */
-  static async updateMemberStatus(memberId: string, status: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('members')
-        .update({ 
-          membership_status: status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', memberId);
+static async updateMemberStatus(memberId: string, status: string): Promise<void> {
+  try {
+    // ADD: Validate member ID and status
+    const cleanMemberId = SecureQueryBuilder.validateUserQuery(memberId);
+    const cleanStatus = SecureQueryBuilder.validateMembershipStatus(status);
 
-      if (error) {
-        console.error('Failed to update member status:', error);
-        throw new Error(error.message);
-      }
-    } catch (error) {
-      console.error('AdminService.updateMemberStatus error:', error);
-      throw error;
+    const { error } = await supabase
+      .from('members')
+      .update({ 
+        membership_status: cleanStatus,  // CHANGE: now validated
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', cleanMemberId);  // CHANGE: now validated
+
+    if (error) {
+      console.error('Failed to update member status:', error);
+      throw new Error(error.message);
     }
+
+    console.log('✅ Member status updated securely');
+  } catch (error) {
+    console.error('AdminService.updateMemberStatus error:', error);
+    throw error;
   }
+}
 
   /**
    * Update complete member details
    */
-  static async updateMemberDetails(memberId: string, memberData: Partial<Member>): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('members')
-        .update({ 
-          ...memberData,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', memberId);
+static async updateMemberDetails(memberId: string, memberData: Partial<Member>): Promise<void> {
+  try {
+    // STEP 1: Validate member ID
+    const cleanMemberId = SecureQueryBuilder.validateUserQuery(memberId);
 
-      if (error) {
-        console.error('Failed to update member details:', error);
-        throw new Error(error.message);
+    // STEP 2: Sanitize all input data
+    const sanitizedData = InputSanitizer.sanitizeFormData(memberData);
+
+    // STEP 3: Build update object
+    const updateObject: any = {
+      updated_at: new Date().toISOString()
+    };
+
+    // Email validation if present
+    if (sanitizedData.email) {
+      const emailValidation = SQLSecurityValidator.validateEmailForDB(sanitizedData.email);
+      if (!emailValidation.isValid) {
+        throw new Error(emailValidation.error);
       }
-    } catch (error) {
-      console.error('AdminService.updateMemberDetails error:', error);
-      throw error;
+      updateObject.email = emailValidation.clean;
     }
+
+    // Access level validation if present
+    if (sanitizedData.access_level) {
+      updateObject.access_level = SecureQueryBuilder.validateAccessLevel(sanitizedData.access_level);
+    }
+
+    // Membership status validation if present
+    if (sanitizedData.membership_status) {
+      updateObject.membership_status = SecureQueryBuilder.validateMembershipStatus(sanitizedData.membership_status);
+    }
+
+    // STEP 4: Check text fields individually (FIXED TYPE ISSUES)
+    if (sanitizedData.full_name) {
+      if (SQLSecurityValidator.containsSQLInjection(sanitizedData.full_name)) {
+        console.error('🚨 SQL injection attempt blocked in admin update:', sanitizedData.full_name);
+        throw new Error('Invalid content in full_name');
+      }
+      updateObject.full_name = sanitizedData.full_name;
+    }
+
+    if (sanitizedData.phone) {
+      if (SQLSecurityValidator.containsSQLInjection(sanitizedData.phone)) {
+        console.error('🚨 SQL injection attempt blocked in admin update:', sanitizedData.phone);
+        throw new Error('Invalid content in phone');
+      }
+      updateObject.phone = sanitizedData.phone;
+    }
+
+    if (sanitizedData.emergency_contact_name) {
+      if (SQLSecurityValidator.containsSQLInjection(sanitizedData.emergency_contact_name)) {
+        console.error('🚨 SQL injection attempt blocked in admin update:', sanitizedData.emergency_contact_name);
+        throw new Error('Invalid content in emergency_contact_name');
+      }
+      updateObject.emergency_contact_name = sanitizedData.emergency_contact_name;
+    }
+
+    if (sanitizedData.emergency_contact_phone) {
+      if (SQLSecurityValidator.containsSQLInjection(sanitizedData.emergency_contact_phone)) {
+        console.error('🚨 SQL injection attempt blocked in admin update:', sanitizedData.emergency_contact_phone);
+        throw new Error('Invalid content in emergency_contact_phone');
+      }
+      updateObject.emergency_contact_phone = sanitizedData.emergency_contact_phone;
+    }
+
+    if (sanitizedData.health_conditions) {
+      if (SQLSecurityValidator.containsSQLInjection(sanitizedData.health_conditions)) {
+        console.error('🚨 SQL injection attempt blocked in admin update:', sanitizedData.health_conditions);
+        throw new Error('Invalid content in health_conditions');
+      }
+      updateObject.health_conditions = sanitizedData.health_conditions;
+    }
+
+    // Handle boolean fields safely
+    if (typeof sanitizedData.email_notifications_enabled === 'boolean') {
+      updateObject.email_notifications_enabled = sanitizedData.email_notifications_enabled;
+    }
+
+    // Handle DBS date if present
+    if (sanitizedData.dbs_expiry_date) {
+      const date = new Date(sanitizedData.dbs_expiry_date);
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid DBS expiry date');
+      }
+      updateObject.dbs_expiry_date = sanitizedData.dbs_expiry_date;
+    }
+
+    // STEP 5: Execute the secure query
+    const { error } = await supabase
+      .from('members')
+      .update(updateObject)
+      .eq('id', cleanMemberId);
+
+    if (error) {
+      console.error('Failed to update member details:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('✅ Admin member update completed securely');
+  } catch (error) {
+    console.error('AdminService.updateMemberDetails error:', error);
+    throw error;
   }
-}
+}}
 
 // Also provide a default export for compatibility
 export default AdminService;
