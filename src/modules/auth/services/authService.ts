@@ -1,5 +1,5 @@
 // src/modules/auth/services/authService.ts
-// ENHANCED - Your existing code with session security integration
+// ENHANCED - Your existing code with minimal rate limiting addition
 
 import { supabase } from '../../../services/supabase';
 import { 
@@ -18,6 +18,71 @@ import { AuthSecurityManager } from '../../../utils/authSecurity';
 import { InputSanitizer } from '../../../utils/inputSanitizer';
 import { SQLSecurityValidator } from '../../../utils/sqlSecurityValidator';
 import { SecureAuthService } from './secureAuthService';
+
+// =====================================
+// 🆕 NEW: MINIMAL DATABASE LOGGING SERVICE
+// Only logs to database - doesn't change existing lockout behavior
+// =====================================
+
+class LoginAttemptLogger {
+  /**
+   * Log login attempt to database for admin monitoring
+   * This is purely for logging - doesn't affect your existing rate limiting
+   */
+  static async logAttempt(email: string, success: boolean, errorMessage?: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('login_attempts')
+        .insert({
+          email: email,
+          ip_address: this.getClientFingerprint(),
+          user_agent: navigator.userAgent,
+          success: success,
+          attempt_time: new Date().toISOString(),
+          error_message: errorMessage || null
+        });
+
+      if (error) {
+        console.error('Failed to log login attempt:', error);
+      }
+    } catch (error) {
+      console.error('Error logging login attempt:', error);
+    }
+  }
+
+  /**
+   * Get a browser fingerprint (not real IP, but consistent identifier)
+   */
+  private static getClientFingerprint(): string {
+    return btoa(
+      navigator.userAgent + 
+      screen.width + 
+      screen.height + 
+      navigator.language + 
+      navigator.platform
+    ).substring(0, 32);
+  }
+
+  /**
+   * Clean up old login attempts (call periodically)
+   */
+  static async cleanupOldAttempts(): Promise<void> {
+    try {
+      const cutoffDate = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000)); // 7 days ago
+
+      const { error } = await supabase
+        .from('login_attempts')
+        .delete()
+        .lt('attempt_time', cutoffDate.toISOString());
+
+      if (error) {
+        console.error('Failed to cleanup old attempts:', error);
+      }
+    } catch (error) {
+      console.error('Error cleaning up old attempts:', error);
+    }
+  }
+}
 
 // =====================================
 // SESSION SECURITY ENHANCEMENT
@@ -63,7 +128,7 @@ class SessionSecurityService {
         });
 
       if (!error) {
-        console.log('📝 Session registered with security tracking');
+        console.log('🔐 Session registered with security tracking');
         localStorage.setItem('session_fingerprint', fingerprint);
         localStorage.setItem('session_start_time', Date.now().toString());
         localStorage.setItem('last_activity', Date.now().toString());
@@ -186,16 +251,29 @@ export const getUserWithProfile = async (userId: string) => {
   }
 };
 
-// ENHANCED LOGIN - Uses your SecureAuthService + adds session security
+// ENHANCED LOGIN - Uses your existing SecureAuthService + adds minimal database logging
 export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   try {
     console.log('🔐 Starting enhanced secure login...');
     
-    // Use your existing SecureAuthService for comprehensive security checks
+    // 🆕 NEW: Log the login attempt start (for admin monitoring)
+    await LoginAttemptLogger.logAttempt(credentials.email, false, 'attempt_started');
+    
+    // Use your existing SecureAuthService for ALL rate limiting and lockout logic
+    // This preserves your tested 15-minute lockout system
     const result = await SecureAuthService.secureLogin(credentials);
     
-    if (result.error || !result.data) {
-      return result; // Return the secure auth result (includes rate limiting, etc.)
+    // 🆕 NEW: Log the final result (success or failure)
+    if (result.error) {
+      await LoginAttemptLogger.logAttempt(credentials.email, false, result.error.message);
+      console.log('❌ Login failed, logged for admin monitoring');
+      return result; // Return unchanged - your existing error messages and lockout logic
+    }
+
+    // 🆕 NEW: Log successful login
+    if (result.data) {
+      await LoginAttemptLogger.logAttempt(credentials.email, true);
+      console.log('✅ Successful login logged for admin monitoring');
     }
 
     // If login successful, add session security tracking
@@ -213,9 +291,17 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
     }
 
     console.log('✅ Enhanced secure login completed');
-    return result;
+    return result; // Return unchanged result from your existing SecureAuthService
   } catch (error) {
     console.error('💥 Enhanced login error:', error);
+    
+    // 🆕 NEW: Log unexpected errors
+    try {
+      await LoginAttemptLogger.logAttempt(credentials.email, false, 'unexpected_error');
+    } catch (logError) {
+      console.error('Failed to log unexpected error:', logError);
+    }
+    
     return {
       data: null,
       error: { message: formatSupabaseError(error) }
@@ -261,7 +347,7 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
       },
     });
 
-    console.log('📝 Auth signup result:', { 
+    console.log('🔐 Auth signup result:', { 
       user: data.user?.id, 
       error: error?.message 
     });
@@ -431,6 +517,8 @@ export const checkLoginEligibility = (email: string) => {
   return SecureAuthService.checkLoginEligibility(email);
 };
 
+// Admin monitoring: Query login_attempts table directly in Supabase when needed
+
 // =====================================
 // YOUR EXISTING FUNCTIONS (UNCHANGED)
 // =====================================
@@ -438,7 +526,7 @@ export const checkLoginEligibility = (email: string) => {
 // Email verification with secure member promotion (UNCHANGED)
 export const verifyEmail = async (token: string): Promise<EmailVerificationResult> => {
   try {
-    console.log('🔍 Starting email verification with token');
+    console.log('🔐 Starting email verification with token');
     
     const { data, error } = await supabase.auth.verifyOtp({
       token_hash: token,
@@ -525,7 +613,7 @@ export const verifyEmail = async (token: string): Promise<EmailVerificationResul
         }
       }
 
-      console.log('🔍 Email verified successfully, signing out user to require manual login');
+      console.log('🔐 Email verified successfully, signing out user to require manual login');
       await supabase.auth.signOut();
     }
 

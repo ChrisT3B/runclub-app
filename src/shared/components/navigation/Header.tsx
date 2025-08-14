@@ -1,5 +1,6 @@
 import React from 'react';
 import { AppLogo } from '../ui/AppLogo';
+import { useAuth } from '../../../modules/auth/context/AuthContext'; // 🆕 NEW: Add this import
 
 interface HeaderProps {
   title?: string;
@@ -10,6 +11,21 @@ export const Header: React.FC<HeaderProps> = ({
   title = "Run Alcester Bookings",
   onMenuClick
 }) => {
+  const { logout } = useAuth(); // 🆕 NEW: Get logout from AuthContext
+
+  // 🆕 NEW: Proper logout handler
+  const handleLogout = async () => {
+    try {
+      await logout();
+      console.log('✅ Logout completed');
+    } catch (error) {
+      console.error('❌ Logout failed:', error);
+      // Fallback: clear localStorage and reload if auth logout fails
+      localStorage.clear();
+      window.location.reload();
+    }
+  };
+
   return (
     <header className="header">
       <div className="header-content">
@@ -37,10 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Right side - logout button */}
           <div className="header-right">
             <button 
-              onClick={() => {
-                localStorage.clear();
-                window.location.reload();
-              }}
+              onClick={handleLogout} // 🆕 CHANGED: Use proper logout
               className="header-icon-btn"
               title="Sign Out"
             >
