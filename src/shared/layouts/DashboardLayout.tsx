@@ -1,5 +1,3 @@
-// DashboardLayout.tsx - Enhanced with back button support
-
 import React, { ReactNode, useState } from 'react'
 import { Header } from '../components/navigation/Header'
 import { Sidebar } from '../components/navigation/Sidebar'
@@ -8,7 +6,6 @@ interface DashboardLayoutProps {
   children: ReactNode
   currentPage?: string
   onNavigate?: (page: string) => void
-  // Remove back button props - we don't need them anymore
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
@@ -35,16 +32,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             className="sidebar-mobile" 
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sidebar-mobile-header">
-              <span className="sidebar-logo">Run Alcester</span>
-              <button 
-                className="sidebar-close-btn"
-                onClick={() => setSidebarOpen(false)}
-                aria-label="Close sidebar"
-              >
-                ✕
-              </button>
-            </div>
+            {/* Remove duplicate header - the Sidebar component already has one */}
             <Sidebar 
               currentPage={currentPage} 
               onNavigate={(page) => {
@@ -52,6 +40,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 setSidebarOpen(false) // Close sidebar after navigation
               }} 
             />
+            
+            {/* Add close button overlay */}
+            <button 
+              className="sidebar-mobile-close"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar"
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}

@@ -28,3 +28,5 @@
 @import url('./fonts.css');
 /*Forms */
 @import './04-pages/forms.css';
+@import './02-layout/page-layout.css';
+@import './04-pages/communications.css';

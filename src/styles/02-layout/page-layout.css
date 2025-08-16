@@ -1,0 +1,205 @@
+/* ==============================================
+   PAGE LAYOUT STYLES
+   ============================================== */
+
+/* Page Header Styles */
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 8px 0;
+}
+
+.page-description {
+  color: var(--gray-600);
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* ==============================================
+   RESPONSIVE LAYOUT UTILITIES 
+   ============================================== */
+
+.responsive-card-layout {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.responsive-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.responsive-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* CRITICAL: This creates space below "Schedule a Run" button */
+.responsive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;  /* ← This is the missing spacing! */
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.btn-responsive {
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+/* Text visibility for mobile/desktop */
+.mobile-hide-text {
+  display: inline;
+}
+
+.mobile-show-text {
+  display: none;
+}
+
+.desktop-only {
+  display: block;
+}
+
+.mobile-only {
+  display: none;
+}
+
+/* ==============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================== */
+
+@media (max-width: 768px) {
+  /* Page header adjustments */
+  .page-header {
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .page-description {
+    font-size: 14px;
+  }
+  
+  /* Responsive utilities - Tablet */
+  .responsive-card-layout {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+  
+  .responsive-card-actions {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+  
+  .responsive-card-actions .btn,
+  .responsive-card-actions .action-btn {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  
+  .responsive-info-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    gap: 12px !important;
+  }
+  
+  .responsive-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+    margin-bottom: 20px !important;  /* Adjusted for mobile */
+  }
+  
+  .responsive-header > div:first-child {
+    text-align: center !important;
+  }
+  
+  .desktop-only {
+    display: none !important;
+  }
+  
+  .mobile-only {
+    display: block !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Text visibility changes */
+  .mobile-hide-text {
+    display: none;
+  }
+  
+  .mobile-show-text {
+    display: inline;
+  }
+  
+  /* Info Grid - Single column */
+  .responsive-info-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  /* Tighter spacing */
+  .responsive-card-layout {
+    gap: 12px;
+  }
+  
+  .responsive-card-actions {
+    gap: 6px;
+  }
+}
+/* ==============================================
+   MOBILE SIDEBAR FIXES - Add to page-layout.css
+   ============================================== */
+
+/* Mobile sidebar close button - positioned over the sidebar */
+.sidebar-mobile-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--gray-500);
+  cursor: pointer;
+  padding: 4px;
+  z-index: 10;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.sidebar-mobile-close:hover {
+  color: var(--red-primary);
+  background: var(--gray-100);
+}
+
+/* Ensure mobile sidebar has proper layout */
+.sidebar-mobile {
+  position: relative; /* For close button positioning */
+}
+
+/* Hide the desktop-only header on mobile */
+@media (max-width: 768px) {
+  .sidebar-header--desktop-only {
+    display: block; /* Show it on mobile too since we removed duplicate */
+  }
+}

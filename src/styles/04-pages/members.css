@@ -1,0 +1,280 @@
+/* ==============================================
+   MEMBER LIST COMPONENT STYLES
+   ============================================== */
+
+/* Alert styles */
+.member-list-alert {
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.member-list-alert--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.member-list-alert--info {
+  background: #f0f9ff;
+  border: 1px solid #7dd3fc;
+  color: #0369a1;
+}
+
+.member-list-alert__link {
+  background: none;
+  border: none;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+/* ==============================================
+   MEMBER TABLE STYLES
+   ============================================== */
+
+/* Member table styles */
+.member-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.member-table__header {
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.member-table__header-cell {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.member-table__row {
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.member-table__row--guest {
+  background-color: #f8fafc;
+}
+
+.member-table__cell {
+  padding: 12px;
+}
+
+.member-table__cell--gray {
+  color: var(--gray-600);
+}
+
+.member-table__cell--small-gray {
+  font-size: 14px;
+  color: var(--gray-500);
+}
+
+/* ==============================================
+   MEMBER ACTIONS AND INFO
+   ============================================== */
+
+/* Member actions */
+.member-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.member-actions__btn {
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+/* Member name and info */
+.member-name {
+  font-weight: 500;
+}
+
+.member-name__guest-label {
+  font-size: 11px;
+  color: var(--gray-500);
+  margin-left: 6px;
+  font-weight: normal;
+}
+
+.member-phone {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+/* ==============================================
+   STATUS BADGES
+   ============================================== */
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge--active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge--inactive {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.status-badge--guest {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Access level badges */
+.access-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.access-badge--admin {
+  background: var(--red-light);
+  color: var(--red-primary);
+}
+
+.access-badge--lirf {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.access-badge--member {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* DBS status badges */
+.dbs-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dbs-badge--valid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.dbs-badge--expiring {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.dbs-badge--expired {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.dbs-badge--not-set {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.dbs-expiry-date {
+  font-size: 11px;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+
+/* ==============================================
+   LAYOUT AND UTILITY STYLES
+   ============================================== */
+
+/* Empty state */
+.member-list-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--gray-500);
+}
+
+/* Loading state */
+.member-list-loading {
+  text-align: center;
+  padding: 40px;
+}
+
+/* Card title helpers */
+.card-title__subtitle {
+  font-size: 14px;
+  font-weight: normal;
+  color: var(--gray-500);
+  margin-left: 8px;
+}
+
+/* Table overflow container */
+.table-container {
+  overflow-x: auto;
+}
+
+/* Filter grid */
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+/* ==============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================== */
+
+@media (max-width: 768px) {
+  .member-table__header-cell,
+  .member-table__cell {
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+  
+  .filter-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .member-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .member-actions__btn {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+  
+  .table-container {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .member-table__header-cell,
+  .member-table__cell {
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+  
+  .status-badge,
+  .access-badge,
+  .dbs-badge {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+}
