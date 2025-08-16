@@ -258,41 +258,14 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
         <p className="page-description">Welcome to your Run Alcester member portal</p>
       </div>
       
-      {/* Quick Stats Card */}
-      <div className="card" style={{ marginBottom: '24px' }}>
-        <div className="card-header">
-          <h3 className="card-title">Quick Stats</h3>
-        </div>
-        <div className="card-content">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--red-primary)', marginBottom: '4px' }}>
-                {loadingBookings ? '...' : upcomingBookings.length}
-              </div>
-              <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Upcoming Runs</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--red-primary)', marginBottom: '4px' }}>
-                {loadingStats ? '...' : userStats.attendanceCount}
-              </div>
-              <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Runs Attended</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--red-primary)', marginBottom: '4px' }}>
-                {loadingStats ? '...' : userStats.memberSince}
-              </div>
-              <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Member Since</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
       {/* Notifications Section */}
       <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-header">
           <h3 className="card-title">📬 Recent Notifications</h3>
           <button 
-            className="btn btn-secondary"
+            className="btn btn-primary"
             onClick={() => onNavigate?.('communications')}
             style={{ fontSize: '14px' }}
           >
@@ -483,7 +456,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
               
               {upcomingBookings.length > 0 && (
                 <button 
-                  className="btn btn-secondary"
+                  className="btn btn-primary"
                   onClick={() => onNavigate?.('scheduled-runs')}
                   style={{ fontSize: '14px', alignSelf: 'flex-start', marginTop: '8px' }}
                 >
@@ -494,17 +467,45 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
           )}
         </div>
       </div>
+{/* Quick Stats Card */}
+      <div className="card" style={{ marginBottom: '24px' }}>
+        <div className="card-header">
+          <h3 className="card-title">Quick Stats</h3>
+        </div>
+        <div className="card-content">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--red-primary)', marginBottom: '4px' }}>
+                {loadingBookings ? '...' : upcomingBookings.length}
+              </div>
+              <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Upcoming Runs</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--red-primary)', marginBottom: '4px' }}>
+                {loadingStats ? '...' : userStats.attendanceCount}
+              </div>
+              <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Runs Attended</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--red-primary)', marginBottom: '4px' }}>
+                {loadingStats ? '...' : userStats.memberSince}
+              </div>
+              <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Member Since</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Profile Summary Card */}
       <div className="card">
         <div className="card-header">
           <h3 className="card-title">Your Profile</h3>
           <button 
-            className="btn btn-secondary"
+            className="btn btn-primary"
             onClick={() => onNavigate?.('profile')}
             style={{ fontSize: '14px' }}
           >
-            Edit Profile
+            📝 Edit Profile
           </button>
         </div>
         <div className="card-content">

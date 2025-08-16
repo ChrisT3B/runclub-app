@@ -244,10 +244,10 @@ export const ManageScheduledRuns: React.FC = () => {
                   <div className="responsive-card-actions">
                     <button
                       onClick={() => handleEditRun(run.id)}
-                      className="btn btn-secondary btn-responsive"
+                      className="btn btn-primary btn-responsive"
                     >
                       <span className="mobile-hide-text">✏️ </span>
-                      Edit
+                      📝 Edit
                     </button>
                     
                     <button

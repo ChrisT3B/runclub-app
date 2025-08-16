@@ -220,17 +220,18 @@ export const MemberList: React.FC = () => {
                       >
                         <td className="member-table__cell">
                           <div className="member-actions">
-                            <button
-                              className="btn btn-secondary member-actions__btn"
-                              onClick={() => setEditingMember(member)}
-                            >
-                              📝 Edit
-                            </button>
+
                             <button
                               className="btn btn-secondary member-actions__btn"
                               onClick={() => setViewingMember(member)}
                             >
                               👁️ View
+                            </button>
+                                                        <button
+                              className="btn btn-primary member-actions__btn"
+                              onClick={() => setEditingMember(member)}
+                            >
+                              📝 Edit
                             </button>
                           </div>
                         </td>

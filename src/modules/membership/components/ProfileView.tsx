@@ -29,7 +29,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
           className="btn btn-primary"
           onClick={onEdit}
         >
-          Edit Profile
+          📝 Edit Profile
         </button>
       </div>
       <div className="card-content">
