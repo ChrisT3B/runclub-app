@@ -10,6 +10,7 @@ import { PWAInstallPrompt } from './shared/components/ui/PWAInstallPrompt';
 import { SessionSecurityWrapper } from './modules/auth/components/SessionSecurityWrapper';
 import './styles/fonts.css';
 import './styles/main.css'; // Ensure main styles are loaded
+import './index.css'; // Global styles
 
 
 const queryClient = new QueryClient({
