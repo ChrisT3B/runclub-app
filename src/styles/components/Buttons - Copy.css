@@ -57,64 +57,7 @@
   cursor: not-allowed;
 }
 
-/* ==============================================
-   RUN CARD BUTTON LAYOUT - CLEAN VERSION
-   ============================================== */
-
-/* MAIN CONTAINER */
-.run-card-actions-container {
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 8px !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-/* EQUAL BUTTON SIZING - THE FIX! */
-.run-card-actions-container .action-btn--primary,
-.run-card-actions-container .action-btn--danger,
-.run-card-actions-container .action-btn--secondary {
-  margin: 0 !important;
-  padding: 8px 16px !important;
-  font-size: 14px !important;
-  min-width: auto !important;
-  max-width: none !important;
-  width: auto !important;
-  flex: 1 !important; /* ALL BUTTONS EQUAL SIZE */
-  text-align: center !important;
-  white-space: nowrap !important;
-}
-
-/* Share menu container */
-.run-card-actions-container .share-menu {
-  margin: 0 !important;
-  flex: 1 !important;
-}
-
-.run-card-actions-container .share-menu .action-btn {
-  padding: 8px 12px !important;
-  font-size: 14px !important;
-  width: 100% !important;
-  text-align: center !important;
-  white-space: nowrap !important;
-}
-
-/* Action status messages */
-.run-card-actions-container .action-status {
-  margin: 0 !important;
-  padding: 8px 12px !important;
-  font-size: 14px !important;
-  flex: 1 !important;
-  text-align: center !important;
-}
-
-/* ==============================================
-   STATUS DISPLAY COMPONENTS
-   ============================================== */
-
+/* Status Display - Can be used for any status */
 .action-status {
   padding: 8px 16px;
   border-radius: 6px;
@@ -138,21 +81,7 @@
   color: #6b7280;
 }
 
-.action-status--success {
-  background: #dcfce7;
-  border: 1px solid #bbf7d0;
-  color: #166534;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: clamp(12px, 2.5vw, 16px);
-  text-align: center;
-  font-weight: 500;
-}
-
-/* ==============================================
-   FILTER TABS
-   ============================================== */
-
+/* Filter Tabs - Can be used across modules */
 .filter-tab {
   padding: 8px 16px;
   border: 1px solid var(--gray-300);
@@ -177,6 +106,54 @@
   background: var(--gray-50);
 }
 
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .action-btn {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  
+  .filter-tab {
+    text-align: center;
+    padding: 10px 12px;
+  }
+}
+/* ==============================================
+   ADDITIONAL STYLES FOR ENHANCED VIEWSCHEDULEDUNS
+   Add these to: src/styles/components/Buttons.css
+   ============================================== */
+
+/* Success status for LIRF assignments */
+.action-status--success {
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: clamp(12px, 2.5vw, 16px);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* URGENT CARD STYLING - Fix for urgent runs */
+.card.run-card--urgent {
+  border: 2px solid #fecaca !important;
+  background: #fef2f2 !important;
+}
+
+.card.run-card--booked {
+  border-left: 4px solid #10b981;
+}
+
+.card.run-card--full {
+  opacity: 0.8;
+}
+
+.card.run-card--assigned {
+  border-left: 4px solid #3b82f6;
+}
+
+/* Filter tabs container */
 .filter-tabs {
   display: flex;
   gap: 8px;
@@ -184,10 +161,7 @@
   flex-wrap: wrap;
 }
 
-/* ==============================================
-   BADGES
-   ============================================== */
-
+/* Run card badges */
 .badge {
   padding: 4px 8px;
   border-radius: 4px;
@@ -215,31 +189,7 @@
   color: #92400e;
 }
 
-/* ==============================================
-   CARD STYLING
-   ============================================== */
-
-.card.run-card--urgent {
-  border: 2px solid #fecaca !important;
-  background: #fef2f2 !important;
-}
-
-.card.run-card--booked {
-  border-left: 4px solid #10b981;
-}
-
-.card.run-card--full {
-  opacity: 0.8;
-}
-
-.card.run-card--assigned {
-  border-left: 4px solid #3b82f6;
-}
-
-/* ==============================================
-   ALERTS AND NOTIFICATIONS
-   ============================================== */
-
+/* Urgent alert */
 .urgent-alert {
   display: flex;
   align-items: center;
@@ -270,10 +220,7 @@
   color: #92400e;
 }
 
-/* ==============================================
-   EMPTY STATE
-   ============================================== */
-
+/* Empty state */
 .empty-state {
   text-align: center;
   padding: 48px 24px;
@@ -296,10 +243,69 @@
   font-size: 14px;
 }
 
-/* ==============================================
-   MOBILE RESPONSIVE
-   ============================================== */
+/* CUSTOM BUTTON CONTAINER - Proper button proportions */
+.run-card-actions-container {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
 
+/* Primary action button (Join/Cancel) - Wider */
+.run-card-actions-container .action-btn--primary,
+.run-card-actions-container .action-btn--danger {
+  margin: 0 !important;
+  padding: 8px 20px !important;
+  font-size: 14px !important;
+  min-width: auto !important;
+  max-width: none !important;
+  width: auto !important;
+  flex: 1.5 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+/* Secondary buttons (Share, Assign Me) - Equal smaller size */
+.run-card-actions-container .action-btn--secondary {
+  margin: 0 !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  min-width: auto !important;
+  max-width: none !important;
+  width: auto !important;
+  flex: 1 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+/* Share menu container */
+.run-card-actions-container .share-menu {
+  margin: 0 !important;
+  flex: 1 !important;
+}
+
+.run-card-actions-container .share-menu .action-btn {
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  width: 100% !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+/* Action status messages */
+.run-card-actions-container .action-status {
+  margin: 0 !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  flex: 1 !important;
+  text-align: center !important;
+}
+
+/* Mobile optimizations - Maintain proportions */
 @media (max-width: 768px) {
   .filter-tabs {
     gap: 4px;
@@ -307,38 +313,40 @@
   
   .run-card-actions-container {
     gap: 6px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    padding-bottom: 8px !important;
   }
   
   .run-card-actions-container .action-btn--primary,
-  .run-card-actions-container .action-btn--danger,
-  .run-card-actions-container .action-btn--secondary {
-    padding: 8px 12px !important;
+  .run-card-actions-container .action-btn--danger {
+    padding: 8px 16px !important;
     font-size: 13px !important;
-    flex: 1 !important; /* Keep equal on tablet */
+    flex: 1.5 !important;
+  }
+  
+  .run-card-actions-container .action-btn--secondary {
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+    flex: 1 !important;
+  }
+  
+  .run-card-actions-container .share-menu {
+    flex: 1 !important;
   }
   
   .run-card-actions-container .share-menu .action-btn {
     padding: 8px 10px !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
   }
   
   .run-card-actions-container .action-status {
     padding: 8px 10px !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
   }
 }
 
 @media (max-width: 480px) {
-  .action-btn {
-    padding: 10px 8px;
-    font-size: 12px;
-  }
-  
-  .filter-tab {
-    text-align: center;
-    padding: 10px 12px;
-  }
-  
   .urgent-alert {
     padding: 8px;
     gap: 8px;
@@ -358,23 +366,29 @@
   
   .run-card-actions-container {
     gap: 4px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    padding-bottom: 6px !important;
   }
   
   .run-card-actions-container .action-btn--primary,
-  .run-card-actions-container .action-btn--danger,
-  .run-card-actions-container .action-btn--secondary {
-    padding: 8px 8px !important;
+  .run-card-actions-container .action-btn--danger {
+    padding: 7px 12px !important;
     font-size: 12px !important;
-    flex: 1 !important; /* Keep equal on mobile */
+  }
+  
+  .run-card-actions-container .action-btn--secondary {
+    padding: 7px 8px !important;
+    font-size: 11px !important;
   }
   
   .run-card-actions-container .share-menu .action-btn {
-    padding: 8px 6px !important;
-    font-size: 12px !important;
+    padding: 7px 8px !important;
+    font-size: 11px !important;
   }
   
   .run-card-actions-container .action-status {
-    padding: 8px 6px !important;
-    font-size: 12px !important;
+    padding: 7px 8px !important;
+    font-size: 11px !important;
   }
 }

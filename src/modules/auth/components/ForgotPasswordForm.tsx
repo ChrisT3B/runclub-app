@@ -1,8 +1,9 @@
-// Improved Password Reset Flow with Better UX
+// Updated ForgotPasswordForm.tsx to match LoginForm styling
 // File: src/modules/auth/components/ForgotPasswordForm.tsx
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { AppLogo } from '../../../shared/components/ui/AppLogo';
 
 interface ForgotPasswordFormProps {
   onBack?: () => void;
@@ -73,185 +74,421 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }
 
   if (isSubmitted) {
     return (
-      <div className="max-w-md mx-auto">
-        {/* Success State */}
-        <div className="text-center mb-6">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 7.89a2 2 0 002.83 0L22 7" />
-            </svg>
+      <div style={{ 
+        maxWidth: '400px', 
+        margin: '0 auto', 
+        padding: '40px 20px',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
+      }}>
+        {/* Success Header with Logo */}
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '24px'
+          }}>
+            <AppLogo 
+              size="large"
+              style={{
+                width: '80px',
+                height: '80px',
+                objectFit: 'contain'
+              }}
+            />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h2>
-          <p className="text-gray-600">
+          
+          <div style={{
+            width: '64px',
+            height: '64px',
+            background: '#dcfce7',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px'
+          }}>
+            <div style={{ fontSize: '24px' }}>✓</div>
+          </div>
+          
+          <h2 style={{ 
+            fontSize: '2rem', 
+            fontWeight: '700', 
+            color: 'var(--gray-900)', 
+            margin: '0 0 8px 0',
+            fontFamily: 'var(--font-family-sans)'
+          }}>
+            Check Your Email
+          </h2>
+          <p style={{ 
+            color: 'var(--gray-600)', 
+            fontSize: '16px',
+            margin: '0 0 4px 0'
+          }}>
             We've sent a password reset link to
           </p>
-          <p className="font-medium text-gray-900 mt-1">{email}</p>
+          <p style={{ 
+            color: 'var(--gray-900)', 
+            fontSize: '16px',
+            fontWeight: '600',
+            margin: '0'
+          }}>
+            {email}
+          </p>
         </div>
 
-        {/* Instructions */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h3 className="font-medium text-blue-900 mb-2">What's next?</h3>
-          <ol className="text-sm text-blue-800 space-y-1">
-            <li>1. Check your email inbox (and spam folder)</li>
-            <li>2. Click the reset link in the email</li>
-            <li>3. Create your new password</li>
-            <li>4. Sign in with your new password</li>
-          </ol>
+        {/* Instructions Card */}
+        <div className="card" style={{ 
+          border: '1px solid #dbeafe',
+          background: '#eff6ff',
+          marginBottom: '30px'
+        }}>
+          <div className="card-content" style={{ padding: '20px' }}>
+            <h3 style={{ 
+              fontWeight: '600', 
+              color: '#1e40af', 
+              margin: '0 0 12px 0',
+              fontSize: '16px'
+            }}>
+              What's next?
+            </h3>
+            <ol style={{ 
+              color: '#1e40af', 
+              fontSize: '14px',
+              margin: '0',
+              paddingLeft: '20px',
+              lineHeight: '1.6'
+            }}>
+              <li style={{ marginBottom: '4px' }}>Check your email inbox (and spam folder)</li>
+              <li style={{ marginBottom: '4px' }}>Click the reset link in the email</li>
+              <li style={{ marginBottom: '4px' }}>Create your new password</li>
+              <li>Sign in with your new password</li>
+            </ol>
+          </div>
         </div>
 
-        {/* Email troubleshooting */}
-        <div className="text-center space-y-3">
-          <p className="text-sm text-gray-600">
+        {/* Resend Section */}
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <p style={{ 
+            color: 'var(--gray-600)', 
+            fontSize: '14px',
+            margin: '0 0 12px 0'
+          }}>
             Didn't receive the email?
           </p>
           
           {cooldown > 0 ? (
-            <p className="text-sm text-gray-500">
+            <p style={{ 
+              color: 'var(--gray-500)', 
+              fontSize: '14px',
+              margin: '0'
+            }}>
               Resend available in {cooldown}s
             </p>
           ) : (
             <button
               onClick={handleResend}
               disabled={isLoading}
-              className="text-primary-600 hover:text-primary-500 text-sm font-medium disabled:opacity-50"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--red-primary)',
+                textDecoration: 'underline',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                opacity: isLoading ? 0.5 : 1,
+                transition: 'color 0.2s ease'
+              }}
+              onMouseEnter={(e) => !isLoading && (e.currentTarget.style.color = '#b91c1c')}
+              onMouseLeave={(e) => !isLoading && (e.currentTarget.style.color = 'var(--red-primary)')}
             >
               {isLoading ? 'Sending...' : 'Resend reset email'}
             </button>
           )}
           
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">
+            <div style={{ 
+              background: '#fef2f2', 
+              border: '1px solid #fecaca', 
+              color: '#dc2626', 
+              padding: '12px', 
+              borderRadius: '8px', 
+              marginTop: '12px',
+              fontSize: '14px'
+            }}>
               {error}
             </div>
           )}
-          
+        </div>
+
+        {/* Back Button */}
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
           <button
             onClick={onBack}
-            className="block mx-auto text-gray-500 hover:text-gray-700 text-sm"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--gray-500)',
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--gray-700)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--gray-500)'}
           >
             Back to login
           </button>
+        </div>
+
+        {/* Help Section */}
+        <div style={{ 
+          textAlign: 'center',
+          paddingTop: '20px',
+          borderTop: '1px solid var(--gray-200)'
+        }}>
+          <p style={{ 
+            color: 'var(--gray-500)', 
+            fontSize: '12px',
+            margin: '0 0 8px 0'
+          }}>
+            Still having trouble?
+          </p>
+          <a 
+            href="mailto:support@runalcester.co.uk" 
+            style={{
+              color: 'var(--red-primary)',
+              fontSize: '12px',
+              textDecoration: 'none'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+            onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+          >
+            Contact support for help
+          </a>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      {/* Header */}
-      <div className="text-center mb-6">
-        <div className="mx-auto w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mb-4">
-          <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-          </svg>
+    <div style={{ 
+      maxWidth: '400px', 
+      margin: '0 auto', 
+      padding: '40px 20px',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center'
+    }}>
+      {/* Header Section with Logo */}
+      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '24px'
+        }}>
+          <AppLogo 
+            size="large"
+            style={{
+              width: '120px',
+              height: '120px',
+              objectFit: 'contain'
+            }}
+          />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Reset Your Password</h2>
-        <p className="text-gray-600">
+        
+        <h1 style={{ 
+          fontSize: '2.5rem', 
+          fontWeight: '700', 
+          color: 'var(--red-primary)', 
+          margin: '0 0 8px 0',
+          fontFamily: 'var(--font-family-sans)',
+          letterSpacing: '-0.025em'
+        }}>
+          Reset Your Password
+        </h1>
+        <p style={{ 
+          color: 'var(--gray-600)', 
+          fontSize: '16px',
+          margin: '0',
+          fontWeight: '400'
+        }}>
           Enter your email address and we'll send you a link to reset your password
         </p>
       </div>
-      
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email Address
-          </label>
-          <div className="relative">
-            <input
-              type="email"
-              id="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={`block w-full px-3 py-2 pr-10 border rounded-md shadow-sm focus:outline-none focus:ring-1 transition-colors ${
-                email && emailValid 
-                  ? 'border-green-300 focus:border-green-500 focus:ring-green-500' 
-                  : email 
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
-              }`}
-              placeholder="Enter your email address"
-            />
-            {/* Email validation icon */}
-            {email && (
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                {emailValid ? (
-                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+
+      {/* Form Card */}
+      <div className="card" style={{ 
+        border: '2px solid var(--red-primary)',
+        boxShadow: '0 10px 25px -5px rgba(220, 38, 38, 0.1), 0 10px 10px -5px rgba(220, 38, 38, 0.04)'
+      }}>
+        <div className="card-content">
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="email">
+                Email Address
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="email"
+                  id="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="form-input"
+                  placeholder="Enter your email address"
+                  style={{ 
+                    borderColor: email && emailValid ? '#10b981' : email ? '#ef4444' : 'var(--gray-300)',
+                    paddingRight: email ? '40px' : '12px',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = email && emailValid ? '#10b981' : email ? '#ef4444' : 'var(--red-primary)'}
+                  onBlur={(e) => e.target.style.borderColor = email && emailValid ? '#10b981' : email ? '#ef4444' : 'var(--gray-300)'}
+                />
+                {/* Email validation icon */}
+                {email && (
+                  <div style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}>
+                    {emailValid ? (
+                      <div style={{ color: '#10b981', fontSize: '16px' }}>✓</div>
+                    ) : (
+                      <div style={{ color: '#ef4444', fontSize: '16px' }}>✗</div>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-          {email && !emailValid && (
-            <p className="mt-1 text-xs text-red-600">Please enter a valid email address</p>
-          )}
-        </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-            <div className="flex">
-              <svg className="w-5 h-5 text-red-400 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-sm">{error}</span>
+              {email && !emailValid && (
+                <p style={{ 
+                  color: '#ef4444', 
+                  fontSize: '12px',
+                  margin: '4px 0 0 0'
+                }}>
+                  Please enter a valid email address
+                </p>
+              )}
             </div>
-          </div>
-        )}
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={!emailValid || isLoading || cooldown > 0}
-          className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {isLoading ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Sending Reset Link...
-            </>
-          ) : cooldown > 0 ? (
-            `Wait ${cooldown}s`
-          ) : (
-            'Send Reset Link'
-          )}
-        </button>
+            {/* Error Display */}
+            {error && (
+              <div style={{ 
+                background: '#fef2f2', 
+                border: '1px solid #fecaca', 
+                color: '#dc2626', 
+                padding: '12px', 
+                borderRadius: '8px', 
+                marginBottom: '20px',
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '8px'
+              }}>
+                <div style={{ marginTop: '1px', fontSize: '16px' }}>⚠️</div>
+                <span>{error}</span>
+              </div>
+            )}
 
-        {/* Back to Login */}
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={onBack}
-            className="text-sm text-primary-600 hover:text-primary-500 font-medium"
-          >
-            ← Back to login
-          </button>
-        </div>
-      </form>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={!emailValid || isLoading || cooldown > 0}
+              className="btn btn-primary"
+              style={{ 
+                width: '100%',
+                padding: '12px',
+                fontSize: '16px',
+                fontWeight: '600',
+                background: (!emailValid || isLoading || cooldown > 0) ? 'var(--gray-400)' : 'var(--red-primary)',
+                borderColor: (!emailValid || isLoading || cooldown > 0) ? 'var(--gray-400)' : 'var(--red-primary)',
+                cursor: (!emailValid || isLoading || cooldown > 0) ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (emailValid && !isLoading && cooldown === 0) {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(220, 38, 38, 0.25)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (emailValid && !isLoading && cooldown === 0) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }
+              }}
+            >
+              {isLoading && (
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid white',
+                  borderTop: '2px solid transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+              )}
+              {isLoading ? 'Sending Reset Link...' : cooldown > 0 ? `Wait ${cooldown}s` : 'Send Reset Link'}
+            </button>
 
-      {/* Help Section */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <div className="text-center">
-          <p className="text-xs text-gray-500 mb-2">
-            Still having trouble?
-          </p>
-          <a 
-            href="mailto:support@runalcester.co.uk" 
-            className="text-xs text-primary-600 hover:text-primary-500"
-          >
-            Contact support for help
-          </a>
+            {/* Back to Login */}
+            <div style={{ 
+              textAlign: 'center',
+              marginTop: '20px'
+            }}>
+              <button
+                type="button"
+                onClick={onBack}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--red-primary)',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'color 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#b91c1c'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--red-primary)'}
+              >
+                ← Back to login
+              </button>
+            </div>
+          </form>
         </div>
       </div>
+
+      {/* Footer */}
+      <div style={{ 
+        textAlign: 'center', 
+        marginTop: '30px',
+        color: 'var(--gray-500)',
+        fontSize: '12px'
+      }}>
+        <p style={{ margin: '0 0 4px 0' }}>© 2025 Run Alcester. All rights reserved.</p>
+        <p style={{ margin: '0' }}>Questions? Contact us at runalcester@gmail.com</p>
+      </div>
+
+      {/* CSS Animation */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

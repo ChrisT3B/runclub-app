@@ -1,12 +1,15 @@
+// Step 2 Update: ViewScheduledRuns.tsx with extracted RunCard
+// File: src/modules/admin/components/ViewScheduledRuns.tsx
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { ScheduledRunsService, RunWithDetails } from '../services/scheduledRunsService';
 import { BookingService, BookingError } from '../services/bookingService';
 import { ErrorModal } from '../../../shared/components/ui/ErrorModal';
-import { Share2 } from 'lucide-react';
-import { formatDate, formatTime, isRunUrgent, handleRunShare, ShareCallbacks } from '../../runs/utils/runUtils';
+import { formatDate, formatTime, isRunUrgent, ShareCallbacks } from '../../runs/utils/runUtils';
 import { ConfirmationModal } from '../../../shared/components/ui/ConfirmationModal';
-import { renderTextWithLinks } from '../../../utils/linkHelper';
+import { RunFilters, FilterType, FilterCounts } from '../../runs/utils/components/RunFilters';
+import { RunCard } from '../../runs/utils/components/RunCard';
 
 export const ViewScheduledRuns: React.FC = () => {
   const { state, permissions } = useAuth();
@@ -15,9 +18,7 @@ export const ViewScheduledRuns: React.FC = () => {
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
   const [assignmentLoading, setAssignmentLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState<'all' | 'available' | 'my-bookings' | 'my-assignments'>('all');
-  const [showShareMenu, setShowShareMenu] = useState<string | null>(null);
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState<FilterType>('all');
   
   // Error Modal State
   const [errorModal, setErrorModal] = useState<{
@@ -82,25 +83,6 @@ export const ViewScheduledRuns: React.FC = () => {
     setShareModal({ isOpen: false, title: '', message: '' });
   };
 
-  // Description expansion toggle
-  const toggleDescription = (runId: string) => {
-    setExpandedDescriptions(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(runId)) {
-        newSet.delete(runId);
-      } else {
-        newSet.add(runId);
-      }
-      return newSet;
-    });
-  };
-
-  // Truncate description helper
-  const truncateText = (text: string, maxLength: number = 100) => {
-    if (text.length <= maxLength) return text;
-    return text.slice(0, maxLength) + '...';
-  };
-
   // OPTIMIZED: Single comprehensive API call
   const loadScheduledRuns = useCallback(async () => {
     try {
@@ -117,26 +99,6 @@ export const ViewScheduledRuns: React.FC = () => {
       setLoading(false);
     }
   }, [state.user?.id]);
-
-  // Close share menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showShareMenu && event.target) {
-        const target = event.target as Element;
-        const isInsideDropdown = target.closest('.share-dropdown');
-        const isShareButton = target.closest('.share-button');
-        
-        if (!isInsideDropdown && !isShareButton) {
-          setShowShareMenu(null);
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showShareMenu]);
 
   // Load runs when user changes
   useEffect(() => {
@@ -164,7 +126,7 @@ export const ViewScheduledRuns: React.FC = () => {
           .reduce((total, run) => total + run.lirf_vacancies, 0)
       : 0;
 
-    const counts = {
+    const counts: FilterCounts = {
       all: runs.length,
       available: runs.filter(r => !r.is_booked && !r.is_full).length,
       myBookings: runs.filter(r => r.is_booked).length,
@@ -174,6 +136,7 @@ export const ViewScheduledRuns: React.FC = () => {
     return { filteredRuns: filtered, urgentVacancies: urgent, filterCounts: counts };
   }, [runs, filter, canManageRuns]);
 
+  // Booking Actions
   const handleBookRun = async (runId: string) => {
     if (!state.user?.id) {
       setErrorModal({
@@ -191,7 +154,6 @@ export const ViewScheduledRuns: React.FC = () => {
         member_id: state.user.id
       });
 
-      // OPTIMIZED: Only reload data, don't need to refetch everything
       await loadScheduledRuns();
       setError('');
       
@@ -259,6 +221,7 @@ export const ViewScheduledRuns: React.FC = () => {
     }
   };
 
+  // LIRF Assignment Actions
   const handleAssignSelfAsLIRF = async (runId: string) => {
     if (!state.user?.id) return;
 
@@ -380,7 +343,6 @@ export const ViewScheduledRuns: React.FC = () => {
         title: 'Success!',
         message
       });
-      setShowShareMenu(null);
     },
     onError: (message: string) => {
       setErrorModal({
@@ -388,7 +350,6 @@ export const ViewScheduledRuns: React.FC = () => {
         title: 'Share Failed',
         message
       });
-      setShowShareMenu(null);
     },
     onFacebookGroupShare: (message: string) => {
       setShareModal({
@@ -396,7 +357,6 @@ export const ViewScheduledRuns: React.FC = () => {
         title: 'Shared to Facebook Group',
         message
       });
-      setShowShareMenu(null);
     }
   };
 
@@ -440,36 +400,14 @@ export const ViewScheduledRuns: React.FC = () => {
       )}
 
       {/* Filter Tabs */}
-      <div className="filter-tabs">
-        <button
-          onClick={() => setFilter('all')}
-          className={`filter-tab ${filter === 'all' ? 'filter-tab--active' : ''}`}
-        >
-          All Runs ({filterCounts.all})
-        </button>
-        <button
-          onClick={() => setFilter('available')}
-          className={`filter-tab ${filter === 'available' ? 'filter-tab--active' : ''}`}
-        >
-          Available ({filterCounts.available})
-        </button>
-        <button
-          onClick={() => setFilter('my-bookings')}
-          className={`filter-tab ${filter === 'my-bookings' ? 'filter-tab--active' : ''}`}
-        >
-          My Bookings ({filterCounts.myBookings})
-        </button>
-        {canManageRuns && (
-          <button
-            onClick={() => setFilter('my-assignments')}
-            className={`filter-tab ${filter === 'my-assignments' ? 'filter-tab--active' : ''}`}
-          >
-            My LIRF Assignments ({filterCounts.myAssignments})
-          </button>
-        )}
-      </div>
+      <RunFilters
+        currentFilter={filter}
+        onFilterChange={setFilter}
+        filterCounts={filterCounts}
+        canManageRuns={canManageRuns}
+      />
 
-      {/* Run Cards */}
+      {/* Run Cards - Now much simpler! */}
       {filteredRuns.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state__icon">📅</div>
@@ -488,224 +426,25 @@ export const ViewScheduledRuns: React.FC = () => {
         </div>
       ) : (
         <div className="runs-grid">
-          {filteredRuns.map((run) => {
-            const isUrgent = canManageRuns && isRunUrgent(run.run_date, run.lirf_vacancies);
-            const isExpanded = expandedDescriptions.has(run.id);
-            const shouldTruncate = run.description && run.description.length > 100;
-            
-            return (
-              <div
-                key={run.id}
-                className={`card ${run.is_booked ? 'run-card--booked' : ''} ${run.is_full ? 'run-card--full' : ''} ${isUrgent ? 'run-card--urgent' : ''} ${run.user_is_assigned_lirf ? 'run-card--assigned' : ''}`}
-              >
-                <div className="card-content" style={{ padding: '18px' }}>
-                  {/* Header with badges */}
-                  <div className="responsive-header">
-                    <div>
-                      <h3 className="card-title">{run.run_title}</h3>
-                      <div className="run-card__badges">
-                        {run.is_booked && <span className="badge badge--booked">Booked</span>}
-                        {run.is_full && <span className="badge badge--full">Full</span>}
-                        {run.user_is_assigned_lirf && <span className="badge badge--assigned">LIRF</span>}
-                        {isUrgent && <span className="badge badge--urgent">Urgent</span>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Run Info Grid */}
-                  <div className="responsive-info-grid">
-                    <div className="run-info-item">
-                      <div className="run-info-item__primary">
-                        📅 {formatDate(run.run_date)} at {formatTime(run.run_time)}
-                      </div>
-                    </div>
-                        
-                    <div className="run-info-item">
-                      <div className="run-info-item__primary">
-                        📍 {run.meeting_point}
-                      </div>
-                      {run.approximate_distance && (
-                        <div className="run-info-item__secondary">
-                          🏃‍♂️ {run.approximate_distance}
-                        </div>
-                      )}
-                    </div>
-                        
-                    <div className="run-info-item">
-                      <div className="run-info-item__primary">
-                        👥 {run.booking_count}/{run.max_participants} booked
-                      </div>
-                      {canManageRuns && (
-                        <div className="run-info-item__secondary">
-                          👨‍🏫 {run.assigned_lirfs.length}/{run.lirfs_required} LIRF{run.lirfs_required > 1 ? 's' : ''}
-                          {run.lirf_vacancies > 0 && (
-                            <span className="run-info-item__highlight">
-                              {' '}({run.lirf_vacancies} needed)
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {/* Description */}
-                          {run.description && (
-                          <div className="run-description">
-                            <div className="run-description__content">
-                              {(() => {
-                                const textToRender = shouldTruncate && !isExpanded 
-                                  ? truncateText(run.description)
-                                  : run.description;
-                                return renderTextWithLinks(textToRender);
-                              })()}
-                            </div>
-                            {shouldTruncate && (
-                              <button
-                                onClick={() => toggleDescription(run.id)}
-                                className="run-description__toggle"
-                              >
-                                {isExpanded ? 'Show Less' : 'Show More'}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                  {/* LIRF Assignment Info - LIRFs/Admins only */}
-                  {canManageRuns && (
-                    <div className="lirf-info">
-                      <div className="lirf-info__title">
-                        LIRF Assignments
-                      </div>
-                      {run.assigned_lirfs.length > 0 ? (
-                        <div className="lirf-info__list">
-                          {run.assigned_lirfs.map((lirf, index) => (
-                            <div key={index} className="lirf-info__item">
-                              • {lirf.name}
-                            </div>
-                          ))}
-                          {run.lirf_vacancies > 0 && (
-                            <div className="lirf-info__vacancy">
-                              • {run.lirf_vacancies} position{run.lirf_vacancies > 1 ? 's' : ''} still needed
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="lirf-info__empty">
-                          No LIRFs assigned yet
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div 
-                  className="run-card-actions-container"
-                  style={{ 
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    marginTop: '16px', 
-                    paddingTop: '12px', 
-                    borderTop: '1px solid var(--gray-100)',
-                    padding: '12px 8px 0 8px'
-                  }}
-                >
-                  {/* Member Booking Actions */}
-                  {!state.user ? (
-                    <div className="action-status action-status--unavailable">
-                      Log in to book
-                    </div>
-                  ) : run.is_booked ? (
-                    <button
-                      onClick={() => run.user_booking_id && handleCancelBooking(run.id, run.user_booking_id, run.run_title)}
-                      disabled={bookingLoading === run.id}
-                      className="action-btn action-btn--danger"
-                    >
-                      {getButtonText('🗑️ Drop out', '🗑️ Cancel', bookingLoading === run.id, 'Dropping...')}
-                    </button>
-                  ) : run.is_full ? (
-                    <div className="action-status action-status--full">
-                      Run is full
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleBookRun(run.id)}
-                      disabled={bookingLoading === run.id}
-                      className="action-btn action-btn--primary"
-                    >
-                      {getButtonText('🏃‍♂️ Join in', '🏃‍♂️ Join', bookingLoading === run.id, 'Booking...')}
-                    </button>
-                  )}
-
-                  {/* Share Button - LIRFs/Admins only */}
-                  {canManageRuns && (
-                    <div className="share-menu">
-                      <button
-                        className="share-button action-btn action-btn--secondary"
-                        onClick={() => setShowShareMenu(showShareMenu === run.id ? null : run.id)}
-                      >
-                        <Share2 size={14} />
-                        {getButtonText('Share Run', 'Share', false, '')}
-                      </button>
-                      
-                      {showShareMenu === run.id && (
-                        <div className="share-dropdown">
-                          <button
-                            onClick={() => handleRunShare(run, 'copy', shareCallbacks)}
-                            className="share-option"
-                          >
-                            📋 Copy Link
-                          </button>
-                          <button
-                            onClick={() => handleRunShare(run, 'whatsapp', shareCallbacks)}
-                            className="share-option"
-                          >
-                            💬 WhatsApp
-                          </button>
-                          <button
-                            onClick={() => handleRunShare(run, 'facebook-group', shareCallbacks)}
-                            className="share-option"
-                          >
-                            📘 Facebook Group
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* LIRF Assignment Actions - LIRFs/Admins only */}
-                  {canManageRuns && state.user && (
-                    <div className="lirf-actions">
-                      {run.user_is_assigned_lirf ? (
-                        <button
-                          onClick={() => handleUnassignSelfAsLIRF(run.id)}
-                          disabled={assignmentLoading === run.id}
-                          className="action-btn action-btn--danger"
-                        >
-                          {getButtonText('👨‍🏫 Unassign LIRF', '👨‍🏫 Unassign', assignmentLoading === run.id, 'Unassigning...')}
-                        </button>
-                      ) : run.lirf_vacancies > 0 ? (
-                        <button
-                          onClick={() => handleAssignSelfAsLIRF(run.id)}
-                          disabled={assignmentLoading === run.id}
-                          className="action-btn action-btn--secondary"
-                        >
-                          {getButtonText('👨‍🏫 Assign Me as LIRF', '👨‍🏫 Assign Me', assignmentLoading === run.id, 'Assigning...')}
-                        </button>
-                      ) : (
-                        <div className="action-status action-status--assigned">
-                          LIRFs fully assigned
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {filteredRuns.map((run) => (
+            <RunCard
+              key={run.id}
+              run={run}
+              canManageRuns={canManageRuns}
+              isBookingLoading={bookingLoading === run.id}
+              isAssignmentLoading={assignmentLoading === run.id}
+              onBookRun={handleBookRun}
+              onCancelBooking={handleCancelBooking}
+              onAssignSelfAsLIRF={handleAssignSelfAsLIRF}
+              onUnassignSelfAsLIRF={handleUnassignSelfAsLIRF}
+              shareCallbacks={shareCallbacks}
+              getButtonText={getButtonText}
+            />
+          ))}
         </div>
       )}
 
-      {/* Error Modal */}
+      {/* Modals */}
       <ErrorModal
         isOpen={errorModal.isOpen}
         title={errorModal.title}
@@ -713,7 +452,6 @@ export const ViewScheduledRuns: React.FC = () => {
         onClose={closeErrorModal}
       />
 
-      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}
@@ -725,7 +463,6 @@ export const ViewScheduledRuns: React.FC = () => {
         type="danger"
       />
 
-      {/* Share Success Modal */}
       <ConfirmationModal
         isOpen={shareModal.isOpen}
         title={shareModal.title}

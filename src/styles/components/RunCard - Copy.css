@@ -1,5 +1,7 @@
 /* 📁 src/styles/components/RunCard.css */
 
+/* 📁 src/styles/components/RunCard.css */
+
 /* ==============================================
    RUN CARD COMPONENT STYLES
    ============================================== */
@@ -38,10 +40,7 @@
   border-left: 4px solid #3b82f6;
 }
 
-/* ==============================================
-   CARD LAYOUT AND CONTENT
-   ============================================== */
-
+/* FIXED: Proper card content padding */
 .run-card__content {
   padding: 20px;
 }
@@ -55,6 +54,20 @@
 
 .run-card__info {
   flex: 1;
+}
+
+/* FIXED: Action buttons with proper spacing from card edges */
+.run-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-100);
+  /* Remove margin-left that was causing edge issues */
+  margin-left: 0;
+  min-width: auto;
+  width: 100%;
 }
 
 .run-card__header {
@@ -79,10 +92,7 @@
   flex-wrap: wrap;
 }
 
-/* ==============================================
-   RUN INFORMATION SECTION
-   ============================================== */
-
+/* Run Info Grid */
 .run-info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -120,10 +130,7 @@
   font-weight: 500;
 }
 
-/* ==============================================
-   RUN DESCRIPTION SECTION
-   ============================================== */
-
+/* Run Sections */
 .run-description {
   background: var(--gray-50);
   padding: 12px;
@@ -152,10 +159,6 @@
 .run-description__toggle:hover {
   color: var(--red-dark);
 }
-
-/* ==============================================
-   LIRF INFORMATION SECTION
-   ============================================== */
 
 .lirf-info {
   background: var(--gray-50);
@@ -193,9 +196,11 @@
   color: #dc2626;
 }
 
-/* ==============================================
-   SHARE DROPDOWN MENU
-   ============================================== */
+/* Share menu styles */
+.share-menu {
+  position: relative;
+  display: inline-block;
+}
 
 .share-dropdown {
   position: absolute;
@@ -235,21 +240,44 @@
   border-radius: 0 0 6px 6px;
 }
 
+/* LIRF actions container */
+.lirf-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* ==============================================
-   MOBILE RESPONSIVE DESIGN
+   MOBILE RESPONSIVE - CARDS
    ============================================== */
 
-/* Tablet and below (768px) */
+/* Tablet and below */
 @media (max-width: 768px) {
   .run-card__layout {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+  
+  /* FIXED: Mobile actions layout */
+  .run-card__actions {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    margin-left: 0 !important;
+    min-width: auto !important;
+    width: 100% !important;
+    margin-top: 12px !important;
+    padding-top: 8px !important;
+  }
+  
+  .run-card__actions .action-btn {
+    flex: 1 !important;
+    min-width: 0 !important;
   }
   
   .run-info-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    gap: 12px !important;
   }
   
   .share-dropdown {
@@ -257,56 +285,58 @@
     min-width: 140px;
   }
   
-  /* Ensure run-card-actions-container stays horizontal on tablet */
-  .run-card-actions-container {
-    flex-direction: row !important;
-    gap: 6px !important;
+  .lirf-actions {
+    flex-direction: row;
+    gap: 6px;
+  }
+  
+  .lirf-actions .action-btn {
+    flex: 1;
+    min-width: 0;
   }
 }
 
-/* Mobile phones (480px) */
+/* Mobile phones */
 @media (max-width: 480px) {
   .run-info-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
   }
   
+  /* FIXED: Mobile card content padding */
   .run-card__content {
-    padding: 16px;
+    padding: 16px !important;
+  }
+  
+  /* FIXED: Mobile actions spacing */
+  .run-card__actions {
+    gap: 6px !important;
+    margin-top: 12px !important;
+    padding-top: 8px !important;
   }
   
   .run-card__header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
   }
   
   .run-card__badges {
-    width: 100%;
-    justify-content: flex-start;
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+  
+  /* Ensure buttons stack properly on very small screens */
+  .run-card__actions {
+    flex-wrap: wrap !important;
+  }
+  
+  .run-card__actions .action-btn {
+    min-width: 100px !important;
   }
   
   .share-option {
     padding: 10px 8px;
     font-size: 12px;
   }
-  
-  /* Mobile button layout - stack vertically if needed */
-  .run-card-actions-container {
-    flex-direction: column !important;
-    gap: 8px !important;
-  }
-  
-  .run-card-actions-container .action-btn {
-    width: 100% !important;
-    flex: none !important;
-  }
 }
-
-/* ==============================================
-   REMOVED CONFLICTING STYLES
-   The following styles have been removed to prevent conflicts:
-   - .run-card__actions (conflicts with .run-card-actions-container)
-   - .lirf-actions (replaced by unified button container)
-   - .share-menu positioning (handled by dropdown only)
-   ============================================== */
