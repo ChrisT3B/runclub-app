@@ -9,6 +9,7 @@ import { EmailVerificationHandler } from './modules/auth/components/EmailVerific
 import { PWAInstallPrompt } from './shared/components/ui/PWAInstallPrompt';
 import { SessionSecurityWrapper } from './modules/auth/components/SessionSecurityWrapper';
 import './styles/fonts.css';
+import './styles/main.css'; // Ensure main styles are loaded
 
 
 const queryClient = new QueryClient({
