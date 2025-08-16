@@ -1,0 +1,102 @@
+/* ==============================================
+   TYPOGRAPHY SYSTEM
+   ============================================== */
+
+/* Base Typography */
+body {
+  font-size: var(--font-base);
+  font-weight: var(--font-normal);
+  line-height: 1.6;
+  color: var(--gray-900);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--font-semibold);
+  line-height: 1.3;
+  margin-bottom: var(--space-4);
+  color: var(--gray-900);
+}
+
+h1 {
+  font-size: var(--font-3xl);
+  font-weight: var(--font-bold);
+}
+
+h2 {
+  font-size: var(--font-2xl);
+}
+
+h3 {
+  font-size: var(--font-xl);
+}
+
+h4 {
+  font-size: var(--font-lg);
+}
+
+h5 {
+  font-size: var(--font-base);
+}
+
+h6 {
+  font-size: var(--font-sm);
+}
+
+/* Paragraphs */
+p {
+  margin-bottom: var(--space-4);
+  line-height: 1.6;
+  color: var(--gray-700);
+}
+
+/* Links */
+a {
+  color: var(--red-primary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  color: var(--red-dark);
+  text-decoration: underline;
+}
+
+/* Lists */
+ul, ol {
+  margin-bottom: var(--space-4);
+  padding-left: var(--space-6);
+}
+
+li {
+  margin-bottom: var(--space-2);
+  line-height: 1.6;
+  color: var(--gray-700);
+}
+
+/* Text Utilities */
+.text-xs { font-size: var(--font-xs); }
+.text-sm { font-size: var(--font-sm); }
+.text-base { font-size: var(--font-base); }
+.text-lg { font-size: var(--font-lg); }
+.text-xl { font-size: var(--font-xl); }
+.text-2xl { font-size: var(--font-2xl); }
+.text-3xl { font-size: var(--font-3xl); }
+
+.font-normal { font-weight: var(--font-normal); }
+.font-medium { font-weight: var(--font-medium); }
+.font-semibold { font-weight: var(--font-semibold); }
+.font-bold { font-weight: var(--font-bold); }
+
+.text-gray-500 { color: var(--gray-500); }
+.text-gray-600 { color: var(--gray-600); }
+.text-gray-700 { color: var(--gray-700); }
+.text-gray-900 { color: var(--gray-900); }
+.text-red-primary { color: var(--red-primary); }
+.text-success { color: var(--success-color); }
+.text-warning { color: var(--warning-color); }
+.text-danger { color: var(--danger-color); }
+
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
