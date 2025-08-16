@@ -7,12 +7,13 @@
 @import url('./01-base/variables.css');
 @import url('./01-base/typography.css');
 
-/* Layout & Structure */
+/* Layout & Structure (empty files for now) */
 @import url('./02-layout/dashboard.css');
 @import url('./02-layout/navigation.css');
 @import url('./02-layout/header.css');
 
 /* Page-Specific Styles */
+@import './04-pages/filters.css';          /* NEW - Filter fix only */
 @import url('./04-pages/auth.css');
 @import url('./04-pages/members.css');
 @import url('./04-pages/modals.css');
@@ -25,3 +26,5 @@
 
 /* Fonts */
 @import url('./fonts.css');
+/*Forms */
+@import './04-pages/forms.css';
