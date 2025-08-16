@@ -6,7 +6,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { ScheduledRunsService, RunWithDetails } from '../services/scheduledRunsService';
 import { BookingService, BookingError } from '../services/bookingService';
 import { ErrorModal } from '../../../shared/components/ui/ErrorModal';
-import { formatDate, formatTime, isRunUrgent, ShareCallbacks } from '../../runs/utils/runUtils';
+import { isRunUrgent, ShareCallbacks } from '../../runs/utils/runUtils';
 import { ConfirmationModal } from '../../../shared/components/ui/ConfirmationModal';
 import { RunFilters, FilterType, FilterCounts } from '../../runs/utils/components/RunFilters';
 import { RunCard } from '../../runs/utils/components/RunCard';
