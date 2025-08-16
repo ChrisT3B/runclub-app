@@ -1,0 +1,151 @@
+/* Lead Your Run (LIRF) Page Styles */
+
+/* Based on the successful component refactoring mentioned in your project documentation */
+
+/* LIRF Cards and Layout */
+.lirf-card-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.lirf-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* LIRF Modal Styles - Now properly organized in CSS */
+.lirf-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.lirf-modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.lirf-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.lirf-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.lirf-close-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--gray-500);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.lirf-close-btn:hover {
+  color: var(--red-primary);
+  background: var(--gray-100);
+}
+
+/* LIRF Form Elements */
+.lirf-form-group {
+  margin-bottom: 20px;
+}
+
+.lirf-form-label {
+  display: block;
+  font-weight: 500;
+  color: var(--gray-700);
+  margin-bottom: 8px;
+}
+
+.lirf-form-input,
+.lirf-form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.15s ease;
+}
+
+.lirf-form-input:focus,
+.lirf-form-textarea:focus {
+  outline: none;
+  border-color: var(--red-primary);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.lirf-form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* LIRF Action Buttons */
+.lirf-action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-200);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .lirf-modal-content {
+    margin: 16px;
+    width: calc(100% - 32px);
+    padding: 20px;
+  }
+  
+  .lirf-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .lirf-action-buttons {
+    flex-direction: column-reverse;
+  }
+  
+  .lirf-action-buttons .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .lirf-modal-content {
+    margin: 8px;
+    width: calc(100% - 16px);
+    padding: 16px;
+  }
+  
+  .lirf-modal-title {
+    font-size: 1.125rem;
+  }
+}

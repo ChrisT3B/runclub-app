@@ -1,32 +1,34 @@
+/* RunClub Main CSS - Organized Import System */
+
 /* ==============================================
-   RUNCLUB APP - SYSTEMATIC CSS ARCHITECTURE
+   BASE STYLES - Load First
    ============================================== */
+@import './01-base/variables.css';
+@import './01-base/reset.css';
+@import './01-base/typography.css';
 
-/* Foundation Styles */
-@import url('./01-base/reset.css');
-@import url('./01-base/variables.css');
-@import url('./01-base/typography.css');
-
-/* Layout & Structure (empty files for now) */
-@import url('./02-layout/dashboard.css');
-@import url('./02-layout/navigation.css');
-@import url('./02-layout/header.css');
-
-/* Page-Specific Styles */
-@import './04-pages/filters.css';          /* NEW - Filter fix only */
-@import url('./04-pages/auth.css');
-@import url('./04-pages/members.css');
-@import url('./04-pages/modals.css');
-@import url('./04-pages/responsive.css');
-
-/* Component Styles (Preserved from Phase 1) */
-@import url('./components/Buttons.css');
-@import url('./components/StatusBadges.css');
-@import url('./components/RunCard.css');
-
-/* Fonts */
-@import url('./fonts.css');
-/*Forms */
-@import './04-pages/forms.css';
+/* ==============================================
+   LAYOUT COMPONENTS
+   ============================================== */
+@import './02-layout/app-layout.css';
+@import './02-layout/header.css';
+@import './02-layout/sidebar.css';
+@import './02-layout/user-menu.css';
+@import './02-layout/cards.css';
 @import './02-layout/page-layout.css';
+@import './02-layout/mobile-responsive.css';
+
+/* ==============================================
+   COMPONENT STYLES
+   ============================================== */
+@import './components/Buttons.css';
+@import './components/StatusBadges.css';
+@import './components/RunCard.css';
+
+/* ==============================================
+   PAGE-SPECIFIC STYLES
+   ============================================== */
+@import './04-pages/forms.css';
+@import './04-pages/members.css';
 @import './04-pages/communications.css';
+@import './04-pages/lead-your-run.css';

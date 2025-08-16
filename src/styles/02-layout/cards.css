@@ -1,0 +1,28 @@
+/* Card Components */
+.card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  padding: 24px 24px 0 24px;
+}
+
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin: 0 0 8px 0;
+}
+
+.card-description {
+  color: var(--gray-600);
+  font-size: 14px;
+  margin: 0;
+}
+
+.card-content {
+  padding: 24px;
+}

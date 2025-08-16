@@ -1,0 +1,140 @@
+/* Mobile Responsive Utilities */
+@media (max-width: 768px) {
+  .responsive-card-layout {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+  
+  .responsive-card-actions {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+  
+  .responsive-card-actions .btn,
+  .responsive-card-actions .action-btn {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  
+  .responsive-info-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    gap: 12px !important;
+  }
+  
+  .responsive-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+  
+  .responsive-header > div:first-child {
+    text-align: center !important;
+  }
+  
+  .desktop-only {
+    display: none !important;
+  }
+  
+  .mobile-only {
+    display: block !important;
+  }
+  
+  .run-filters {
+    gap: 6px;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .filter-tab {
+    padding: 8px 2px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobile-hide-text {
+    display: none;
+  }
+  
+  .mobile-show-text {
+    display: inline;
+  }
+  
+  .responsive-info-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .responsive-card-layout {
+    gap: 12px;
+  }
+  
+  .responsive-card-actions {
+    gap: 6px;
+  }
+  
+  .page-header {
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .page-description {
+    font-size: 14px;
+  }
+  
+  .auth-card {
+    padding: 24px 16px;
+    margin: 8px;
+  }
+  
+  .form-group {
+    margin-bottom: 12px;
+  }
+  
+  .btn {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  .run-filters {
+    gap: 4px;
+  }
+  
+  .filter-tab {
+    padding: 8px 1px;
+    font-size: 10px;
+  }
+}
+
+/* Mobile Keyboard Fix */
+@media screen and (max-height: 600px) and (max-width: 768px) {
+  .auth-layout,
+  div[style*="minHeight: 100vh"] {
+    min-height: 100dvh !important;
+    justify-content: flex-start !important;
+    padding-top: 1rem !important;
+  }
+  
+  form {
+    margin-bottom: 2rem;
+  }
+  
+  input:focus {
+    transform: translateY(-20px);
+    transition: transform 0.2s ease;
+  }
+}
+
+@media screen and (max-height: 500px) {
+  div[style*="minHeight: 100vh"] {
+    align-items: flex-start !important;
+    padding-top: 0.5rem !important;
+  }
+}
