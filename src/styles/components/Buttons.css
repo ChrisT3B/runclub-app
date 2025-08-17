@@ -415,3 +415,48 @@
     font-size: 12px !important;
   }
 }
+/* Add this section to your existing src/styles/components/Buttons.css */
+/* Add after the existing button rules, around line 90+ */
+
+/* ==============================================
+   BOOKING MANAGER INTEGRATION
+   ============================================== */
+
+/* BookingManager container - inherits same flex sizing as other buttons */
+.run-card-actions-container .booking-manager {
+  margin: 0 !important;
+  flex: 1.5 !important;  /* Same as primary buttons */
+  display: flex !important;
+  width: 100% !important;
+}
+
+/* BookingManager button - inherits all action-btn styling */
+.run-card-actions-container .booking-manager .action-btn {
+  margin: 0 !important;
+  padding: 8px 20px !important;
+  font-size: 14px !important;
+  min-width: auto !important;
+  max-width: none !important;
+  width: 100% !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+/* BookingManager mobile responsiveness - match other buttons */
+@media (max-width: 768px) {
+  .run-card-actions-container .booking-manager {
+    flex: 1.5 !important;  /* Same as primary buttons on mobile */
+  }
+  
+  .run-card-actions-container .booking-manager .action-btn {
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .run-card-actions-container .booking-manager .action-btn {
+    padding: 7px 12px !important;
+    font-size: 12px !important;
+  }
+}

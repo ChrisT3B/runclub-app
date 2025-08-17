@@ -44,6 +44,7 @@ button {
   overflow: visible;
   text-transform: none;
   -webkit-appearance: button;
+  appearance: button;  /* Add this line */
 }
 
 /* Remove default input styles */
