@@ -46,7 +46,6 @@ export const BookingManager: React.FC<BookingManagerProps> = ({
   onBookingChange,
   onError,
   showSuccessModal = true,
-  autoRefreshData = true,
   className = ''
 }) => {
   const [state, setState] = useState<BookingManagerState>({
@@ -69,30 +68,30 @@ export const BookingManager: React.FC<BookingManagerProps> = ({
     onBookingChange(run);
   }, [run, onBookingChange]);
 
-  // Enhanced error handling with context-aware messages
-  const handleBookingError = useCallback((error: BookingError, originalRun: RunWithDetails) => {
-    // Rollback optimistic update
-    rollbackOptimisticUpdate();
+// Enhanced error handling with context-aware messages
+const handleBookingError = useCallback((error: BookingError, originalRun: RunWithDetails) => {
+  // Rollback optimistic update
+  rollbackOptimisticUpdate();
 
-    // Create context-aware error messages
-    const errorConfig: Record<string, { title: string; message: string }> = {
-      'ALREADY_BOOKED': {
-        title: 'Already Booked',
-        message: 'You\'ve already booked this run. Check your bookings to see all your upcoming runs.'
-      },
-      'RUN_FULL': {
-        title: 'Run is Full',
-        message: 'This run has reached capacity while you were booking. Please try a different run.'
-      },
-      'LIRF_CONFLICT': {
-        title: 'LIRF Assignment Conflict',
-        message: 'You\'re assigned as LIRF for this run. Please cancel your LIRF assignment first.'
-      },
-      'AUTH_ERROR': {
-        title: 'Login Required',
-        message: 'Please log in to book runs.'
-      }
-    };
+  // Create context-aware error messages using the run info
+  const errorConfig: Record<string, { title: string; message: string }> = {
+    'ALREADY_BOOKED': {
+      title: 'Already Booked',
+      message: `You've already booked "${originalRun.run_title}". Check your bookings to see all your upcoming runs.`
+    },
+    'RUN_FULL': {
+      title: 'Run is Full',
+      message: `"${originalRun.run_title}" has reached capacity while you were booking. Please try a different run.`
+    },
+    'LIRF_CONFLICT': {
+      title: 'LIRF Assignment Conflict',
+      message: `You're assigned as LIRF for "${originalRun.run_title}". Please cancel your LIRF assignment first.`
+    },
+    'AUTH_ERROR': {
+      title: 'Login Required',
+      message: 'Please log in to book runs.'
+    }
+  };
 
     const config = errorConfig[error.type] || {
       title: 'Booking Error',
