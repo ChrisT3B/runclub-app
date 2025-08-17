@@ -244,7 +244,13 @@ export const RunCard: React.FC<RunCardProps> = ({
                   📱 WhatsApp
                 </button>
                 <button 
-                  onClick={() => handleShare('facebook')}
+                  onClick={() => handleShare('facebook-group')}
+                  className="share-option"
+                    >
+                  👥 Facebook Group
+                </button>
+                <button 
+                  onClick={() => handleShare('email')}
                   className="share-option"
                 >
                   📘 Facebook

@@ -50,10 +50,12 @@ export const ViewScheduledRuns: React.FC = () => {
     isOpen: boolean;
     title: string;
     message: string;
+     facebookUrl?: string; // Add this
   }>({
     isOpen: false,
     title: '',
-    message: ''
+    message: '',
+    facebookUrl: undefined // Add this
   });
 
   // Use permissions instead of checking access_level directly
@@ -80,9 +82,19 @@ export const ViewScheduledRuns: React.FC = () => {
     setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   };
 
-  const closeShareModal = () => {
-    setShareModal({ isOpen: false, title: '', message: '' });
-  };
+const closeShareModal = () => {
+  // Open Facebook if there's a URL stored
+  if (shareModal.facebookUrl) {
+    window.open(shareModal.facebookUrl, '_blank');
+  }
+  
+  setShareModal({ 
+    isOpen: false, 
+    title: '', 
+    message: '', 
+    facebookUrl: undefined 
+  });
+};
 
   // OPTIMIZED: Single comprehensive API call
   const loadScheduledRuns = useCallback(async () => {
@@ -337,7 +349,8 @@ export const ViewScheduledRuns: React.FC = () => {
       setShareModal({
         isOpen: true,
         title: 'Success',
-        message
+        message,
+        facebookUrl: undefined // No URL for regular success
       });
     },
     onError: (message: string) => {
@@ -347,11 +360,12 @@ export const ViewScheduledRuns: React.FC = () => {
         message
       });
     },
-    onFacebookGroupShare: (message: string) => {
+    onFacebookGroupShare: (message: string, facebookUrl?: string) => {
       setShareModal({
         isOpen: true,
         title: 'Facebook Group Share',
-        message
+        message,
+        facebookUrl: facebookUrl // Store the URL for later
       });
     }
   };
@@ -465,7 +479,14 @@ export const ViewScheduledRuns: React.FC = () => {
         onCancel={closeConfirmModal}
         title={confirmModal.title}
         message={confirmModal.message}
-      />
+          confirmText={
+    shareModal.title === 'Facebook Group Share' ? 'Open Facebook Group' :
+    shareModal.title === 'Facebook Share' ? 'Open Facebook' :
+    'OK'
+  }
+  cancelText="" // Empty string to hide the cancel button
+/>
+    
 
       {/* Share Success Modal */}
       <ErrorModal

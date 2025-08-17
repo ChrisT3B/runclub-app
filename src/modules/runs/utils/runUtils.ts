@@ -66,7 +66,7 @@ export const getMembershipStatusColor = (status: string) => {
 export interface ShareCallbacks {
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
-  onFacebookGroupShare: (message: string) => void;
+  onFacebookGroupShare: (message: string, facebookUrl?: string) => void;
 }
 
 /**
@@ -125,31 +125,61 @@ export const handleRunShare = (run: any, platform: string, callbacks?: ShareCall
   switch (platform) {
     case 'facebook-group':
       const fbGroupUrl = 'https://www.facebook.com/groups/runalcester';
+       const runTextForGroup = runText + '\n\n' + runUrl;
       
       // Copy the text to clipboard first
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(runText).then(() => {
-          window.open(fbGroupUrl, '_blank');
-          callbacks?.onFacebookGroupShare('📋 Run details copied to clipboard!\n\nFacebook group is opening - paste the details into a new post.') ||
-          console.log('Shared to Facebook group');
-        }).catch(() => {
-          copyFallback(runText);
-          window.open(fbGroupUrl, '_blank');
-          callbacks?.onFacebookGroupShare('📋 Run details copied to clipboard!\n\nFacebook group is opening - paste the details into a new post.') ||
-          console.log('Shared to Facebook group (fallback)');
-        });
-      } else {
-        copyFallback(runText);
-        window.open(fbGroupUrl, '_blank');
-        callbacks?.onFacebookGroupShare('📋 Run details copied to clipboard!\n\nFacebook group is opening - paste the details into a new post.') ||
-        console.log('Shared to Facebook group (fallback)');
-      }
-      break;
+     if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(runTextForGroup).then(() => {
+      // Pass the URL to the callback but don't open Facebook yet
+      callbacks?.onFacebookGroupShare(
+        '📋 Run details copied to clipboard!\n\nClick OK to open the Facebook group where you can paste the details into a new post.',
+        fbGroupUrl
+      ) || console.log('Shared to Facebook group');
+    }).catch(() => {
+      copyFallback(runTextForGroup);
+      callbacks?.onFacebookGroupShare(
+        '📋 Run details copied to clipboard!\n\nClick OK to open the Facebook group where you can paste the details into a new post.',
+        fbGroupUrl
+      ) || console.log('Shared to Facebook group (fallback)');
+    });
+  } else {
+    copyFallback(runTextForGroup);
+    callbacks?.onFacebookGroupShare(
+      '📋 Run details copied to clipboard!\n\nClick OK to open the Facebook group where you can paste the details into a new post.',
+      fbGroupUrl
+    ) || console.log('Shared to Facebook group (fallback)');
+  }
+  break;
       
-    case 'facebook':
-      const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(runUrl)}&quote=${encodeURIComponent(runText)}`;
-      window.open(fbUrl, '_blank');
-      break;
+case 'facebook':
+  // Facebook has deprecated the quote parameter, so we copy content to clipboard
+  // and let user paste it manually in Facebook's share dialog
+  const textToCopyForFacebook = runText + '\n\n' + runUrl;
+  const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(runUrl)}`;
+  
+  // Copy the text to clipboard first
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(textToCopyForFacebook).then(() => {
+      // Use the same callback pattern as facebook-group
+      callbacks?.onFacebookGroupShare(
+        '📋 Run details copied to clipboard!\n\nClick OK to open Facebook where you can paste the details into your post.',
+        facebookShareUrl
+      ) || console.log('Shared to Facebook with clipboard');
+    }).catch(() => {
+      copyFallback(textToCopyForFacebook);
+      callbacks?.onFacebookGroupShare(
+        '📋 Run details copied to clipboard!\n\nClick OK to open Facebook where you can paste the details into your post.',
+        facebookShareUrl
+      ) || console.log('Shared to Facebook with fallback');
+    });
+  } else {
+    copyFallback(textToCopyForFacebook);
+    callbacks?.onFacebookGroupShare(
+      '📋 Run details copied to clipboard!\n\nClick OK to open Facebook where you can paste the details into your post.',
+      facebookShareUrl
+    ) || console.log('Shared to Facebook with fallback');
+  }
+  break;
       
     case 'whatsapp':
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(runText + '\n\n' + runUrl)}`;
