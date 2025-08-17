@@ -1,0 +1,400 @@
+/* src/styles/components/booking-modal.css */
+/* BookingSuccessModal - Calendar Integration with Mobile Optimization */
+
+.booking-success-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  padding: 20px;
+}
+
+.booking-success-modal--visible {
+  opacity: 1;
+}
+
+.booking-success-modal__content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.booking-success-modal--visible .booking-success-modal__content {
+  transform: scale(1);
+}
+
+.booking-success-modal__animation {
+  margin-bottom: 24px;
+}
+
+/* Success Checkmark Animation */
+.success-checkmark {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+}
+
+.checkmark-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--green-600, #22c55e);
+  position: relative;
+  animation: checkmark-scale 0.6s ease-in-out;
+}
+
+.checkmark-stem,
+.checkmark-kick {
+  position: absolute;
+  background: white;
+  border-radius: 2px;
+}
+
+.checkmark-stem {
+  width: 3px;
+  height: 16px;
+  top: 28px;
+  left: 32px;
+  transform: rotate(45deg);
+  animation: checkmark-stem 0.4s ease-in-out 0.2s both;
+}
+
+.checkmark-kick {
+  width: 3px;
+  height: 10px;
+  top: 36px;
+  left: 26px;
+  transform: rotate(-45deg);
+  animation: checkmark-kick 0.4s ease-in-out 0.3s both;
+}
+
+/* Cancel Animation */
+.cancel-animation {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+}
+
+.cancel-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--red-500, #ef4444);
+  position: relative;
+  animation: checkmark-scale 0.6s ease-in-out;
+}
+
+.cancel-x {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 4px;
+  background: white;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+}
+
+.cancel-x::before {
+  content: '';
+  position: absolute;
+  width: 40px;
+  height: 4px;
+  background: white;
+  border-radius: 2px;
+  transform: rotate(90deg);
+}
+
+/* Animations */
+@keyframes checkmark-scale {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes checkmark-stem {
+  0% { height: 0; }
+  100% { height: 16px; }
+}
+
+@keyframes checkmark-kick {
+  0% { height: 0; }
+  100% { height: 10px; }
+}
+
+/* Content Sections */
+.booking-success-modal__header {
+  margin-bottom: 24px;
+}
+
+.booking-success-modal__header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--gray-900, #1f2937);
+  margin: 0 0 8px 0;
+}
+
+.booking-success-modal__header p {
+  font-size: 16px;
+  color: var(--gray-600, #6b7280);
+  margin: 0;
+}
+
+.booking-success-modal__details {
+  background: var(--gray-50, #f9fafb);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.run-detail {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 15px;
+  color: var(--gray-700, #374151);
+}
+
+.run-detail:last-child {
+  margin-bottom: 0;
+}
+
+.run-detail svg {
+  color: var(--gray-500, #6b7280);
+  flex-shrink: 0;
+}
+
+/* Calendar Integration Section */
+.booking-success-modal__calendar {
+  margin-bottom: 24px;
+}
+
+.booking-success-modal__calendar h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--gray-900, #1f2937);
+  margin: 0 0 8px 0;
+}
+
+.booking-success-modal__calendar p {
+  font-size: 14px;
+  color: var(--gray-600, #6b7280);
+  margin: 0 0 16px 0;
+}
+
+.calendar-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px; /* Mobile touch target minimum */
+  text-decoration: none;
+}
+
+.calendar-btn--primary {
+  background: var(--red-primary, #dc2626);
+  color: white;
+}
+
+.calendar-btn--primary:hover {
+  background: var(--red-700, #b91c1c);
+  transform: translateY(-1px);
+}
+
+.calendar-btn--secondary {
+  background: var(--gray-100, #f3f4f6);
+  color: var(--gray-700, #374151);
+  border: 1px solid var(--gray-300, #d1d5db);
+}
+
+.calendar-btn--secondary:hover {
+  background: var(--gray-200, #e5e7eb);
+  transform: translateY(-1px);
+}
+
+/* Action Buttons */
+.booking-success-modal__actions {
+  display: flex;
+  justify-content: center;
+}
+
+.booking-success-modal__actions .btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px; /* Mobile touch target */
+  min-width: 120px;
+}
+
+.booking-success-modal__actions .btn--primary {
+  background: var(--red-primary, #dc2626);
+  color: white;
+}
+
+.booking-success-modal__actions .btn--primary:hover {
+  background: var(--red-700, #b91c1c);
+  transform: translateY(-1px);
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 640px) {
+  .booking-success-modal {
+    padding: 16px;
+  }
+
+  .booking-success-modal__content {
+    padding: 24px;
+    border-radius: 12px;
+    max-height: 95vh;
+  }
+
+  .booking-success-modal__header h2 {
+    font-size: 22px;
+  }
+
+  .calendar-buttons {
+    gap: 16px;
+  }
+
+  .calendar-btn {
+    padding: 16px 20px;
+    font-size: 16px;
+    min-height: 48px; /* Larger touch targets on mobile */
+  }
+
+  .booking-success-modal__actions .btn {
+    padding: 16px 24px;
+    font-size: 16px;
+    min-height: 48px;
+  }
+
+  /* Ensure text is readable on mobile */
+  .booking-success-modal__header p {
+    font-size: 15px;
+  }
+
+  .run-detail {
+    font-size: 16px;
+  }
+}
+
+/* Ultra-wide mobile screens */
+@media (max-width: 380px) {
+  .booking-success-modal {
+    padding: 12px;
+  }
+
+  .booking-success-modal__content {
+    padding: 20px;
+  }
+
+  .booking-success-modal__header h2 {
+    font-size: 20px;
+  }
+
+  .calendar-btn {
+    font-size: 15px;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .booking-success-modal__content {
+    max-width: 520px;
+  }
+
+  .calendar-buttons {
+    flex-direction: row;
+    gap: 16px;
+  }
+
+  .calendar-btn {
+    flex: 1;
+  }
+}
+
+/* Accessibility and animations */
+@media (prefers-reduced-motion: reduce) {
+  .booking-success-modal,
+  .booking-success-modal__content,
+  .checkmark-circle,
+  .cancel-circle,
+  .calendar-btn,
+  .btn {
+    animation: none;
+    transition: none;
+  }
+
+  .calendar-btn:hover,
+  .btn:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .booking-success-modal {
+    background: rgba(0, 0, 0, 0.8);
+  }
+
+  .booking-success-modal__content {
+    border: 2px solid #000;
+  }
+
+  .calendar-btn,
+  .btn {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Focus states for keyboard navigation */
+.calendar-btn:focus,
+.booking-success-modal__actions .btn:focus {
+  outline: 2px solid var(--blue-500, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* Loading state for calendar buttons */
+.calendar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.calendar-btn:disabled:hover {
+  transform: none;
+}

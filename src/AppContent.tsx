@@ -5,7 +5,7 @@ import { useAuth } from './modules/auth/context/AuthContext';
 import { DashboardLayout } from './shared/layouts/DashboardLayout';
 import { AuthContent } from './modules/auth/components/AuthContent';
 import { DashboardContent } from './modules/dashboard/components/DashboardContent';
-import { ViewScheduledRuns } from './modules/admin/components/ViewScheduledRuns';
+import { ViewScheduledRuns } from './modules/runs/components/ViewScheduledRuns';
 import { ManageScheduledRuns } from './modules/admin/components/ManageScheduledRuns';
 import { ProfilePage } from './modules/membership/components/ProfilePage';
 import { MemberList } from './modules/admin/components/MemberList';

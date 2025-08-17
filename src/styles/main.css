@@ -25,6 +25,7 @@
 @import './components/StatusBadges.css';
 @import './components/RunCard.css';
 
+
 /* ==============================================
    PAGE-SPECIFIC STYLES
    ============================================== */
@@ -32,3 +33,4 @@
 @import './04-pages/members.css';
 @import './04-pages/communications.css';
 @import './04-pages/lead-your-run.css';
+@import './04-pages/booking-modal.css';

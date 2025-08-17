@@ -1,11 +1,13 @@
-// Step 2: Extract RunCard Component - FIXED BUTTON LAYOUT
+// Updated RunCard Component with BookingManager Integration
 // File: src/modules/runs/components/RunCard.tsx
 
 import React, { useState } from 'react';
 import { Share2 } from 'lucide-react';
-import { formatDate, formatTime, isRunUrgent, handleRunShare, ShareCallbacks } from '../../utils/runUtils';
-import { renderTextWithLinks } from '../../../../utils/linkHelper';
-import { RunWithDetails } from '../../../admin/services/scheduledRunsService';
+import { formatDate, formatTime, isRunUrgent, handleRunShare, ShareCallbacks } from '../utils/runUtils';
+import { renderTextWithLinks } from '../../../utils/linkHelper';
+import { RunWithDetails } from '../../admin/services/scheduledRunsService';
+import { BookingError } from '../../admin/services/bookingService';
+import { BookingManager } from './BookingManager';
 
 interface RunCardProps {
   run: RunWithDetails;
@@ -19,6 +21,11 @@ interface RunCardProps {
   shareCallbacks: ShareCallbacks;
   // Helper function from parent for responsive text
   getButtonText: (fullText: string, shortText: string, loading: boolean, loadingText: string) => string;
+  // ✅ NEW: BookingManager integration props
+  userId?: string;
+  onBookingChange?: (updatedRun: RunWithDetails) => void;
+  onBookingError?: (error: BookingError) => void;
+  useBookingManager?: boolean; // Flag to enable BookingManager
 }
 
 export const RunCard: React.FC<RunCardProps> = ({
@@ -31,7 +38,12 @@ export const RunCard: React.FC<RunCardProps> = ({
   onAssignSelfAsLIRF,
   onUnassignSelfAsLIRF,
   shareCallbacks,
-  getButtonText
+  getButtonText,
+  // ✅ NEW: BookingManager props
+  userId,
+  onBookingChange,
+  onBookingError,
+  useBookingManager = false
 }) => {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -57,6 +69,52 @@ export const RunCard: React.FC<RunCardProps> = ({
   const handleShare = (platform: string) => {
     handleRunShare(run, platform, shareCallbacks);
     setShowShareMenu(false);
+  };
+
+  // ✅ NEW: Render enhanced or traditional booking buttons
+  const renderBookingButton = () => {
+    if (useBookingManager && onBookingChange && onBookingError && userId) {
+      // ✅ Enhanced: Use BookingManager for enhanced booking experience
+      return (
+        <BookingManager
+          run={run}
+          userId={userId}
+          onBookingChange={onBookingChange}
+          onError={onBookingError}
+          showSuccessModal={true}
+          className="run-card__booking-manager"
+        />
+      );
+    } else {
+      // ✅ Traditional: Use existing booking buttons
+      if (run.is_booked) {
+        return (
+          <button
+            onClick={() => onCancelBooking(run.id, run.user_booking_id!, run.run_title)}
+            disabled={isBookingLoading}
+            className="action-btn action-btn--danger"
+          >
+            {getButtonText('❌ Cancel Booking', '❌ Cancel', isBookingLoading, 'Cancelling...')}
+          </button>
+        );
+      } else if (run.is_full) {
+        return (
+          <div className="action-status action-status--full">
+            Run Full
+          </div>
+        );
+      } else {
+        return (
+          <button
+            onClick={() => onBookRun(run.id)}
+            disabled={isBookingLoading}
+            className="action-btn action-btn--primary"
+          >
+            {getButtonText('🏃‍♂️ Book Run', '🏃‍♂️ Book', isBookingLoading, 'Booking...')}
+          </button>
+        );
+      }
+    }
   };
 
   return (
@@ -162,32 +220,12 @@ export const RunCard: React.FC<RunCardProps> = ({
           </div>
         )}
 
-        {/* FIXED: Action Buttons - All in ONE container */}
+        {/* ✅ UPDATED: Action Buttons Container */}
         <div className="run-card-actions-container">
-          {/* Booking Button */}
-          {run.is_booked ? (
-            <button
-              onClick={() => onCancelBooking(run.id, run.user_booking_id!, run.run_title)}
-              disabled={isBookingLoading}
-              className="action-btn action-btn--danger"
-            >
-              {getButtonText('❌ Cancel Booking', '❌ Cancel', isBookingLoading, 'Cancelling...')}
-            </button>
-          ) : run.is_full ? (
-            <div className="action-status action-status--full">
-              Run Full
-            </div>
-          ) : (
-            <button
-              onClick={() => onBookRun(run.id)}
-              disabled={isBookingLoading}
-              className="action-btn action-btn--primary"
-            >
-              {getButtonText('🏃‍♂️ Book Run', '🏃‍♂️ Book', isBookingLoading, 'Booking...')}
-            </button>
-          )}
+          {/* ✅ ENHANCED: BookingManager or Traditional Booking Button */}
+          {renderBookingButton()}
 
-          {/* Share Button - NO wrapper div */}
+          {/* Share Button - NO changes needed */}
           <button
             onClick={handleShareClick}
             className="action-btn action-btn--secondary share-button"
@@ -227,7 +265,7 @@ export const RunCard: React.FC<RunCardProps> = ({
             )}
           </button>
 
-          {/* LIRF Button - SAME container, no separate div */}
+          {/* LIRF Button - NO changes needed */}
           {canManageRuns && (
             run.user_is_assigned_lirf ? (
               <button

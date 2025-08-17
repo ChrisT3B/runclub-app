@@ -1,15 +1,16 @@
-// Step 2 Update: ViewScheduledRuns.tsx with extracted RunCard
-// File: src/modules/admin/components/ViewScheduledRuns.tsx
+// src/modules/runs/components/ViewScheduledRuns.tsx
+// INTEGRATED VERSION - Using existing RunCard and RunFilters with BookingManager enhancement
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
-import { ScheduledRunsService, RunWithDetails } from '../services/scheduledRunsService';
-import { BookingService, BookingError } from '../services/bookingService';
+import { ScheduledRunsService, RunWithDetails } from '../../admin/services/scheduledRunsService';
+import { BookingService, BookingError } from '../../admin/services/bookingService';
 import { ErrorModal } from '../../../shared/components/ui/ErrorModal';
-import { isRunUrgent, ShareCallbacks } from '../../runs/utils/runUtils';
+import { ShareCallbacks } from '../utils/runUtils';
 import { ConfirmationModal } from '../../../shared/components/ui/ConfirmationModal';
-import { RunFilters, FilterType, FilterCounts } from '../../runs/utils/components/RunFilters';
-import { RunCard } from '../../runs/utils/components/RunCard';
+import { RunCard } from './RunCard';
+import { RunFilters, FilterType, FilterCounts } from './RunFilters';
+import { BookingManager } from './BookingManager';
 
 export const ViewScheduledRuns: React.FC = () => {
   const { state, permissions } = useAuth();
@@ -106,7 +107,10 @@ export const ViewScheduledRuns: React.FC = () => {
   }, [loadScheduledRuns]);
 
   // PERFORMANCE: Use useMemo for expensive calculations
-  const { filteredRuns, urgentVacancies, filterCounts } = useMemo(() => {
+  const { filteredRuns, filterCounts }: { 
+    filteredRuns: RunWithDetails[], 
+    filterCounts: FilterCounts 
+  } = useMemo(() => {
     const filtered = runs.filter(run => {
       switch (filter) {
         case 'available':
@@ -120,12 +124,6 @@ export const ViewScheduledRuns: React.FC = () => {
       }
     });
 
-    const urgent = canManageRuns 
-      ? runs
-          .filter(run => isRunUrgent(run.run_date, run.lirf_vacancies))
-          .reduce((total, run) => total + run.lirf_vacancies, 0)
-      : 0;
-
     const counts: FilterCounts = {
       all: runs.length,
       available: runs.filter(r => !r.is_booked && !r.is_full).length,
@@ -133,10 +131,23 @@ export const ViewScheduledRuns: React.FC = () => {
       myAssignments: runs.filter(r => r.user_is_assigned_lirf).length
     };
 
-    return { filteredRuns: filtered, urgentVacancies: urgent, filterCounts: counts };
+    return { filteredRuns: filtered, filterCounts: counts };
   }, [runs, filter, canManageRuns]);
 
-  // Booking Actions
+  // ✅ BookingManager integration callbacks 
+  const handleBookingChange = useCallback((updatedRun: RunWithDetails) => {
+    setRuns(prev => prev.map(r => r.id === updatedRun.id ? updatedRun : r));
+  }, []);
+
+  const handleBookingError = useCallback((error: BookingError) => {
+    setErrorModal({
+      isOpen: true,
+      title: error.title || 'Booking Error',
+      message: error.message
+    });
+  }, []);
+
+  // Traditional booking functions for RunCard compatibility
   const handleBookRun = async (runId: string) => {
     if (!state.user?.id) {
       setErrorModal({
@@ -221,7 +232,6 @@ export const ViewScheduledRuns: React.FC = () => {
     }
   };
 
-  // LIRF Assignment Actions
   const handleAssignSelfAsLIRF = async (runId: string) => {
     if (!state.user?.id) return;
 
@@ -249,24 +259,13 @@ export const ViewScheduledRuns: React.FC = () => {
 
       await ScheduledRunsService.updateScheduledRun(runId, updateData);
       await loadScheduledRuns();
-      setError('');
-      
+
     } catch (err: any) {
-      console.error('LIRF assignment error:', err);
-    
-      if (err instanceof BookingError) {
-        setErrorModal({
-          isOpen: true,
-          title: err.title || 'LIRF Assignment Failed',
-          message: err.message
-        });
-      } else {
-        setErrorModal({
-          isOpen: true,
-          title: 'LIRF Assignment Failed',
-          message: err.message || 'Failed to assign LIRF position. Please try again.'
-        });
-      }
+      setErrorModal({
+        isOpen: true,
+        title: 'LIRF Assignment Failed',
+        message: err.message || 'Failed to assign LIRF role'
+      });
     } finally {
       setAssignmentLoading(null);
     }
@@ -308,9 +307,6 @@ export const ViewScheduledRuns: React.FC = () => {
       }
 
       await ScheduledRunsService.updateScheduledRun(runId, updateData);
-      
-      console.log('TODO: Notify admins of LIRF unassignment for run:', run.run_title);
-      
       await loadScheduledRuns();
       setError('');
       
@@ -340,21 +336,21 @@ export const ViewScheduledRuns: React.FC = () => {
     onSuccess: (message: string) => {
       setShareModal({
         isOpen: true,
-        title: 'Success!',
+        title: 'Success',
         message
       });
     },
     onError: (message: string) => {
       setErrorModal({
         isOpen: true,
-        title: 'Share Failed',
+        title: 'Share Error',
         message
       });
     },
     onFacebookGroupShare: (message: string) => {
       setShareModal({
         isOpen: true,
-        title: 'Shared to Facebook Group',
+        title: 'Facebook Group Share',
         message
       });
     }
@@ -362,44 +358,51 @@ export const ViewScheduledRuns: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="loading">Loading scheduled runs...</div>
+      <div style={{ textAlign: 'center', padding: '40px' }}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          border: '4px solid var(--gray-300)',
+          borderTop: '4px solid var(--red-primary)',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          margin: '0 auto 16px'
+        }}></div>
+        Loading scheduled runs...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏃‍♂️</div>
+        <h2 style={{ marginBottom: '8px', color: 'var(--gray-900)' }}>
+          Unable to Load Runs
+        </h2>
+        <p style={{ color: 'var(--gray-600)', marginBottom: '24px' }}>
+          {error}
+        </p>
+        <button 
+          onClick={loadScheduledRuns}
+          style={{
+            background: 'var(--red-primary)',
+            color: 'white',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          Try Again
+        </button>
+      </div>
     );
   }
 
   return (
-    <div>
-      <div className="page-header">
-        <h1 className="page-title">Scheduled Runs</h1>
-        <p className="page-description">
-          {canManageRuns ?
-            'Book runs and manage LIRF assignments. Urgent LIRF vacancies are highlighted.' :
-            'Book and manage your upcoming runs.'
-          }
-        </p>
-        
-        {canManageRuns && urgentVacancies > 0 && (
-          <div className="urgent-alert">
-            <div className="urgent-alert__icon">⚠️</div>
-            <div className="urgent-alert__content">
-              <div className="urgent-alert__title">Urgent LIRF Assignments Needed</div>
-              <div className="urgent-alert__message">
-                {urgentVacancies} LIRF position{urgentVacancies > 1 ? 's' : ''} needed for runs in the next 48 hours
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {error && (
-        <div className="error-message">
-          {error}
-          <button onClick={loadScheduledRuns} className="error-retry">
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* Filter Tabs */}
+    <div className="view-scheduled-runs">
+      {/* ✅ EXISTING: Use working RunFilters component */}
       <RunFilters
         currentFilter={filter}
         onFilterChange={setFilter}
@@ -407,26 +410,24 @@ export const ViewScheduledRuns: React.FC = () => {
         canManageRuns={canManageRuns}
       />
 
-      {/* Run Cards - Now much simpler! */}
+      {/* Run Cards */}
       {filteredRuns.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state__icon">📅</div>
-          <div className="empty-state__title">
-            {filter === 'all' ? 'No runs scheduled' :
-             filter === 'available' ? 'No available runs' :
-             filter === 'my-bookings' ? 'No bookings found' :
-             'No LIRF assignments'}
-          </div>
-          <div className="empty-state__message">
-            {filter === 'all' ? 'Check back later for new runs!' :
-             filter === 'available' ? 'All runs are either full or you\'re already booked' :
-             filter === 'my-bookings' ? 'Book a run to see it here' :
-             'No LIRF assignments yet'}
-          </div>
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏃‍♂️</div>
+          <h2 style={{ marginBottom: '8px', color: 'var(--gray-900)' }}>
+            No Runs Found
+          </h2>
+          <p style={{ color: 'var(--gray-600)' }}>
+            {filter === 'available' ? 'No runs available for booking right now.' :
+             filter === 'my-bookings' ? 'You haven\'t booked any runs yet.' :
+             filter === 'my-assignments' ? 'You don\'t have any LIRF assignments.' :
+             'No scheduled runs found.'}
+          </p>
         </div>
       ) : (
         <div className="runs-grid">
-          {filteredRuns.map((run) => (
+          {filteredRuns.map(run => (
+            // ✅ ENHANCED: RunCard with BookingManager integration
             <RunCard
               key={run.id}
               run={run}
@@ -439,38 +440,39 @@ export const ViewScheduledRuns: React.FC = () => {
               onUnassignSelfAsLIRF={handleUnassignSelfAsLIRF}
               shareCallbacks={shareCallbacks}
               getButtonText={getButtonText}
+              // ✅ NEW: BookingManager enhancement props
+              userId={state.user?.id}
+              onBookingChange={handleBookingChange}
+              onBookingError={handleBookingError}
+              useBookingManager={true}
             />
           ))}
         </div>
       )}
 
-      {/* Modals */}
+      {/* Error Modal */}
       <ErrorModal
         isOpen={errorModal.isOpen}
+        onClose={closeErrorModal}
         title={errorModal.title}
         message={errorModal.message}
-        onClose={closeErrorModal}
       />
 
+      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmModal.isOpen}
-        title={confirmModal.title}
-        message={confirmModal.message}
         onConfirm={confirmModal.onConfirm}
         onCancel={closeConfirmModal}
-        confirmText="Yes, Unassign Me"
-        cancelText="Keep Assignment"
-        type="danger"
+        title={confirmModal.title}
+        message={confirmModal.message}
       />
 
-      <ConfirmationModal
+      {/* Share Success Modal */}
+      <ErrorModal
         isOpen={shareModal.isOpen}
+        onClose={closeShareModal}
         title={shareModal.title}
         message={shareModal.message}
-        onConfirm={closeShareModal}
-        onCancel={closeShareModal}
-        confirmText="OK"
-        cancelText=""
       />
     </div>
   );
