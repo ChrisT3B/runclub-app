@@ -360,6 +360,14 @@ const closeShareModal = () => {
         message
       });
     },
+      onFacebookShare: (message: string, fbUrl: string) => {
+        setShareModal({
+         isOpen: true,
+         title: 'Facebook Share',
+         message,
+         facebookUrl: fbUrl
+        });
+      },
     onFacebookGroupShare: (message: string, facebookUrl?: string) => {
       setShareModal({
         isOpen: true,

@@ -66,6 +66,7 @@ export const getMembershipStatusColor = (status: string) => {
 export interface ShareCallbacks {
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
+  onFacebookShare: (message: string, facebookUrl: string) => void; // NEW: For regular Facebook
   onFacebookGroupShare: (message: string, facebookUrl?: string) => void;
 }
 
@@ -156,7 +157,8 @@ case 'facebook':
   // and let user paste it manually in Facebook's share dialog
   const textToCopyForFacebook = runText + '\n\n' + runUrl;
   const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(runUrl)}`;
-  
+    console.log('📋 Text to copy:', textToCopyForFacebook);
+  console.log('🔗 Facebook URL:', facebookShareUrl);
   // Copy the text to clipboard first
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(textToCopyForFacebook).then(() => {
