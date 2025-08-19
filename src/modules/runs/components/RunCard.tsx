@@ -1,14 +1,18 @@
-// Fixed RunCard Component with Scroll Handling
+// Clean RunCard Component with Share Modal - Final Version
 // File: src/modules/runs/components/RunCard.tsx
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Share2 , //share icon
-  Facebook,     // Facebook icon <Facebook />
-  MessageCircle, // WhatsApp-style icon (or use Phone)
-  Mail,         // Email icon
-  Copy,         // Copy icon
-  Users         // Group icon (for Facebook Group)
-  } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Share2,
+  Facebook,
+  MessageCircle,
+  Copy,
+  Users,
+  X,
+  ShieldPlus,
+  ShieldX,
+  ShieldCheck
+} from 'lucide-react';
 import { formatDate, formatTime, isRunUrgent, handleRunShare, ShareCallbacks } from '../utils/runUtils';
 import { renderTextWithLinks } from '../../../utils/linkHelper';
 import { RunWithDetails } from '../../admin/services/scheduledRunsService';
@@ -50,18 +54,7 @@ export const RunCard: React.FC<RunCardProps> = ({
   useBookingManager = false
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  
-  const [dropdownPosition, setDropdownPosition] = useState<{
-    top: number;
-    left: number;
-    show: boolean;
-  }>({
-    top: 0,
-    left: 0,
-    show: false
-  });
-
-  const shareButtonRef = useRef<HTMLButtonElement>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Calculate properties
   const isUrgent = canManageRuns && isRunUrgent(run.run_date, run.lirf_vacancies);
@@ -78,93 +71,31 @@ export const RunCard: React.FC<RunCardProps> = ({
   };
 
   const handleShareClick = () => {
-    if (!shareButtonRef.current) return;
-    
-    const buttonRect = shareButtonRef.current.getBoundingClientRect();
-    const dropdownWidth = 180;
-    
-    let top = buttonRect.bottom + window.scrollY + 4;
-    let left = buttonRect.right + window.scrollX - dropdownWidth;
-    
-    if (left < 10) {
-      left = buttonRect.left + window.scrollX;
-    }
-    
-    setDropdownPosition({
-      top,
-      left,
-      show: !dropdownPosition.show
-    });
+    setShowShareModal(true);
   };
 
   const handleShare = (platform: string) => {
     handleRunShare(run, platform, shareCallbacks);
-    setDropdownPosition(prev => ({ ...prev, show: false }));
+    setShowShareModal(false);
   };
 
-  // Enhanced useEffect with scroll handling
+  const closeShareModal = () => {
+    setShowShareModal(false);
+  };
+
+  // Simple modal event handling - just Escape key
   useEffect(() => {
-    if (!dropdownPosition.show) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const isInsideButton = shareButtonRef.current?.contains(target);
-      const isInsideDropdown = document.querySelector('.share-dropdown')?.contains(target);
-      
-      // Only close if click is truly outside both button AND dropdown
-      if (!isInsideButton && !isInsideDropdown) {
-        setDropdownPosition(prev => ({ ...prev, show: false }));
-      }
-    };
-
-    const handleScroll = () => {
-      // Close dropdown on any scroll event
-      setDropdownPosition(prev => ({ ...prev, show: false }));
-    };
-
-    const handleTouchMove = (event: TouchEvent) => {
-      // Close dropdown on touch scroll (mobile)
-      const target = event.target as Element;
-      const isInsideDropdown = document.querySelector('.share-dropdown')?.contains(target);
-      
-      // Only close if touch is outside the dropdown
-      if (!isInsideDropdown) {
-        setDropdownPosition(prev => ({ ...prev, show: false }));
-      }
-    };
+    if (!showShareModal) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Close dropdown on Escape key
       if (event.key === 'Escape') {
-        setDropdownPosition(prev => ({ ...prev, show: false }));
+        setShowShareModal(false);
       }
     };
 
-    const handleResize = () => {
-      // Close dropdown on window resize (orientation change, etc.)
-      setDropdownPosition(prev => ({ ...prev, show: false }));
-    };
-
-    // Add all event listeners
-    document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    document.addEventListener('scroll', handleScroll, { passive: true });
-    document.addEventListener('touchmove', handleTouchMove, { passive: true });
-    document.addEventListener('touchstart', handleTouchMove, { passive: true });
     document.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('resize', handleResize);
-
-    // Cleanup function
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScroll);
-      document.removeEventListener('scroll', handleScroll);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchstart', handleTouchMove);
-      document.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [dropdownPosition.show]);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showShareModal]);
 
   // Render booking button
   const renderBookingButton = () => {
@@ -254,7 +185,8 @@ export const RunCard: React.FC<RunCardProps> = ({
               </div>
               {canManageRuns && (
                 <div className="run-info-item__secondary">
-                  👨‍🏫 {run.assigned_lirfs.length}/{run.lirfs_required} LIRF{run.lirfs_required > 1 ? 's' : ''}
+                  <ShieldCheck size={16} />
+                   {' '}{run.assigned_lirfs.length}/{run.lirfs_required} LIRF{run.lirfs_required > 1 ? 's' : ''}
                   {run.lirf_vacancies > 0 && (
                     <span className="run-info-item__highlight">
                       {' '}({run.lirf_vacancies} needed)
@@ -314,14 +246,13 @@ export const RunCard: React.FC<RunCardProps> = ({
             </div>
           )}
 
-          {/* ✅ Action Buttons Container */}
+          {/* Action Buttons Container */}
           <div className="run-card-actions-container">
             {/* Booking Button */}
             {renderBookingButton()}
 
-            {/* Share Button */}
+            {/* Share Button - Simple click to open modal */}
             <button
-              ref={shareButtonRef}
               onClick={handleShareClick}
               className="action-btn action-btn--secondary share-button"
             >
@@ -337,7 +268,8 @@ export const RunCard: React.FC<RunCardProps> = ({
                   disabled={isAssignmentLoading}
                   className="action-btn action-btn--danger"
                 >
-                  {getButtonText('👨‍🏫 Unassign LIRF', '👨‍🏫 Unassign', isAssignmentLoading, 'Unassigning...')}
+                  <ShieldX size={16} />
+                  {getButtonText(' Unassign LIRF', ' Unassign', isAssignmentLoading, 'Unassigning...')}
                 </button>
               ) : run.lirf_vacancies > 0 ? (
                 <button
@@ -345,7 +277,8 @@ export const RunCard: React.FC<RunCardProps> = ({
                   disabled={isAssignmentLoading}
                   className="action-btn action-btn--secondary"
                 >
-                  {getButtonText('👨‍🏫 Assign Me as LIRF', '👨‍🏫 Assign Me', isAssignmentLoading, 'Assigning...')}
+                  <ShieldPlus size={16} />
+                  {getButtonText(' Assign Me as LIRF', ' Assign Me', isAssignmentLoading, 'Assigning...')}
                 </button>
               ) : (
                 <div className="action-status action-status--assigned">
@@ -357,52 +290,75 @@ export const RunCard: React.FC<RunCardProps> = ({
         </div>
       </div>
 
-      {/* ✅ Share dropdown portal - OUTSIDE the main component */}
-      {dropdownPosition.show && createPortal(
-        <div 
-          className="share-dropdown"
-          style={{
-            position: 'fixed',
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            zIndex: 9999
-          }}
-        >
-          <button 
-            onClick={() => handleShare('whatsapp')}
-            className="share-option"
-          >
-            <MessageCircle size={16} />
-            {' '}WhatsApp
-          </button>
-          <button 
-            onClick={() => handleShare('facebook-group')}
-            className="share-option"
-          >
-            <Users size={16} />
-            {' '} Facebook Group
-          </button>
-          <button 
-            onClick={() => handleShare('facebook')}
-            className="share-option"
-          >
-            <Facebook size={16} />
-            {' '} Facebook
-          </button>
-          <button 
-            onClick={() => handleShare('email')}
-            className="share-option"
-          >
-            <Mail size={16} />
-            {' '} Email
-          </button>
-          <button 
-            onClick={() => handleShare('copy')}
-            className="share-option"
-          >
-            <Copy size={16} />
-            {' '} Copy Link 
-          </button>
+      {/* Simple Share Modal */}
+      {showShareModal && createPortal(
+        <div className="modal-overlay" onClick={closeShareModal}>
+          <div className="modal-content share-modal" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="modal-header">
+              <h3 className="modal-title">Share This Run</h3>
+              <button 
+                onClick={closeShareModal}
+                className="modal-close-btn"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Run Info Preview */}
+            <div className="share-modal-preview">
+              <h4>{run.run_title}</h4>
+              <p>📅 {formatDate(run.run_date)} at {formatTime(run.run_time)}</p>
+              <p>📍 {run.meeting_point}</p>
+            </div>
+
+            {/* Share Options */}
+            <div className="share-options">
+              <button 
+                onClick={() => handleShare('whatsapp')}
+                className="share-option-btn"
+              >
+                <MessageCircle size={20} />
+                <span>WhatsApp</span>
+              </button>
+
+              <button 
+                onClick={() => handleShare('facebook-group')}
+                className="share-option-btn"
+              >
+                <Users size={20} />
+                <span>Facebook Group</span>
+              </button>
+
+              <button 
+                onClick={() => handleShare('facebook')}
+                className="share-option-btn"
+              >
+                <Facebook size={20} />
+                <span>Facebook</span>
+              </button>
+
+
+              <button 
+                onClick={() => handleShare('copy')}
+                className="share-option-btn"
+              >
+                <Copy size={20} />
+                <span>Copy Link</span>
+              </button>
+            </div>
+
+            {/* Cancel Button */}
+            <div className="modal-actions">
+              <button 
+                onClick={closeShareModal}
+                className="btn btn--secondary"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>,
         document.body
       )}
