@@ -1,60 +1,250 @@
+/* src/styles/04-pages/filters.css */
+/* Updated styles for redesigned RunFilters component */
+
 /* ==============================================
-   FILTER BUTTONS - SURGICAL FIX
+   FILTER CONTAINER - NEW DESIGN
    ============================================== */
 
-/* Filter Container */
-.filter-tabs {
-  display: flex;
-  gap: var(--space-2);
-  margin-bottom: var(--space-6);
-  border-bottom: 1px solid var(--gray-200);
-  padding-bottom: var(--space-4);
+.filter-container {
+  position: relative;
   width: 100%;
+  margin-bottom: var(--space-6);
 }
 
-.filter-tab {
-  flex: 1;
-  padding: var(--space-2) var(--space-1);
-  border: 1px solid var(--gray-300);
+.filter-selector {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
   background: white;
-  color: var(--gray-700);
-  border-radius: var(--radius-md);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  font-weight: var(--font-normal);
-  transition: all 0.15s ease;
-  font-size: var(--font-xs);
-  text-align: center;
-  white-space: nowrap;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.filter-tab--active {
-  border: 2px solid var(--red-primary);
+.filter-selector:hover {
+  border-color: var(--red-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.filter-selector:focus {
+  outline: none;
+  border-color: var(--red-primary);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Filter Icon */
+.filter-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
   background: var(--red-light);
   color: var(--red-primary);
+  border-radius: var(--radius-md);
+  margin-right: var(--space-3);
+  flex-shrink: 0;
+}
+
+/* Filter Content */
+.filter-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filter-label {
+  font-size: var(--font-md);
+  font-weight: var(--font-semibold);
+  color: var(--gray-900);
+}
+
+.filter-count {
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+  font-weight: var(--font-normal);
+}
+
+/* Filter Arrow */
+.filter-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-500);
+  transition: transform 0.2s ease;
+  margin-left: var(--space-2);
+}
+
+.filter-arrow--open {
+  transform: rotate(180deg);
+}
+
+/* ==============================================
+   FILTER DROPDOWN
+   ============================================== */
+
+.filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid var(--gray-300);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.filter-option:last-child {
+  border-bottom: none;
+}
+
+.filter-option:hover {
+  background: var(--gray-50);
+}
+
+.filter-option--active {
+  background: var(--red-light);
+  color: var(--red-primary);
+}
+
+.filter-option--active .filter-option-label {
   font-weight: var(--font-semibold);
 }
 
-/* Mobile adjustments */
+.filter-option-label {
+  font-size: var(--font-md);
+  color: var(--gray-900);
+}
+
+.filter-option--active .filter-option-label {
+  color: var(--red-primary);
+}
+
+.filter-option-count {
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+  font-weight: var(--font-normal);
+}
+
+.filter-option--active .filter-option-count {
+  color: var(--red-primary);
+}
+
+/* ==============================================
+   MOBILE RESPONSIVENESS
+   ============================================== */
+
 @media (max-width: 768px) {
-  .filter-tabs {
-    gap: var(--space-1);
-    padding-bottom: var(--space-3);
-    margin-bottom: var(--space-5);
+  .filter-selector {
+    padding: var(--space-2) var(--space-3);
   }
   
-  .filter-tab {
-    padding: var(--space-2) var(--space-1);
-    font-size: 11px;
+  .filter-icon {
+    width: 36px;
+    height: 36px;
+    margin-right: var(--space-2);
+  }
+  
+  .filter-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .filter-label {
+    font-size: var(--font-sm);
+  }
+  
+  .filter-count {
+    font-size: var(--font-xs);
+  }
+  
+  .filter-option {
+    padding: var(--space-2) var(--space-3);
+  }
+  
+  .filter-option-label {
+    font-size: var(--font-sm);
+  }
+  
+  .filter-option-count {
+    font-size: var(--font-xs);
   }
 }
 
 @media (max-width: 480px) {
-  .filter-tabs {
-    gap: var(--space-1);
+  .filter-selector {
+    padding: var(--space-2);
   }
   
-  .filter-tab {
-    padding: var(--space-2) 2px;
-    font-size: 10px;
+  .filter-icon {
+    width: 32px;
+    height: 32px;
+    margin-right: var(--space-2);
+  }
+  
+  .filter-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .filter-label {
+    font-size: var(--font-xs);
+  }
+  
+  .filter-count {
+    font-size: 11px;
+  }
+}
+
+/* ==============================================
+   ACCESSIBILITY IMPROVEMENTS
+   ============================================== */
+
+.filter-selector:focus-visible {
+  outline: 2px solid var(--red-primary);
+  outline-offset: 2px;
+}
+
+.filter-option:focus-visible {
+  outline: 2px solid var(--red-primary);
+  outline-offset: -2px;
+}
+
+/* Ensure dropdown appears above other content */
+.filter-dropdown {
+  z-index: 1000;
+}
+
+/* Animation for smooth dropdown appearance */
+.filter-dropdown {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
