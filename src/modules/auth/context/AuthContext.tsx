@@ -86,19 +86,7 @@ const login = async (credentials: LoginCredentials) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
-        useEffect(() => {
-  // Loading timeout protection
-  if (authState.isLoading) {
-    const timeout = setTimeout(() => {
-      console.warn('⚠️ Auth loading timeout - forcing resolution');
-      // Force clear the loading state by invalidating queries
-      queryClient.setQueryData(authQueryKeys.session, { data: null, error: null });
-      queryClient.setQueryData(authQueryKeys.user, { data: null, error: null });
-    }, 10000); // 10 second timeout
-
-    return () => clearTimeout(timeout);
-  }
-}, [authState.isLoading, queryClient]);
+        
         if (event === 'SIGNED_IN') {
           // Invalidate queries to refetch user data
           queryClient.invalidateQueries({ queryKey: authQueryKeys.session });
