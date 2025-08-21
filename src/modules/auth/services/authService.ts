@@ -414,21 +414,17 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
   }
 };
 
-// ENHANCED LOGOUT - Adds session cleanup to your existing logic
+// SIMPLIFIED LOGOUT - Remove the problematic SessionSecurityService calls
 export const logoutUser = async (): Promise<void> => {
   try {
-    console.log('🔓 Starting enhanced secure logout...');
+    console.log('🔓 Starting logout...');
     
     // Get session info before logout
     const { data: { session } } = await supabase.auth.getSession();
     const { data: { user } } = await supabase.auth.getUser();
 
-    console.log('🔍 Logout debug - Session exists:', !!session);
-    console.log('🔍 Logout debug - User exists:', !!user);
-
     // Cleanup session security tracking
     if (session && user) {
-      console.log('🧹 Attempting session cleanup...');
       await SessionSecurityService.cleanupSession(user.id, session.access_token);
       
       // Log secure logout event
@@ -436,19 +432,23 @@ export const logoutUser = async (): Promise<void> => {
         user_id: user.id,
         reason: 'user_initiated'
       });
-      console.log('✅ Session cleanup completed');
-    } else {
-      console.log('⚠️ No session/user found to cleanup');
     }
 
     // Your existing logout logic
-    console.log('🔐 Calling Supabase signOut...');
     await supabase.auth.signOut();
-    console.log('✅ Enhanced secure logout completed');
+localStorage.removeItem('device_fingerprint');
+    localStorage.removeItem('session_fingerprint');
+    localStorage.removeItem('last_activity');
+    sessionStorage.removeItem('redirectAfterLogin');
+    
+    console.log('✅ Enhanced secure logout completed with cache clear');
   } catch (error) {
-    console.error('💥 Error during logout:', error);
+window.location.reload();
   }
 };
+
+  
+
 
 // SESSION SECURITY HELPER FUNCTIONS (NEW)
 export const updateSessionActivity = async (): Promise<void> => {
