@@ -464,3 +464,18 @@
   }
 }
 
+/* LIRF Assignment Manager - follows BookingManager pattern */
+.run-card-actions-container .lirf-assignment-manager {
+  margin: 0 !important;
+  flex: 1 !important;  /* Same as secondary buttons */
+  display: flex !important;
+  width: 100% !important;
+}
+
+.run-card-actions-container .lirf-assignment-manager .action-btn {
+  margin: 0 !important;
+  padding: 8px 20px !important;
+  font-size: 14px !important;
+  width: 100% !important;
+  text-align: center !important;
+}

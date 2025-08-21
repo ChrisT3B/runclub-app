@@ -398,3 +398,245 @@
 .calendar-btn:disabled:hover {
   transform: none;
 }
+/* ===== ADD THIS TO THE END OF booking-modal.css ===== */
+
+/* LIRF Assignment Success Modal Styles */
+
+
+.lirf-assignment-success-content {
+  text-align: center;
+}
+
+/* Success Header */
+.success-header {
+  margin-bottom: 24px;
+}
+
+.success-icon {
+  margin-bottom: 16px;
+}
+
+.success-shield {
+  color: #10b981; /* Green color for success */
+  margin: 0 auto;
+}
+
+.success-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.success-subtitle {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0 0 8px 0;
+}
+
+.success-recognition {
+  font-size: 14px;
+  color: #6b7280;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Run Details Preview */
+.run-details-preview {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.run-details-preview h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.run-details-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.detail-item {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.detail-item strong {
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+/* LIRF Responsibilities */
+.lirf-responsibilities {
+  background: #fef2f2;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.lirf-responsibilities h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #dc2626;
+  margin: 0 0 12px 0;
+}
+
+.lirf-responsibilities ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.lirf-responsibilities li {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.lirf-responsibilities li:last-child {
+  margin-bottom: 0;
+}
+
+/* Calendar Integration */
+.calendar-integration {
+  margin-bottom: 24px;
+}
+
+.calendar-integration h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.calendar-integration p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+}
+
+.calendar-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+  text-decoration: none;
+}
+
+.calendar-btn--primary {
+  background: #dc2626;
+  color: white;
+}
+
+.calendar-btn--primary:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.calendar-btn--secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.calendar-btn--secondary:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.calendar-success {
+  font-size: 14px;
+  color: #10b981;
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .lirf-assignment-success-content {
+    padding: 20px;
+  }
+  
+  .success-title {
+    font-size: 20px;
+  }
+  
+  .calendar-btn {
+    padding: 16px 20px;
+    font-size: 16px;
+    min-height: 48px;
+  }
+}
+/* Add this to your booking-modal.css file */
+
+/* Compact button layout */
+.calendar-button-group {
+  display: flex;
+  gap: 12px;
+  flex-direction: column;
+}
+
+.calendar-options-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Make the "Got it, thanks!" button slightly different styling */
+.calendar-btn--secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.calendar-btn--secondary:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+/* On mobile, stack buttons vertically with proper spacing */
+@media (max-width: 640px) {
+  .calendar-button-group {
+    gap: 16px;
+  }
+  
+  .calendar-options-group {
+    gap: 16px;
+  }
+}
+
+/* On larger screens, show buttons side by side for the main action */
+@media (min-width: 641px) {
+  .calendar-button-group {
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .calendar-button-group .calendar-btn {
+    flex: 1;
+    max-width: 200px;
+  }
+}

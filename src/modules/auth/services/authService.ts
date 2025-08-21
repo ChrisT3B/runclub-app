@@ -436,9 +436,14 @@ export const logoutUser = async (): Promise<void> => {
 
     // Your existing logout logic
     await supabase.auth.signOut();
-    console.log('✅ Enhanced secure logout completed');
+localStorage.removeItem('device_fingerprint');
+    localStorage.removeItem('session_fingerprint');
+    localStorage.removeItem('last_activity');
+    sessionStorage.removeItem('redirectAfterLogin');
+    
+    console.log('✅ Enhanced secure logout completed with cache clear');
   } catch (error) {
-    console.error('Error during logout:', error);
+window.location.reload();
   }
 };
 

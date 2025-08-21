@@ -17,7 +17,7 @@ export const ViewScheduledRuns: React.FC = () => {
   const [runs, setRuns] = useState<RunWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
-  const [assignmentLoading, setAssignmentLoading] = useState<string | null>(null);
+  //const [assignmentLoading, setAssignmentLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
   
@@ -57,7 +57,14 @@ export const ViewScheduledRuns: React.FC = () => {
     message: '',
     facebookUrl: undefined // Add this
   });
-
+// Add to existing state declarations (around line 15-25):
+const [lirfSuccessModal, setLirfSuccessModal] = useState<{
+  isOpen: boolean;
+  run: any | null;
+}>({
+  isOpen: false,
+  run: null
+});
   // Use permissions instead of checking access_level directly
   const canManageRuns = permissions.canManageRuns; // true for LIRF and admin
 
@@ -243,8 +250,91 @@ const closeShareModal = () => {
       setBookingLoading(null);
     }
   };
+// NEW: LirfAssignmentManager callback functions
+// UPDATE the existing handleLirfAssignmentSuccess function:
+const handleLirfAssignmentSuccess = () => {
+  console.log('🎯 Parent: LIRF assignment success, reloading data');
+  loadScheduledRuns();
+  // Don't close modal here - let user close it manually or after timeout
+};
+const handleLirfAssignmentError = (title: string, message: string) => {
+  setErrorModal({
+    isOpen: true,
+    title,
+    message
+  });
+};
 
-  const handleAssignSelfAsLIRF = async (runId: string) => {
+const handleLirfUnassignmentConfirm = (runId: string, runTitle: string) => {
+  if (!state.user?.id) return;
+
+  setConfirmModal({
+    isOpen: true,
+    title: 'Unassign LIRF',
+    message: `Are you sure you want to unassign yourself as LIRF from "${runTitle}"? Admins will be notified of this change.`,
+    onConfirm: () => {
+      closeConfirmModal();
+      performLirfUnassignment(runId);
+    }
+  });
+};
+
+const performLirfUnassignment = async (runId: string) => {
+  if (!state.user?.id) return;
+
+  try {
+    const run = runs.find(r => r.id === runId);
+    if (!run) return;
+
+    let updateData: any = {};
+    if (run.assigned_lirf_1 === state.user.id) {
+      updateData.assigned_lirf_1 = null;
+    } else if (run.assigned_lirf_2 === state.user.id) {
+      updateData.assigned_lirf_2 = null;
+    } else if (run.assigned_lirf_3 === state.user.id) {
+      updateData.assigned_lirf_3 = null;
+    }
+
+    await ScheduledRunsService.updateScheduledRun(runId, updateData);
+    await loadScheduledRuns();
+    setError('');
+    
+  } catch (err: any) {
+    console.error('LIRF unassignment error:', err);
+    
+    if (err instanceof BookingError) {
+      setErrorModal({
+        isOpen: true,
+        title: err.title || 'LIRF Unassignment Failed',
+        message: err.message
+      });
+    } else {
+      setErrorModal({
+        isOpen: true,
+        title: 'LIRF Unassignment Failed',
+        message: err.message || 'Failed to unassign LIRF position. Please try again.'
+      });
+    }
+  }
+};
+// NEW: Handle LIRF success modal display
+const handleLirfShowSuccessModal = (run: any) => {
+  console.log('🎯 Parent: Showing LIRF success modal for run:', run.run_title);
+  setLirfSuccessModal({
+    isOpen: true,
+    run: run
+  });
+};
+// NEW: Handle LIRF success modal close
+const handleLirfCloseSuccessModal = () => {
+  console.log('🎯 Parent: Closing LIRF success modal');
+  setLirfSuccessModal({
+    isOpen: false,
+    run: null
+  });
+};
+
+{/*}  const handleAssignSelfAsLIRF = async (runId: string) => {
     if (!state.user?.id) return;
 
     try {
@@ -281,7 +371,7 @@ const closeShareModal = () => {
     } finally {
       setAssignmentLoading(null);
     }
-  };
+  }; 
 
   const handleUnassignSelfAsLIRF = async (runId: string) => {
     if (!state.user?.id) return;
@@ -341,7 +431,7 @@ const closeShareModal = () => {
     } finally {
       setAssignmentLoading(null);
     }
-  };
+  }; */}
 
   // Share callbacks
   const shareCallbacks: ShareCallbacks = {
@@ -455,18 +545,26 @@ const closeShareModal = () => {
               run={run}
               canManageRuns={canManageRuns}
               isBookingLoading={bookingLoading === run.id}
-              isAssignmentLoading={assignmentLoading === run.id}
+              isAssignmentLoading={false}
               onBookRun={handleBookRun}
               onCancelBooking={handleCancelBooking}
-              onAssignSelfAsLIRF={handleAssignSelfAsLIRF}
-              onUnassignSelfAsLIRF={handleUnassignSelfAsLIRF}
+              onAssignSelfAsLIRF={()=>{}}
+              onUnassignSelfAsLIRF={()=>{}}
               shareCallbacks={shareCallbacks}
               getButtonText={getButtonText}
               // ✅ NEW: BookingManager enhancement props
               userId={state.user?.id}
+              user={state.user} // ADD this missing line
               onBookingChange={handleBookingChange}
               onBookingError={handleBookingError}
+                onAssignmentSuccess={handleLirfAssignmentSuccess} // ADD this line
+                onAssignmentError={handleLirfAssignmentError} // ADD this line
+                onUnassignmentConfirm={handleLirfUnassignmentConfirm} // ADD this line
               useBookingManager={true}
+              useLirfAssignmentManager={true} // ADD this line
+               showLirfSuccessModal={lirfSuccessModal.isOpen && lirfSuccessModal.run?.id === run.id}
+              onCloseLirfSuccessModal={handleLirfCloseSuccessModal}
+                 onShowLirfSuccessModal={handleLirfShowSuccessModal}
             />
           ))}
         </div>

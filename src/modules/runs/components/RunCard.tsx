@@ -19,6 +19,7 @@ import { RunWithDetails } from '../../admin/services/scheduledRunsService';
 import { BookingError } from '../../admin/services/bookingService';
 import { BookingManager } from './BookingManager';
 import { createPortal } from 'react-dom';
+import LirfAssignmentManager from './LirfAssignmentManager';  
 
 interface RunCardProps {
   run: RunWithDetails;
@@ -32,9 +33,17 @@ interface RunCardProps {
   shareCallbacks: ShareCallbacks;
   getButtonText: (fullText: string, shortText: string, loading: boolean, loadingText: string) => string;
   userId?: string;
+  user?: any; // ADD this line
   onBookingChange?: (updatedRun: RunWithDetails) => void;
   onBookingError?: (error: BookingError) => void;
+  onAssignmentSuccess?: () => void; // ADD this line
+  onAssignmentError?: (title: string, message: string) => void; // ADD this line
+  onUnassignmentConfirm?: (runId: string, runTitle: string) => void; // ADD this line
   useBookingManager?: boolean;
+  useLirfAssignmentManager?: boolean; // ADD this line
+    showLirfSuccessModal?: boolean;
+  onCloseLirfSuccessModal?: () => void;
+  onShowLirfSuccessModal?: (run: any) => void;
 }
 
 export const RunCard: React.FC<RunCardProps> = ({
@@ -49,9 +58,17 @@ export const RunCard: React.FC<RunCardProps> = ({
   shareCallbacks,
   getButtonText,
   userId,
+  user, // ADD this line
   onBookingChange,
   onBookingError,
-  useBookingManager = false
+    onAssignmentSuccess, // ADD this line
+  onAssignmentError, // ADD this line
+  onUnassignmentConfirm, // ADD this line
+  useBookingManager = false,
+  useLirfAssignmentManager = false, // ADD this line
+    showLirfSuccessModal = false,
+  onCloseLirfSuccessModal,
+  onShowLirfSuccessModal,
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -140,7 +157,58 @@ export const RunCard: React.FC<RunCardProps> = ({
       }
     }
   };
-
+// Render LIRF button (Following BookingManager pattern exactly)
+const renderLirfButton = () => {
+  if (useLirfAssignmentManager && onAssignmentSuccess && onAssignmentError && onUnassignmentConfirm && user) {
+    return (
+      <LirfAssignmentManager
+        run={run}
+        user={user}
+        onAssignmentSuccess={onAssignmentSuccess}
+        onAssignmentError={onAssignmentError}
+        onUnassignmentConfirm={onUnassignmentConfirm}
+                showSuccessModal={showLirfSuccessModal}
+        onCloseSuccessModal={onCloseLirfSuccessModal}
+        onShowSuccessModal={onShowLirfSuccessModal}
+      />
+    );
+  } else {
+    // Fallback to traditional prop-based approach (like BookingManager does)
+    if (!canManageRuns) {
+      return null;
+    }
+    
+    if (run.user_is_assigned_lirf) {
+      return (
+        <button
+          onClick={() => onUnassignSelfAsLIRF(run.id)}
+          disabled={isAssignmentLoading}
+          className="action-btn action-btn--danger"
+        >
+          <ShieldX size={16} />
+          {getButtonText(' Unassign LIRF', ' Unassign', isAssignmentLoading, 'Unassigning...')}
+        </button>
+      );
+    } else if (run.lirf_vacancies > 0) {
+      return (
+        <button
+          onClick={() => onAssignSelfAsLIRF(run.id)}
+          disabled={isAssignmentLoading}
+          className="action-btn action-btn--secondary"
+        >
+          <ShieldPlus size={16} />
+          {getButtonText(' Assign Me as LIRF', ' Assign Me', isAssignmentLoading, 'Assigning...')}
+        </button>
+      );
+    } else {
+      return (
+        <div className="action-status action-status--assigned">
+          LIRFs fully assigned
+        </div>
+      );
+    }
+  }
+};
   return (
     <>
       <div
@@ -261,31 +329,8 @@ export const RunCard: React.FC<RunCardProps> = ({
             </button>
 
             {/* LIRF Button */}
-            {canManageRuns && (
-              run.user_is_assigned_lirf ? (
-                <button
-                  onClick={() => onUnassignSelfAsLIRF(run.id)}
-                  disabled={isAssignmentLoading}
-                  className="action-btn action-btn--danger"
-                >
-                  <ShieldX size={16} />
-                  {getButtonText(' Unassign LIRF', ' Unassign', isAssignmentLoading, 'Unassigning...')}
-                </button>
-              ) : run.lirf_vacancies > 0 ? (
-                <button
-                  onClick={() => onAssignSelfAsLIRF(run.id)}
-                  disabled={isAssignmentLoading}
-                  className="action-btn action-btn--secondary"
-                >
-                  <ShieldPlus size={16} />
-                  {getButtonText(' Assign Me as LIRF', ' Assign Me', isAssignmentLoading, 'Assigning...')}
-                </button>
-              ) : (
-                <div className="action-status action-status--assigned">
-                  LIRFs fully assigned
-                </div>
-              )
-            )}
+
+            {renderLirfButton()}
           </div>
         </div>
       </div>
