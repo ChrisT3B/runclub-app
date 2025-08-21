@@ -19,7 +19,7 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
   bookingType
 }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [hasNativeCalendar, setHasNativeCalendar] = useState(false);
+
   const [isMobile, setIsMobile] = useState(false);
 
   // Show animation and detect device capabilities
@@ -37,9 +37,7 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
     const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     setIsMobile(mobile);
 
-    // Detect native calendar support
-    const hasCalendar = mobile || 'calendar' in navigator || 'calendarAPI' in window;
-    setHasNativeCalendar(hasCalendar);
+
   };
 
   const generateICSFile = () => {
@@ -185,35 +183,47 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
               <p>Don't forget about your run! Add it to your calendar:</p>
               
               <div className="calendar-buttons">
-                {hasNativeCalendar && isMobile ? (
-                  <button 
-                    className="calendar-btn calendar-btn--primary"
-                    onClick={openNativeCalendar}
-                  >
-                    <Smartphone size={20} />
-                    Open in Calendar App
-                  </button>
+                {isMobile ? (
+                    <>
+                    <button 
+                        className="calendar-btn calendar-btn--primary"
+                        onClick={openNativeCalendar}
+                    >
+                        <Smartphone size={20} />
+                        Open in Calendar App
+                    </button>
+                    
+                    <button 
+                        className="calendar-btn calendar-btn--secondary"
+                        onClick={downloadICSFile}
+                    >
+                        <Download size={20} />
+                        Download Calendar File
+                    </button>
+                    </>
                 ) : (
-                  <button 
+                    <button 
                     className="calendar-btn calendar-btn--primary"
                     onClick={downloadICSFile}
-                  >
+                    >
                     <Download size={20} />
                     Download Calendar File
-                  </button>
+                    </button>
                 )}
                 
                 <button 
-                  className="calendar-btn calendar-btn--secondary"
-                  onClick={() => {
-                    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(run.run_title)}&dates=${new Date(`${run.run_date}T${run.run_time}`).toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${new Date(new Date(`${run.run_date}T${run.run_time}`).getTime() + 90 * 60000).toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent(run.description || 'Run Alcester group run')}&location=${encodeURIComponent(run.meeting_point)}`;
+                    className="calendar-btn calendar-btn--secondary"
+                    onClick={() => {
+                    const startDateTime = new Date(`${run.run_date}T${run.run_time}`);
+                    const endDateTime = new Date(startDateTime.getTime() + 90 * 60000);
+                    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(run.run_title)}&dates=${startDateTime.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${endDateTime.toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent(run.description || 'Run Alcester group run')}&location=${encodeURIComponent(run.meeting_point)}`;
                     window.open(googleCalendarUrl, '_blank');
-                  }}
+                    }}
                 >
-                  <Calendar size={20} />
-                  Google Calendar
+                    <Calendar size={20} />
+                    Google Calendar
                 </button>
-              </div>
+                </div>
             </div>
           </>
         )}
