@@ -370,7 +370,7 @@ const renderLirfButton = () => {
                 <MessageCircle size={20} />
                 <span>WhatsApp</span>
               </button>
-
+              {canManageRuns && (
               <button 
                 onClick={() => handleShare('facebook-group')}
                 className="share-option-btn"
@@ -378,7 +378,7 @@ const renderLirfButton = () => {
                 <Users size={20} />
                 <span>Facebook Group</span>
               </button>
-
+              )}
               <button 
                 onClick={() => handleShare('facebook')}
                 className="share-option-btn"
