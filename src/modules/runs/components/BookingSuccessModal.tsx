@@ -42,7 +42,7 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
 
   const generateICSFile = () => {
     const startDateTime = new Date(`${run.run_date}T${run.run_time}`);
-    const endDateTime = new Date(startDateTime.getTime() + 90 * 60000); // 90 minutes duration
+    const endDateTime = new Date(startDateTime.getTime() + 60 * 60000); // 90 minutes duration
     
     // Format dates for ICS (YYYYMMDDTHHMMSSZ)
     const formatICSDate = (date: Date) => {

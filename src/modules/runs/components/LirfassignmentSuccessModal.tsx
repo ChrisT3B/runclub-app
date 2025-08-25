@@ -77,7 +77,7 @@ const LirfAssignmentSuccessModal: React.FC<LirfAssignmentSuccessModalProps> = ({
   const generateICS = () => {
     const event = generateCalendarEvent();
     const startDateTime = new Date(`${event.date}T${event.time}`);
-    const endDateTime = new Date(startDateTime.getTime() + (90 * 60 * 1000)); // Add 90 minutes
+    const endDateTime = new Date(startDateTime.getTime() + (60 * 60 * 1000)); // Add 60 minutes
 
     // Format dates for ICS (YYYYMMDDTHHMMSS)
     const formatICSDate = (date: Date) => {
