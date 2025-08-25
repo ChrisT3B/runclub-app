@@ -159,6 +159,9 @@ export const RunCard: React.FC<RunCardProps> = ({
   };
 // Render LIRF button (Following BookingManager pattern exactly)
 const renderLirfButton = () => {
+  if (!canManageRuns) {
+    return null;
+  }
   if (useLirfAssignmentManager && onAssignmentSuccess && onAssignmentError && onUnassignmentConfirm && user) {
     return (
       <LirfAssignmentManager
