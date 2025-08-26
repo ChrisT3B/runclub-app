@@ -77,56 +77,65 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
 
   useEffect(() => {
     loadRunData();
+    loadAllMembers();
   }, [runId]);
 
-  const loadRunData = async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      // Reset bookings first
-      setBookings([]);
-
-      // Load bookings for this run
-      const runBookings = await BookingService.getRunBookings(runId);
-      const activeBookings = runBookings.filter(b => !b.cancelled_at);
-
-      // Get member details for each booking
-      const bookingsWithMembers: BookingWithMember[] = await Promise.all(
-        activeBookings.map(async (booking) => {
+        const loadRunData = async () => {
           try {
-            const member = await getMemberDetails(booking.member_id);
-            return {
-              ...booking,
-              member,
-              is_manual_addition: false
-            };
+            setLoading(true);
+            setError('');
+
+            // Reset states in proper order
+            setBookings([]);
+            setAttendance([]);
+
+            // Load bookings for this run
+            const runBookings = await BookingService.getRunBookings(runId);
+            const activeBookings = runBookings.filter(b => !b.cancelled_at);
+
+            // Get member details for bookings
+            const bookingsWithMembers: BookingWithMember[] = await Promise.all(
+              activeBookings.map(async (booking) => {
+                try {
+                  const member = await getMemberDetails(booking.member_id);
+                  return {
+                    ...booking,
+                    member: member || {
+                      id: booking.member_id,
+                      full_name: 'Unknown Member',
+                      email: '',
+                      phone: ''
+                    }
+                  };
+                } catch (error) {
+                  console.error('Error processing member booking:', error);
+                  return {
+                    ...booking,
+                    member: {
+                      id: booking.member_id,
+                      full_name: 'Unknown Member',
+                      email: '',
+                      phone: ''
+                    }
+                  };
+                }
+              })
+            );
+
+            // Set bookings first
+            setBookings(bookingsWithMembers);
+
+            // Then load attendance records and sync
+            await loadAttendanceRecordsSync(bookingsWithMembers);
+
           } catch (error) {
-            console.error('Error loading member details:', error);
-            return {
-              ...booking,
-              member: undefined,
-              is_manual_addition: false
-            };
+            console.error('Error loading run data:', error);
+            setError('Failed to load run data');
+          } finally {
+            setLoading(false);
           }
-        })
-      );
+        };
 
-      setBookings(bookingsWithMembers);
-
-      // Load existing attendance records (including manual additions)
-      await loadAttendanceRecords();
-
-      // Load all members for the dropdown
-      await loadAllMembers();
-
-    } catch (err: any) {
-      console.error('Failed to load run data:', err);
-      setError(err.message || 'Failed to load run data');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadAllMembers = async () => {
     try {
@@ -159,24 +168,25 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
     }
   };
 
-  const loadAttendanceRecords = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('run_attendance')
-        .select('*')
-        .eq('run_id', runId);
-      
-      if (error) throw error;
-      
-      const attendanceRecords = data || [];
-      setAttendance(attendanceRecords);
+  const loadAttendanceRecordsSync = async (currentBookings: BookingWithMember[]) => {
+  try {
+    const { data, error } = await supabase
+      .from('run_attendance')
+      .select('*')
+      .eq('run_id', runId);
+    
+    if (error) throw error;
+    
+    const attendanceRecords = data || [];
+    setAttendance(attendanceRecords);
 
-      // Add manually added runners that aren't in bookings
-      const manualAttendees = attendanceRecords.filter(record => 
-        record.is_manual_addition && 
-        !bookings.find(booking => booking.member_id === record.member_id)
-      );
+    // Add manually added runners that aren't in current bookings
+    const manualAttendees = attendanceRecords.filter(record => 
+      record.is_manual_addition && 
+      !currentBookings.find(booking => booking.member_id === record.member_id)
+    );
 
+    if (manualAttendees.length > 0) {
       // Get member details for manual attendees
       const manualBookings: BookingWithMember[] = await Promise.all(
         manualAttendees.map(async (record) => {
@@ -192,17 +202,14 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
         })
       );
 
-      // Only add new manual bookings that aren't already in the list
-      setBookings(prev => {
-        const existingIds = prev.map(b => b.member_id);
-        const newManualBookings = manualBookings.filter(mb => !existingIds.includes(mb.member_id));
-        return [...prev, ...newManualBookings];
-      });
-
-    } catch (error) {
-      console.error('Error loading attendance records:', error);
+      // Update bookings with manual additions
+      setBookings(prev => [...prev, ...manualBookings]);
     }
-  };
+
+  } catch (error) {
+    console.error('Error loading attendance records:', error);
+  }
+};
 
   const markAttendance = async (memberId: string, present: boolean, notes?: string) => {
     if (!state.user?.id) return;
@@ -242,7 +249,7 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
       }
 
       // Reload attendance records
-      await loadAttendanceRecords();
+      await loadRunData();
 
     } catch (err: any) {
       console.error('Failed to mark attendance:', err);
@@ -386,8 +393,20 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
     !bookings.find(booking => booking.member_id === member.id)
   );
 
-  const presentCount = attendance.filter(a => a.marked_present).length;
-  const totalCount = bookings.length;
+    const getUnifiedAttendanceData = () => {
+      return bookings.map(booking => {
+        const attendanceRecord = attendance.find(a => a.member_id === booking.member_id);
+        return {
+          booking,
+          attendanceRecord,
+          isPresent: attendanceRecord?.marked_present || false,
+          isMarked: attendanceRecord !== undefined
+        };
+      });
+    };
+    const unifiedData = getUnifiedAttendanceData();
+    const presentCount = unifiedData.filter(item => item.isPresent).length;
+    const totalCount = unifiedData.length;
 
   if (loading) {
     return (

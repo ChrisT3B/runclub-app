@@ -17,6 +17,7 @@ export interface Member {
   access_level: string;
   dbs_expiry_date?: string; // New DBS expiry field
   email_notifications_enabled?: boolean; // New field for email notifications
+  date_joined?: string; // ✅ ADD THIS LINE IF MISSING
   created_at: string;
   updated_at: string;
 }

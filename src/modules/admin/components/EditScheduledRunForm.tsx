@@ -29,7 +29,7 @@ export const EditScheduledRunForm: React.FC<EditScheduledRunFormProps> = ({
   onSuccess, 
   onCancel 
 }) => {
-  const { state } = useAuth();
+  const { state, permissions } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingRun, setLoadingRun] = useState(true);
   const [error, setError] = useState('');
@@ -145,11 +145,17 @@ const handleSubmit = async (e: React.FormEvent) => {
     if (!window.confirm('Are you sure you want to delete this run? This action cannot be undone.')) {
       return;
     }
-
+    if (!state.user?.id || !permissions.accessLevel) {
+      setError('Authentication error. Please log in again.');
+      return;
+    }
     try {
       setLoading(true);
       
-      await ScheduledRunsService.deleteScheduledRun(runId);
+      await ScheduledRunsService.deleteScheduledRun(
+        runId,   
+        state.user.id, 
+        permissions.accessLevel);
       
       onSuccess();
     } catch (err: any) {

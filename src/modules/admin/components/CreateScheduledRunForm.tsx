@@ -130,7 +130,8 @@ const generateWeeklyRuns = (baseData: ScheduledRunData) => {
     return [{
       ...baseData,
       end_date: baseData.run_date, // Use original date exactly as entered
-      created_by: state.user?.id
+      created_by: state.user?.id,
+      created_by_name: state.member?.full_name || 'Unknown User'
     }];
   }
 

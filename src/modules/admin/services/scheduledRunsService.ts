@@ -21,6 +21,7 @@ export interface ScheduledRun {
   assigned_lirf_2?: string;
   assigned_lirf_3?: string;
   created_by: string;
+  created_by_name?: string;
   created_at: string;
   updated_at: string;
   bookings_count?: number;
@@ -42,6 +43,7 @@ export interface CreateScheduledRunData {
   assigned_lirf_2?: string;
   assigned_lirf_3?: string;
   created_by: string;
+  created_by_name?: string;     // ADD: Name for display
 }
 
 export interface RunWithDetails extends ScheduledRun {
@@ -343,7 +345,8 @@ export class ScheduledRunsService {
           assigned_lirf_1: null, // Set to null initially
           assigned_lirf_2: null,
           assigned_lirf_3: null,
-          created_by: runData.created_by
+          created_by: runData.created_by,
+          created_by_name: runData.created_by_name      // ADD: Name
         })
         .select()
         .single();
@@ -473,11 +476,70 @@ export class ScheduledRunsService {
     }
   }
 
-  /**
-   * Delete a scheduled run
+ /**
+   * Check if a user can delete a specific run
    */
-  static async deleteScheduledRun(runId: string): Promise<void> {
+  static async canUserDeleteRun(runId: string, userId: string, userAccessLevel: string): Promise<{
+    canDelete: boolean;
+    reason?: string;
+  }> {
     try {
+      // First get the run details
+      const run = await this.getScheduledRun(runId);
+      
+      // Check if run has started or completed
+      if (run.run_status === 'in_progress' || run.run_status === 'completed') {
+         console.log('❌ Delete blocked - run status:', run.run_status);
+        return {
+          canDelete: false,
+          reason: `Cannot delete ${run.run_status === 'in_progress' ? 'a run that has started' : 'a completed run'}`
+        };
+      }
+      
+      // Admin can delete any scheduled or cancelled run
+      if (userAccessLevel === 'admin') {
+        return { canDelete: true };
+      }
+      
+      // LIRF can only delete runs they created (and only if scheduled/cancelled)
+      if (userAccessLevel === 'lirf') {
+        if (run.created_by !== userId) {
+          return {
+            canDelete: false,
+            reason: 'You can only delete runs you created'
+          };
+        }
+        return { canDelete: true };
+      }
+      
+      // Regular members cannot delete runs
+      return {
+        canDelete: false,
+        reason: 'You do not have permission to delete runs'
+      };
+      
+    } catch (error) {
+      console.error('Error checking delete permissions:', error);
+      return {
+        canDelete: false,
+        reason: 'Unable to verify permissions'
+      };
+    }
+  }
+
+  /**
+   * Delete a scheduled run with proper permission checks
+   */
+  static async deleteScheduledRun(runId: string, userId: string, userAccessLevel: string): Promise<void> {
+    try {
+      // First check if user can delete this run
+      const permissionCheck = await this.canUserDeleteRun(runId, userId, userAccessLevel);
+      
+      if (!permissionCheck.canDelete) {
+        throw new Error(permissionCheck.reason || 'You cannot delete this run');
+      }
+      
+      // Proceed with deletion if permissions are valid
       const { error } = await supabase
         .from('scheduled_runs')
         .delete()
@@ -492,6 +554,29 @@ export class ScheduledRunsService {
       throw error;
     }
   }
+
+  /**
+   * Get runs that a user can delete (for UI filtering)
+   */
+  static async getDeletableRuns(userId: string, userAccessLevel: string): Promise<string[]> {
+    try {
+      const runs = await this.getScheduledRuns();
+      const deletableRunIds: string[] = [];
+      
+      for (const run of runs) {
+        const permissionCheck = await this.canUserDeleteRun(run.id, userId, userAccessLevel);
+        if (permissionCheck.canDelete) {
+          deletableRunIds.push(run.id);
+        }
+      }
+      
+      return deletableRunIds;
+    } catch (error) {
+      console.error('Error getting deletable runs:', error);
+      return [];
+    }
+  }
+
 
   /**
    * Update run status
