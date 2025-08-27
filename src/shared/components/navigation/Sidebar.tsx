@@ -24,7 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
   }
 
   // Add admin-specific navigation using permissions
-  if (permissions.canManageMembers) {
+  if (permissions.canManageRuns) {
     navigation.push(
       { id: 'members', name: 'Members', icon: '👥' },
       { id: 'communications', name: 'Communications', icon: '📧' }
