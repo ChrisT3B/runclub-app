@@ -19,15 +19,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
   if (permissions.canManageRuns) {
     navigation.push(
       { id: 'manage-runs', name: 'Manage Scheduled Runs', icon: '📅' },
-      { id: 'lead-your-run', name: 'Lead Your Runs', icon: '🎯' }
+      { id: 'lead-your-run', name: 'Lead Your Runs', icon: '🎯' },
+      { id: 'communications', name: 'Communications', icon: '📧' }
     )
   }
 
   // Add admin-specific navigation using permissions
-  if (permissions.canManageRuns) {
+  if (permissions.canManageMembers) {
     navigation.push(
       { id: 'members', name: 'Members', icon: '👥' },
-      { id: 'communications', name: 'Communications', icon: '📧' }
+    
     )
   }
 
