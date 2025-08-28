@@ -1,5 +1,7 @@
+// src/modules/membership/components/ProfileView.tsx
 import React from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
+import { useProfileQuery } from '../services/profileServices';
 
 interface ProfileViewProps {
   onEdit: () => void;
@@ -7,9 +9,12 @@ interface ProfileViewProps {
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
   const { state } = useAuth();
+  
+  // Fetch profile data using React Query instead of AuthContext
+  const { data: member, isLoading, error } = useProfileQuery(state.user?.id);
 
   const getEmailNotificationStatus = () => {
-    const isEnabled = state.member?.email_notifications_enabled !== false; // Default to true if undefined
+    const isEnabled = member?.email_notifications_enabled !== false; // Default to true if undefined
     return {
       enabled: isEnabled,
       text: isEnabled ? 'Enabled' : 'Disabled',
@@ -18,6 +23,42 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
       icon: isEnabled ? '✅' : '❌'
     };
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="card">
+        <div className="card-content">
+          <div style={{ 
+            padding: '40px 20px', 
+            textAlign: 'center',
+            color: 'var(--gray-600)'
+          }}>
+            Loading profile...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="card">
+        <div className="card-content">
+          <div style={{ 
+            padding: '20px', 
+            textAlign: 'center',
+            color: 'var(--red-600)',
+            background: '#fef2f2',
+            borderRadius: '6px'
+          }}>
+            Failed to load profile. Please try refreshing the page.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const emailStatus = getEmailNotificationStatus();
 
@@ -38,7 +79,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
           <div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Name:</div>
-              <div style={{ color: 'var(--gray-900)' }}>{state.member?.full_name || 'Not set'}</div>
+              <div style={{ color: 'var(--gray-900)' }}>{member?.full_name || 'Not set'}</div>
             </div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Email:</div>
@@ -46,7 +87,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
             </div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Phone:</div>
-              <div style={{ color: 'var(--gray-900)' }}>{state.member?.phone || 'Not set'}</div>
+              <div style={{ color: 'var(--gray-900)' }}>{member?.phone || 'Not set'}</div>
             </div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>📧 Email Notifications:</div>
@@ -54,30 +95,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
                 <span style={{ 
                   background: emailStatus.background, 
                   color: emailStatus.color, 
-                  padding: '4px 8px', 
+                  padding: '4px 12px', 
                   borderRadius: '12px', 
                   fontSize: '12px', 
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
+                  fontWeight: '500', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '4px' 
                 }}>
                   {emailStatus.icon} {emailStatus.text}
                 </span>
-                {!emailStatus.enabled && (
-                  <span style={{ 
-                    fontSize: '12px', 
-                    color: 'var(--gray-500)', 
-                    fontStyle: 'italic' 
-                  }}>
-                    (You won't receive email alerts)
-                  </span>
-                )}
               </div>
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Medical Information:</div>
-              <div style={{ color: 'var(--gray-900)' }}>{state.member?.health_conditions || 'Not set'}</div>
             </div>
           </div>
 
@@ -85,37 +113,25 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
           <div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Emergency Contact:</div>
-              <div style={{ color: 'var(--gray-900)' }}>{state.member?.emergency_contact_name || 'Not set'}</div>
+              <div style={{ color: 'var(--gray-900)' }}>{member?.emergency_contact_name || 'Not set'}</div>
             </div>
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Emergency Phone:</div>
-              <div style={{ color: 'var(--gray-900)' }}>{state.member?.emergency_contact_phone || 'Not set'}</div>
+              <div style={{ color: 'var(--gray-900)' }}>{member?.emergency_contact_phone || 'Not set'}</div>
             </div>
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Access Level:</div>
-              <span style={{ 
-                background: 'var(--red-light)', 
-                color: 'var(--red-primary)', 
-                padding: '4px 8px', 
-                borderRadius: '12px', 
-                fontSize: '12px', 
-                fontWeight: '500' 
+              <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Medical Information:</div>
+              <div style={{ 
+                color: 'var(--gray-900)', 
+                backgroundColor: 'var(--gray-50)', 
+                padding: '8px 12px', 
+                borderRadius: '6px', 
+                fontSize: '14px',
+                minHeight: '36px',
+                whiteSpace: 'pre-wrap'
               }}>
-                {state.member?.access_level || 'member'}
-              </span>
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>Membership Status:</div>
-              <span style={{ 
-                background: '#dcfce7', 
-                color: '#166534', 
-                padding: '4px 8px', 
-                borderRadius: '12px', 
-                fontSize: '12px', 
-                fontWeight: '500' 
-              }}>
-                {state.member?.membership_status || 'Pending'}
-              </span>
+                {member?.health_conditions || 'No medical conditions reported'}
+              </div>
             </div>
           </div>
         </div>

@@ -495,18 +495,24 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
           </div>
         </div>
       </div>
-
-      {/* Profile Summary Card */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">Your Profile</h3>
-          <button 
-            className="btn btn-primary"
-            onClick={() => onNavigate?.('profile')}
-            style={{ fontSize: '14px' }}
-          >
-            📝 Edit Profile
-          </button>
+          {/* Profile Summary Card */}
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">Your Profile</h3>
+              <button 
+                className="btn btn-primary"
+                onClick={() => {
+                  // Navigate to profile page with edit mode enabled
+                  onNavigate?.('profile');
+                  // Add edit parameter to URL
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('edit', 'true');
+                  window.history.replaceState({}, '', url.toString());
+                }}
+                style={{ fontSize: '14px' }}
+              >
+                📝 Edit Profile
+              </button>
         </div>
         <div className="card-content">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>

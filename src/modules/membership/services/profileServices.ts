@@ -1,11 +1,8 @@
+// src/modules/membership/services/profileServices.ts
 import { supabase } from '../../../services/supabase';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SQLSecurityValidator, SecureQueryBuilder } from '../../../utils/sqlSecurityValidator';
-import { InputSanitizer } from '../../../utils/inputSanitizer'; // ADD THIS
-
-
-// Test UUID validation
-console.log(SQLSecurityValidator.validateUUID('valid-uuid-here'));
-console.log(SQLSecurityValidator.validateUUID('malicious-input'));
+import { InputSanitizer } from '../../../utils/inputSanitizer';
 
 export interface ProfileUpdateData {
   fullName: string;
@@ -14,70 +11,74 @@ export interface ProfileUpdateData {
   emergencyContact?: string;
   emergencyPhone?: string;
   medicalInfo?: string;
-  email_notifications_enabled?: boolean; // ADD THIS LINE
+  email_notifications_enabled?: boolean;
 }
+
+// Query keys for profile cache management
+export const profileQueryKeys = {
+  profile: (userId: string) => ['profile', userId] as const,
+};
 
 export class ProfileService {
   /**
    * Update user profile in the database
    */
-// REPLACE your existing updateProfile function with this:
-static async updateProfile(userId: string, profileData: ProfileUpdateData) {
-  try {
-    // ADD: Security validation
-    const cleanUserId = SecureQueryBuilder.validateUserQuery(userId);
-    const sanitizedData = InputSanitizer.sanitizeFormData(profileData);
-    
-    // ADD: Email validation
-    const emailValidation = SQLSecurityValidator.validateEmailForDB(sanitizedData.email);
-    if (!emailValidation.isValid) {
-      throw new Error(emailValidation.error);
-    }
-
-    // ADD: SQL injection check for text fields
-    const textFields = [
-      sanitizedData.fullName,
-      sanitizedData.phone,
-      sanitizedData.emergencyContact,
-      sanitizedData.emergencyPhone,
-      sanitizedData.medicalInfo
-    ].filter((field): field is string => typeof field === 'string' && field.length > 0);
-
-    for (const field of textFields) {
-      if (SQLSecurityValidator.containsSQLInjection(field)) {
-        console.error('🚨 SQL injection attempt blocked in profile update:', field);
-        throw new Error('Invalid input detected');
+  static async updateProfile(userId: string, profileData: ProfileUpdateData) {
+    try {
+      // Security validation
+      const cleanUserId = SecureQueryBuilder.validateUserQuery(userId);
+      const sanitizedData = InputSanitizer.sanitizeFormData(profileData);
+      
+      // Email validation
+      const emailValidation = SQLSecurityValidator.validateEmailForDB(sanitizedData.email);
+      if (!emailValidation.isValid) {
+        throw new Error(emailValidation.error);
       }
+
+      // SQL injection check for text fields
+      const textFields = [
+        sanitizedData.fullName,
+        sanitizedData.phone,
+        sanitizedData.emergencyContact,
+        sanitizedData.emergencyPhone,
+        sanitizedData.medicalInfo
+      ].filter((field): field is string => typeof field === 'string' && field.length > 0);
+
+      for (const field of textFields) {
+        if (SQLSecurityValidator.containsSQLInjection(field)) {
+          console.error('🚨 SQL injection attempt blocked in profile update:', field);
+          throw new Error('Invalid input detected');
+        }
+      }
+
+      // Update profile in database
+      const { data, error } = await supabase
+        .from('members')
+        .update({
+          full_name: sanitizedData.fullName,
+          email: emailValidation.clean,
+          phone: sanitizedData.phone || null,
+          emergency_contact_name: sanitizedData.emergencyContact || null,
+          emergency_contact_phone: sanitizedData.emergencyPhone || null,
+          health_conditions: sanitizedData.medicalInfo || null,
+          email_notifications_enabled: sanitizedData.email_notifications_enabled,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', cleanUserId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Profile update error:', error);
+        throw new Error(error.message);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      throw error;
     }
-
-    // KEEP your existing Supabase query, just update the data references:
-    const { data, error } = await supabase
-      .from('members')
-      .update({
-        full_name: sanitizedData.fullName,                    // CHANGE: was profileData.fullName
-        email: emailValidation.clean,                         // CHANGE: was profileData.email
-        phone: sanitizedData.phone || null,                   // CHANGE: was profileData.phone
-        emergency_contact_phone: sanitizedData.emergencyPhone || null,      // CHANGE: was profileData.emergencyPhone
-        health_conditions: sanitizedData.medicalInfo || null,               // CHANGE: was profileData.medicalInfo
-        email_notifications_enabled: sanitizedData.email_notifications_enabled, // CHANGE: was profileData.email_notifications_enabled
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', cleanUserId)  // CHANGE: was userId
-      .select()
-      .single();
-
-    // KEEP your existing error handling
-    if (error) {
-      console.error('Profile update error:', error);
-      throw new Error(error.message);
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Failed to update profile:', error);
-    throw error;
   }
-}
 
   /**
    * Get user profile from database
@@ -123,3 +124,26 @@ static async updateProfile(userId: string, profileData: ProfileUpdateData) {
     }
   }
 }
+
+// React Query hook for profile data
+export const useProfileQuery = (userId: string | undefined) => {
+  return useQuery({
+    queryKey: profileQueryKeys.profile(userId || ''),
+    queryFn: () => ProfileService.getProfile(userId!),
+    enabled: !!userId,
+    staleTime: 2 * 60 * 1000, // 2 minutes - shorter than auth context for fresh data
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+};
+
+// Hook for invalidating profile cache after updates
+export const useInvalidateProfile = () => {
+  const queryClient = useQueryClient();
+  
+  return (userId: string) => {
+    queryClient.invalidateQueries({ 
+      queryKey: profileQueryKeys.profile(userId) 
+    });
+  };
+};

@@ -1,6 +1,9 @@
+// src/modules/membership/components/ProfileEditForm.tsx
 import React, { useState } from 'react';
 import { useAuth } from '../../../modules/auth/context/AuthContext';
-import { ProfileService } from '../services/profileServices';
+import { ProfileService, useInvalidateProfile } from '../services/profileServices';
+import { authQueryKeys } from '../../auth/hooks/useAuthQueries';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ProfileEditFormProps {
   onCancel: () => void;
@@ -9,6 +12,8 @@ interface ProfileEditFormProps {
 
 export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSave }) => {
   const { state } = useAuth();
+  const queryClient = useQueryClient();
+  const invalidateProfile = useInvalidateProfile();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -55,6 +60,16 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
         ...formData,
         email_notifications_enabled: formData.emailNotifications
       });
+      
+      // Invalidate both profile cache and auth context cache to refresh all data
+      invalidateProfile(state.user.id);
+      
+      // Also invalidate the auth context user profile query
+      if (state.user.id) {
+        queryClient.invalidateQueries({ 
+          queryKey: authQueryKeys.userProfile(state.user.id) 
+        });
+      }
       
       setSuccess('Profile updated successfully!');
       setTimeout(() => {
@@ -150,67 +165,6 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
             </div>
           </div>
 
-          {/* Communication Preferences */}
-          <div style={{ marginBottom: '24px' }}>
-            <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--gray-900)', marginBottom: '16px' }}>
-              📧 Communication Preferences
-            </h4>
-            
-            <div style={{
-              padding: '16px',
-              background: '#f9fafb',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <input
-                  type="checkbox"
-                  id="emailNotifications"
-                  name="emailNotifications"
-                  checked={formData.emailNotifications}
-                  onChange={handleInputChange}
-                  style={{
-                    marginTop: '2px',
-                    width: '18px',
-                    height: '18px',
-                    cursor: 'pointer'
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <label 
-                    htmlFor="emailNotifications" 
-                    style={{
-                      fontWeight: '500',
-                      color: 'var(--gray-900)',
-                      cursor: 'pointer',
-                      display: 'block',
-                      marginBottom: '4px'
-                    }}
-                  >
-                    📨 Receive Email Notifications
-                  </label>
-                  <div style={{ fontSize: '14px', color: 'var(--gray-600)', lineHeight: '1.4' }}>
-                    Get email alerts for run updates, club announcements, and important notifications.
-                    You'll still receive in-app notifications regardless of this setting.
-                  </div>
-                  {!formData.emailNotifications && (
-                    <div style={{
-                      fontSize: '12px',
-                      color: '#dc2626',
-                      marginTop: '8px',
-                      padding: '6px 8px',
-                      background: '#fef2f2',
-                      border: '1px solid #fecaca',
-                      borderRadius: '4px'
-                    }}>
-                      ⚠️ You won't receive email notifications for important run updates
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Emergency Contact */}
           <div style={{ marginBottom: '24px' }}>
             <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--gray-900)', marginBottom: '16px' }}>
@@ -245,14 +199,14 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
           </div>
 
           {/* Medical Information */}
-          <div style={{ marginBottom: '32px' }}>
+          <div style={{ marginBottom: '24px' }}>
             <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--gray-900)', marginBottom: '16px' }}>
               Medical Information
             </h4>
             
             <div className="form-group">
               <label className="form-label" htmlFor="medicalInfo">
-                Medical Conditions / Allergies
+                Health Conditions / Allergies / Medical Notes
               </label>
               <textarea
                 id="medicalInfo"
@@ -260,23 +214,54 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
                 value={formData.medicalInfo}
                 onChange={handleInputChange}
                 className="form-input"
-                rows={3}
-                placeholder="Any medical conditions, allergies, or medications we should be aware of..."
-                style={{ resize: 'vertical', minHeight: '80px' }}
+                placeholder="Any medical conditions, allergies, or other health information we should know about..."
+                rows={4}
+                style={{ resize: 'vertical', minHeight: '100px' }}
               />
-              <div style={{ fontSize: '12px', color: 'var(--gray-500)', marginTop: '4px' }}>
-                This information is kept confidential and only used for safety purposes
-              </div>
+              <small style={{ color: 'var(--gray-600)', fontSize: '12px' }}>
+                This information is kept confidential and is only used for safety purposes during runs.
+              </small>
+            </div>
+          </div>
+
+          {/* Communication Preferences */}
+          <div style={{ marginBottom: '32px' }}>
+            <h4 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--gray-900)', marginBottom: '16px' }}>
+              Communication Preferences
+            </h4>
+            
+            <div className="form-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  name="emailNotifications"
+                  checked={formData.emailNotifications}
+                  onChange={handleInputChange}
+                  style={{ marginRight: '4px' }}
+                />
+                <span className="form-label" style={{ marginBottom: '0' }}>
+                  📧 Receive email notifications about runs and club updates
+                </span>
+              </label>
+              <small style={{ color: 'var(--gray-600)', fontSize: '12px', marginLeft: '24px' }}>
+                You can change this setting at any time. Important safety notifications will always be sent.
+              </small>
             </div>
           </div>
 
           {/* Form Actions */}
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+          <div style={{ 
+            display: 'flex', 
+            gap: '12px', 
+            paddingTop: '20px', 
+            borderTop: '1px solid var(--gray-200)' 
+          }}>
             <button
               type="button"
               onClick={onCancel}
               className="btn btn-secondary"
               disabled={isLoading}
+              style={{ flex: 1 }}
             >
               Cancel
             </button>
@@ -284,6 +269,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
               type="submit"
               className="btn btn-primary"
               disabled={isLoading}
+              style={{ flex: 1 }}
             >
               {isLoading ? 'Saving...' : 'Save Changes'}
             </button>
@@ -293,5 +279,3 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
     </div>
   );
 };
-
-export default ProfileEditForm;
