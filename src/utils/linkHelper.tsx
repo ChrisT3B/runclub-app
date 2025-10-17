@@ -3,7 +3,7 @@ import React from 'react';
 
 /**
  * Enhanced function that converts both markdown formatting AND URLs to proper JSX
- * This replaces the original renderTextWithLinks function
+ * FIXED: Better regex patterns and processing order to prevent formatting issues
  */
 const renderTextWithLinksAndMarkdown = (text: string): React.ReactNode => {
   if (!text) return text;
@@ -16,12 +16,16 @@ const renderTextWithLinksAndMarkdown = (text: string): React.ReactNode => {
       return <br key={lineIndex} />;
     }
 
-    // First, process markdown formatting
+    // FIXED: Process markdown formatting with more robust regex patterns
     let processedLine = line
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Bold: **text**
-      .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')  // Italic: *text*
-      .replace(/^• (.*)/, '<li style="list-style-type: disc; margin-left: 20px;">$1</li>')  // Bullets
-      .replace(/^\d+\. (.*)/, '<li style="list-style-type: decimal; margin-left: 20px;">$1</li>');  // Numbers
+      // Bold: **text** - improved regex to handle edge cases
+      .replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>')
+      // Italic: *text* - ensure it doesn't interfere with bold
+      .replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, '<em>$1</em>')
+      // Bullets: • text
+      .replace(/^• (.+)$/gm, '<li style="list-style-type: disc; margin-left: 20px;">$1</li>')
+      // Numbers: 1. text
+      .replace(/^\d+\. (.+)$/gm, '<li style="list-style-type: decimal; margin-left: 20px;">$1</li>');
 
     // Then, process URLs within the already-processed line
     const urlRegex = /(https?:\/\/[^\s<]+)/g;
@@ -93,12 +97,16 @@ export const renderTextWithAllLinks = (text: string): React.ReactNode => {
       return <br key={lineIndex} />;
     }
 
-    // First, process markdown formatting
+    // FIXED: Process markdown formatting with improved regex patterns
     let processedLine = line
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
-      .replace(/^• (.*)/, '<li style="list-style-type: disc; margin-left: 20px;">$1</li>')
-      .replace(/^\d+\. (.*)/, '<li style="list-style-type: decimal; margin-left: 20px;">$1</li>');
+      // Bold: **text** - improved regex
+      .replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>')
+      // Italic: *text* - ensure it doesn't interfere with bold
+      .replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, '<em>$1</em>')
+      // Bullets: • text
+      .replace(/^• (.+)$/gm, '<li style="list-style-type: disc; margin-left: 20px;">$1</li>')
+      // Numbers: 1. text
+      .replace(/^\d+\. (.+)$/gm, '<li style="list-style-type: decimal; margin-left: 20px;">$1</li>');
 
     // Combined regex for URLs, emails, and phone numbers
     const linkRegex = /(https?:\/\/[^\s<]+|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(?:\+44|0)[0-9\s-]+)/g;

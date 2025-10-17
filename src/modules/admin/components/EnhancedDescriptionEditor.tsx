@@ -24,7 +24,7 @@ export const EnhancedDescriptionEditor: React.FC<EnhancedDescriptionEditorProps>
   const [showPreview, setShowPreview] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Format text with basic markdown-like syntax
+  // FIXED: Format text with proper cursor positioning for bullets
   const formatText = useCallback((format: string) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -55,26 +55,42 @@ export const EnhancedDescriptionEditor: React.FC<EnhancedDescriptionEditorProps>
         }
         break;
       case 'bullet':
-        const bulletText = selectedText || 'List item';
+        // FIXED: Better bullet handling
         const beforeStart = value.substring(0, start);
         const needsNewline = beforeStart && !beforeStart.endsWith('\n');
         const prefix = needsNewline ? '\n• ' : '• ';
-        newText = value.substring(0, start) + prefix + bulletText + value.substring(end);
-        newCursorPos = start + prefix.length;
+        
+        if (selectedText) {
+          // If text is selected, wrap it with bullet
+          newText = value.substring(0, start) + prefix + selectedText + value.substring(end);
+          newCursorPos = start + prefix.length + selectedText.length;
+        } else {
+          // If no text selected, just add bullet prefix and position cursor after it
+          newText = value.substring(0, start) + prefix + value.substring(end);
+          newCursorPos = start + prefix.length;
+        }
         break;
       case 'numbered':
-        const numberedText = selectedText || 'List item';
+        // FIXED: Better numbered list handling
         const beforeStartNum = value.substring(0, start);
         const needsNewlineNum = beforeStartNum && !beforeStartNum.endsWith('\n');
         const prefixNum = needsNewlineNum ? '\n1. ' : '1. ';
-        newText = value.substring(0, start) + prefixNum + numberedText + value.substring(end);
-        newCursorPos = start + prefixNum.length;
+        
+        if (selectedText) {
+          // If text is selected, wrap it with number
+          newText = value.substring(0, start) + prefixNum + selectedText + value.substring(end);
+          newCursorPos = start + prefixNum.length + selectedText.length;
+        } else {
+          // If no text selected, just add number prefix and position cursor after it
+          newText = value.substring(0, start) + prefixNum + value.substring(end);
+          newCursorPos = start + prefixNum.length;
+        }
         break;
     }
 
     onChange(newText);
     
-    // Restore cursor position after state update
+    // FIXED: Better cursor positioning
     setTimeout(() => {
       if (textarea) {
         textarea.focus();
@@ -264,6 +280,7 @@ export const EnhancedDescriptionEditor: React.FC<EnhancedDescriptionEditorProps>
       }}>
         <span>💡 <strong>Formatting:</strong> **bold**, *italic*, • bullets, 1. numbers</span>
         <span>↵ Line breaks are preserved</span>
+        <span>🎯 <strong>Tip:</strong> Click bullet/number buttons to start lists, or select text first to convert it</span>
       </div>
     </div>
   );

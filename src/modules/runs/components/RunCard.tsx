@@ -1,4 +1,4 @@
-// Clean RunCard Component with Share Modal - Final Version
+// Updated RunCard Component with Formatting Fixes
 // File: src/modules/runs/components/RunCard.tsx
 
 import React, { useState, useEffect } from 'react';
@@ -33,15 +33,15 @@ interface RunCardProps {
   shareCallbacks: ShareCallbacks;
   getButtonText: (fullText: string, shortText: string, loading: boolean, loadingText: string) => string;
   userId?: string;
-  user?: any; // ADD this line
+  user?: any;
   onBookingChange?: (updatedRun: RunWithDetails) => void;
   onBookingError?: (error: BookingError) => void;
-  onAssignmentSuccess?: () => void; // ADD this line
-  onAssignmentError?: (title: string, message: string) => void; // ADD this line
-  onUnassignmentConfirm?: (runId: string, runTitle: string) => void; // ADD this line
+  onAssignmentSuccess?: () => void;
+  onAssignmentError?: (title: string, message: string) => void;
+  onUnassignmentConfirm?: (runId: string, runTitle: string) => void;
   useBookingManager?: boolean;
-  useLirfAssignmentManager?: boolean; // ADD this line
-    showLirfSuccessModal?: boolean;
+  useLirfAssignmentManager?: boolean;
+  showLirfSuccessModal?: boolean;
   onCloseLirfSuccessModal?: () => void;
   onShowLirfSuccessModal?: (run: any) => void;
 }
@@ -58,15 +58,15 @@ export const RunCard: React.FC<RunCardProps> = ({
   shareCallbacks,
   getButtonText,
   userId,
-  user, // ADD this line
+  user,
   onBookingChange,
   onBookingError,
-    onAssignmentSuccess, // ADD this line
-  onAssignmentError, // ADD this line
-  onUnassignmentConfirm, // ADD this line
+  onAssignmentSuccess,
+  onAssignmentError,
+  onUnassignmentConfirm,
   useBookingManager = false,
-  useLirfAssignmentManager = false, // ADD this line
-    showLirfSuccessModal = false,
+  useLirfAssignmentManager = false,
+  showLirfSuccessModal = false,
   onCloseLirfSuccessModal,
   onShowLirfSuccessModal,
 }) => {
@@ -76,12 +76,6 @@ export const RunCard: React.FC<RunCardProps> = ({
   // Calculate properties
   const isUrgent = canManageRuns && isRunUrgent(run.run_date, run.lirf_vacancies);
   const shouldTruncateDescription = run.description && run.description.length > 100;
-
-  // Helper functions
-  const truncateText = (text: string, maxLength: number = 100) => {
-    if (text.length <= maxLength) return text;
-    return text.slice(0, maxLength) + '...';
-  };
 
   const toggleDescription = () => {
     setIsDescriptionExpanded(!isDescriptionExpanded);
@@ -157,184 +151,199 @@ export const RunCard: React.FC<RunCardProps> = ({
       }
     }
   };
-// Render LIRF button (Following BookingManager pattern exactly)
-const renderLirfButton = () => {
-  if (!canManageRuns) {
-    return null;
-  }
-  if (useLirfAssignmentManager && onAssignmentSuccess && onAssignmentError && onUnassignmentConfirm && user) {
-    return (
-      <LirfAssignmentManager
-        run={run}
-        user={user}
-        onAssignmentSuccess={onAssignmentSuccess}
-        onAssignmentError={onAssignmentError}
-        onUnassignmentConfirm={onUnassignmentConfirm}
-                showSuccessModal={showLirfSuccessModal}
-        onCloseSuccessModal={onCloseLirfSuccessModal}
-        onShowSuccessModal={onShowLirfSuccessModal}
-      />
-    );
-  } else {
-    // Fallback to traditional prop-based approach (like BookingManager does)
+
+  // Render LIRF button
+  const renderLirfButton = () => {
     if (!canManageRuns) {
       return null;
     }
-    
-    if (run.user_is_assigned_lirf) {
+
+    if (useLirfAssignmentManager && onAssignmentSuccess && onAssignmentError && onUnassignmentConfirm && user) {
       return (
-        <button
-          onClick={() => onUnassignSelfAsLIRF(run.id)}
-          disabled={isAssignmentLoading}
-          className="action-btn action-btn--danger"
-        >
-          <ShieldX size={16} />
-          {getButtonText(' Unassign LIRF', ' Unassign', isAssignmentLoading, 'Unassigning...')}
-        </button>
-      );
-    } else if (run.lirf_vacancies > 0) {
-      return (
-        <button
-          onClick={() => onAssignSelfAsLIRF(run.id)}
-          disabled={isAssignmentLoading}
-          className="action-btn action-btn--secondary"
-        >
-          <ShieldPlus size={16} />
-          {getButtonText(' Assign Me as LIRF', ' Assign Me', isAssignmentLoading, 'Assigning...')}
-        </button>
+        <LirfAssignmentManager
+          run={run}
+          user={user}
+          onAssignmentSuccess={onAssignmentSuccess}
+          onAssignmentError={onAssignmentError}
+          onUnassignmentConfirm={onUnassignmentConfirm}
+          showSuccessModal={showLirfSuccessModal}
+          onCloseSuccessModal={onCloseLirfSuccessModal}
+          onShowSuccessModal={onShowLirfSuccessModal}
+        />
       );
     } else {
-      return (
-        <div className="action-status action-status--assigned">
-          LIRFs fully assigned
-        </div>
-      );
+      if (run.user_is_assigned_lirf) {
+        return (
+          <button
+            onClick={() => onUnassignSelfAsLIRF(run.id)}
+            disabled={isAssignmentLoading}
+            className="action-btn action-btn--danger"
+          >
+            <ShieldX size={16} />
+            {getButtonText('Unassign as LIRF', 'Unassign', isAssignmentLoading, 'Unassigning...')}
+          </button>
+        );
+      } else if (run.lirf_vacancies > 0) {
+        return (
+          <button
+            onClick={() => onAssignSelfAsLIRF(run.id)}
+            disabled={isAssignmentLoading}
+            className="action-btn action-btn--secondary"
+          >
+            <ShieldPlus size={16} />
+            {getButtonText('Assign as LIRF', 'Assign', isAssignmentLoading, 'Assigning...')}
+          </button>
+        );
+      } else {
+        return (
+          <div className="action-status action-status--full">
+            <ShieldCheck size={16} />
+            LIRF Full
+          </div>
+        );
+      }
     }
-  }
-};
+  };
+
   return (
-    <>
-      <div
-        className={`card ${run.is_booked ? 'run-card--booked' : ''} ${run.is_full ? 'run-card--full' : ''} ${isUrgent ? 'run-card--urgent' : ''} ${run.user_is_assigned_lirf ? 'run-card--assigned' : ''}`}
-      >
-        <div className="card-content" style={{ padding: '18px' }}>
-          {/* Header with badges */}
-          <div className="responsive-header">
-            <div>
-              <h3 className="card-title">{run.run_title}</h3>
-              <div className="run-card__badges">
-                {run.is_booked && <span className="badge badge--booked">Booked</span>}
-                {run.is_full && <span className="badge badge--full">Full</span>}
-                {run.user_is_assigned_lirf && <span className="badge badge--assigned">LIRF</span>}
-                {isUrgent && <span className="badge badge--urgent">Urgent</span>}
-              </div>
+    <div 
+      className={`card run-card ${run.is_booked ? 'run-card--booked' : ''} ${run.is_full ? 'run-card--full' : ''} ${isUrgent ? 'run-card--urgent' : ''} ${run.user_is_assigned_lirf ? 'run-card--assigned' : ''}`}
+    >
+      <div className="card-content" style={{ padding: '18px' }}>
+        {/* Header with badges */}
+        <div className="responsive-header">
+          <div>
+            <h3 className="card-title">{run.run_title}</h3>
+            <div className="run-card__badges">
+              {run.is_booked && <span className="badge badge--booked">Booked</span>}
+              {run.is_full && <span className="badge badge--full">Full</span>}
+              {run.user_is_assigned_lirf && <span className="badge badge--assigned">LIRF</span>}
+              {isUrgent && <span className="badge badge--urgent">Urgent</span>}
             </div>
           </div>
+        </div>
 
-          {/* Run Info Grid */}
-          <div className="responsive-info-grid">
-            <div className="run-info-item">
-              <div className="run-info-item__primary">
-                📅 {formatDate(run.run_date)} at {formatTime(run.run_time)}
-              </div>
-            </div>
-                
-            <div className="run-info-item">
-              <div className="run-info-item__primary">
-                📍 {run.meeting_point}
-              </div>
-              {run.approximate_distance && (
-                <div className="run-info-item__secondary">
-                  🏃‍♂️ {run.approximate_distance}
-                </div>
-              )}
-            </div>
-                
-            <div className="run-info-item">
-              <div className="run-info-item__primary">
-                👥 {run.booking_count}/{run.max_participants} booked
-              </div>
-              {canManageRuns && (
-                <div className="run-info-item__secondary">
-                  <ShieldCheck size={16} />
-                   {' '}{run.assigned_lirfs.length}/{run.lirfs_required} LIRF{run.lirfs_required > 1 ? 's' : ''}
-                  {run.lirf_vacancies > 0 && (
-                    <span className="run-info-item__highlight">
-                      {' '}({run.lirf_vacancies} needed)
-                    </span>
-                  )}
-                </div>
-              )}
+        {/* Run Info Grid */}
+        <div className="responsive-info-grid">
+          <div className="run-info-item">
+            <div className="run-info-item__primary">
+              📅 {formatDate(run.run_date)} at {formatTime(run.run_time)}
             </div>
           </div>
-          
-          {/* Description */}
-          {run.description && (
-            <div className="run-description">
-              <div className="run-description__content">
-                {(() => {
-                  const textToRender = shouldTruncateDescription && !isDescriptionExpanded 
-                    ? truncateText(run.description)
-                    : run.description;
-                  return renderTextWithLinks(textToRender);
-                })()}
-              </div>
-              {shouldTruncateDescription && (
-                <button
-                  onClick={toggleDescription}
-                  className="run-description__toggle"
-                >
-                  {isDescriptionExpanded ? 'Show Less' : 'Show More'}
-                </button>
-              )}
+              
+          <div className="run-info-item">
+            <div className="run-info-item__primary">
+              📍 {run.meeting_point}
             </div>
-          )}
-          
-          {/* LIRF Assignment Info */}
-          {canManageRuns && (
-            <div className="lirf-info">
-              <div className="lirf-info__title">
-                LIRF Assignments
+            {run.approximate_distance && (
+              <div className="run-info-item__secondary">
+                🏃‍♂️ {run.approximate_distance}
               </div>
-              {run.assigned_lirfs.length > 0 ? (
-                <div className="lirf-info__list">
-                  {run.assigned_lirfs.map((lirf, index) => (
-                    <div key={index} className="lirf-info__item">
-                      • {lirf.name}
-                    </div>
-                  ))}
-                  {run.lirf_vacancies > 0 && (
-                    <div className="lirf-info__vacancy">
-                      • {run.lirf_vacancies} position{run.lirf_vacancies > 1 ? 's' : ''} still needed
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="lirf-info__empty">
-                  No LIRFs assigned yet
-                </div>
-              )}
+            )}
+          </div>
+              
+          <div className="run-info-item">
+            <div className="run-info-item__primary">
+              👥 {run.booking_count}/{run.max_participants} booked
             </div>
-          )}
-
-          {/* Action Buttons Container */}
-          <div className="run-card-actions-container">
-            {/* Booking Button */}
-            {renderBookingButton()}
-
-            {/* Share Button - Simple click to open modal */}
-            <button
-              onClick={handleShareClick}
-              className="action-btn action-btn--secondary share-button"
+            {canManageRuns && (
+              <div className="run-info-item__secondary">
+                <ShieldCheck size={16} />
+                 {' '}{run.assigned_lirfs.length}/{run.lirfs_required} LIRF{run.lirfs_required > 1 ? 's' : ''}
+                {run.lirf_vacancies > 0 && (
+                  <span className="run-info-item__highlight">
+                    {' '}({run.lirf_vacancies} needed)
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* UPDATED: Description with CSS-based truncation instead of text truncation */}
+        {run.description && (
+          <div className="run-description">
+            <div 
+              className="run-description__content"
+              style={{
+                maxHeight: shouldTruncateDescription && !isDescriptionExpanded ? '60px' : 'none',
+                overflow: shouldTruncateDescription && !isDescriptionExpanded ? 'hidden' : 'visible',
+                position: 'relative'
+              }}
             >
-              <Share2 size={16} />
-              {getButtonText('Share Run', 'Share', false, '')}
-            </button>
-
-            {/* LIRF Button */}
-
-            {renderLirfButton()}
+              {/* FIXED: Process full text without truncation to preserve markdown */}
+              {renderTextWithLinks(run.description)}
+              {shouldTruncateDescription && !isDescriptionExpanded && (
+                <div 
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    background: 'linear-gradient(to right, transparent, var(--gray-50) 50%)',
+                    padding: '0 8px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  ...
+                </div>
+              )}
+            </div>
+            {shouldTruncateDescription && (
+              <button
+                onClick={toggleDescription}
+                className="run-description__toggle"
+              >
+                {isDescriptionExpanded ? 'Show Less' : 'Show More'}
+              </button>
+            )}
           </div>
+        )}
+        
+        {/* LIRF Assignment Info */}
+        {canManageRuns && (
+          <div className="lirf-info">
+            <div className="lirf-info__title">
+              LIRF Assignments
+            </div>
+            {run.assigned_lirfs.length > 0 ? (
+              <div className="lirf-info__list">
+                {run.assigned_lirfs.map((lirf, index) => (
+                  <div key={index} className="lirf-info__item">
+                    • {lirf.name}
+                  </div>
+                ))}
+                {run.lirf_vacancies > 0 && (
+                  <div className="lirf-info__vacancy">
+                    • {run.lirf_vacancies} position{run.lirf_vacancies > 1 ? 's' : ''} still needed
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="lirf-info__empty">
+                No LIRFs assigned yet
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action Buttons Container */}
+        <div className="run-card-actions-container">
+          {/* Booking Button */}
+          {renderBookingButton()}
+
+          {/* Share Button - Simple click to open modal */}
+          <button
+            onClick={handleShareClick}
+            className="action-btn action-btn--secondary share-button"
+          >
+            <Share2 size={16} />
+            {getButtonText('Share Run', 'Share', false, '')}
+          </button>
+
+          {/* LIRF Button */}
+          {renderLirfButton()}
         </div>
       </div>
 
@@ -342,74 +351,52 @@ const renderLirfButton = () => {
       {showShareModal && createPortal(
         <div className="modal-overlay" onClick={closeShareModal}>
           <div className="modal-content share-modal" onClick={(e) => e.stopPropagation()}>
-            {/* Modal Header */}
             <div className="modal-header">
-              <h3 className="modal-title">Share This Run</h3>
-              <button 
-                onClick={closeShareModal}
-                className="modal-close-btn"
-                aria-label="Close"
-              >
+              <h3 className="modal-title">Share "{run.run_title}"</h3>
+              <button onClick={closeShareModal} className="modal-close-btn">
                 <X size={20} />
               </button>
             </div>
-
-            {/* Run Info Preview */}
-            <div className="share-modal-preview">
-              <h4>{run.run_title}</h4>
-              <p>📅 {formatDate(run.run_date)} at {formatTime(run.run_time)}</p>
-              <p>📍 {run.meeting_point}</p>
-            </div>
-
-            {/* Share Options */}
-            <div className="share-options">
-              <button 
-                onClick={() => handleShare('whatsapp')}
-                className="share-option-btn"
-              >
-                <MessageCircle size={20} />
-                <span>WhatsApp</span>
-              </button>
-              {canManageRuns && (
-              <button 
-                onClick={() => handleShare('facebook-group')}
-                className="share-option-btn"
-              >
-                <Users size={20} />
-                <span>Facebook Group</span>
-              </button>
-              )}
-              <button 
-                onClick={() => handleShare('facebook')}
-                className="share-option-btn"
-              >
-                <Facebook size={20} />
-                <span>Facebook</span>
-              </button>
-
-
-              <button 
-                onClick={() => handleShare('copy')}
-                className="share-option-btn"
-              >
-                <Copy size={20} />
-                <span>Copy Link</span>
-              </button>
-            </div>
-
-            {/* Cancel Button */}
-            <div className="modal-actions">
-              <button 
-                onClick={closeShareModal}
-                className="btn btn--secondary"
-              >
-                Cancel
-              </button>
+            
+            <div className="modal-body">
+              <div className="share-options">
+                <button
+                  onClick={() => handleShare('whatsapp')}
+                  className="share-option share-option--whatsapp"
+                >
+                  <MessageCircle size={20} />
+                  <span>WhatsApp</span>
+                </button>
+                
+                <button
+                  onClick={() => handleShare('facebook')}
+                  className="share-option share-option--facebook"
+                >
+                  <Facebook size={20} />
+                  <span>Facebook</span>
+                </button>
+                
+                <button
+                  onClick={() => handleShare('copy')}
+                  className="share-option share-option--copy"
+                >
+                  <Copy size={20} />
+                  <span>Copy Link</span>
+                </button>
+                
+                <button
+                  onClick={() => handleShare('members')}
+                  className="share-option share-option--members"
+                >
+                  <Users size={20} />
+                  <span>Share with Members</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>,
         document.body
       )}
-    </>
+    </div>
   );
 };
