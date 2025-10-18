@@ -229,7 +229,7 @@ export class NotificationService {
     if (type === 'run_specific' && runId) {
       // Send to members booked on the specific run
       const { data: bookings, error } = await supabase
-        .from('bookings')
+        .from('run_bookings')
         .select('member_id')
         .eq('run_id', runId)
         .is('cancelled_at', null); // Only active bookings
