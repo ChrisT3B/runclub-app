@@ -1,5 +1,5 @@
 // src/modules/auth/components/PasswordResetForm.tsx
-// SIMPLIFIED APPROACH - Work with whatever session Supabase provides
+// FIXED - Now reads from both URL params and hash fragments
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../services/supabase'
@@ -17,40 +17,70 @@ export const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isValidSession, setIsValidSession] = useState<boolean | null>(null)
-  const [sessionCheckComplete, setSessionCheckComplete] = useState(false)
+  const [isValidSession, setIsValidSession] = useState(false)
 
   useEffect(() => {
-    // Check for any valid session - don't overthink the URL parsing
+    // Check for recovery session
     const checkSession = async () => {
       try {
-        console.log('🔍 Checking for any valid session...');
+        // First, clear any potentially cached session that might interfere
+        const currentUser = await supabase.auth.getUser();
+        if (currentUser.data.user) {
+          // Only sign out if it's not a recovery session
+          const urlParams = new URLSearchParams(window.location.search);
+          const hashParams = new URLSearchParams(window.location.hash.substring(1)); // Remove # and parse
+          const type = urlParams.get('type') || hashParams.get('type');
+          const accessToken = urlParams.get('access_token') || hashParams.get('access_token');
+          
+          if (type !== 'recovery' || !accessToken) {
+            await supabase.auth.signOut();
+          }
+        }
         
-        // Wait a moment for Supabase to process the redirect
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Check for recovery parameters in URL (both search params and hash)
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1)); // Remove # and parse
         
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const type = urlParams.get('type') || hashParams.get('type');
+        const accessToken = urlParams.get('access_token') || hashParams.get('access_token');
+        const refreshToken = urlParams.get('refresh_token') || hashParams.get('refresh_token');
         
-        console.log('📊 Session check result:', { 
-          hasSession: !!session, 
-          error: error?.message,
-          userEmail: session?.user?.email
+        console.log('Password reset params:', { 
+          type, 
+          hasAccessToken: !!accessToken,
+          fromHash: !!hashParams.get('access_token'),
+          fromSearch: !!urlParams.get('access_token')
         });
         
-        if (session && session.user) {
-          console.log('✅ Found valid session for password reset');
-          setIsValidSession(true);
+        if (type === 'recovery' && accessToken && refreshToken) {
+          // Set the session using the tokens from URL
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+          
+          if (error) {
+            console.error('Recovery session error:', error);
+            setError('Invalid or expired reset link. Please request a new password reset.');
+            setIsValidSession(false);
+          } else {
+            console.log('Valid recovery session established');
+            setIsValidSession(true);
+          }
         } else {
-          console.log('❌ No valid session found');
-          setError('Invalid or expired reset link. Please request a new password reset.');
-          setIsValidSession(false);
+          // Fallback: Check if we have a valid password reset session
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session) {
+            setIsValidSession(true)
+          } else {
+            setError('Invalid or expired reset link. Please request a new password reset.')
+            setIsValidSession(false);
+          }
         }
       } catch (error) {
         console.error('Session check error:', error);
         setError('Failed to verify reset link. Please try again.');
         setIsValidSession(false);
-      } finally {
-        setSessionCheckComplete(true);
       }
     }
     
@@ -86,8 +116,6 @@ export const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
     setLoading(true)
 
     try {
-      console.log('🔐 Attempting to update password...');
-      
       const { error } = await supabase.auth.updateUser({
         password: password
       })
@@ -96,34 +124,17 @@ export const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
         throw error
       }
 
-      console.log('✅ Password updated successfully');
-      
       // Sign out after password update to force fresh login
       await supabase.auth.signOut()
       onSuccess?.()
     } catch (error) {
-      console.error('❌ Password update failed:', error);
       setError(error instanceof Error ? error.message : 'Failed to update password')
     } finally {
       setLoading(false)
     }
   }
 
-  // Still checking session
-  if (!sessionCheckComplete) {
-    return (
-      <div className="max-w-md mx-auto text-center">
-        <h2 className="text-2xl font-bold mb-6">Verifying Reset Link</h2>
-        <div className="flex justify-center mb-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-        </div>
-        <p className="text-gray-600">Please wait while we verify your reset link...</p>
-      </div>
-    )
-  }
-
-  // Invalid session
-  if (isValidSession === false) {
+  if (!isValidSession && error) {
     return (
       <div className="max-w-md mx-auto text-center">
         <h2 className="text-2xl font-bold mb-6">Reset Link Expired</h2>
@@ -140,7 +151,19 @@ export const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
     )
   }
 
-  // Valid session - show password reset form
+  // Show loading state while checking session
+  if (!isValidSession && !error) {
+    return (
+      <div className="max-w-md mx-auto text-center">
+        <h2 className="text-2xl font-bold mb-6">Verifying Reset Link</h2>
+        <div className="flex justify-center mb-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+        <p className="text-gray-600">Please wait while we verify your reset link...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-md mx-auto">
       <h2 className="text-2xl font-bold text-center mb-6">Set New Password</h2>
