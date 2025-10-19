@@ -1,4 +1,4 @@
-// AppContent.tsx - Final version that handles password reset properly
+// AppContent.tsx - even more Final version that handles password reset properly
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './modules/auth/context/AuthContext';
@@ -13,7 +13,7 @@ import { CreateRunPage } from './modules/admin/components/CreateRunPage';
 import { LeadYourRun } from './modules/activeruns/components/LeadYourRun';
 import { RunAttendance } from './modules/activeruns/components/RunAttendance';
 import { CommunicationsDashboard } from './modules/communications/components/CommunicationsDashboard';
-
+console.log('🔄 AppContent component loaded 1548 even more Final');
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -36,16 +36,21 @@ export const AppContent: React.FC = () => {
     const hasRecoveryParam = urlParams.get('type') === 'recovery';
     const hasRecoveryHash = urlHash.includes('access_token') && urlHash.includes('type=recovery');
     
+    // ENHANCED DEBUG: Multiple checks
+    const isResetPath = window.location.pathname === '/reset-password';
+    const hasAnyRecovery = hasRecoveryParam || hasRecoveryHash || isResetPath;
+    
     console.log('🔍 AppContent isPasswordResetFlow check:', {
       pathname: window.location.pathname,
       hasRecoveryParam,
       hasRecoveryHash,
+      isResetPath,
       fullHash: urlHash,
       fullSearch: window.location.search,
-      result: hasRecoveryParam || hasRecoveryHash
+      finalResult: hasAnyRecovery
     });
     
-    return hasRecoveryParam || hasRecoveryHash;
+    return hasAnyRecovery;
   };
 
   // Initialize browser history to prevent PWA closing
