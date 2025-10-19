@@ -258,7 +258,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }
             Still having trouble?
           </p>
           <a 
-            href="mailto:support@runalcester.co.uk" 
+            href="mailto:runalcester@gmail.com" 
             style={{
               color: 'var(--red-primary)',
               fontSize: '12px',
