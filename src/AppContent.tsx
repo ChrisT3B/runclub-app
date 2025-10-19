@@ -113,7 +113,7 @@ export const AppContent: React.FC = () => {
     switch (currentPage) {
       case 'dashboard':
         console.log('✅ Rendering DashboardContent');
-        return <DashboardContent />;
+        return <DashboardContent onNavigate={handleNavigation} />;
       case 'view-runs':
       case 'scheduled-runs':
         console.log('✅ Rendering ViewScheduledRuns');
@@ -153,7 +153,7 @@ export const AppContent: React.FC = () => {
         return <CommunicationsDashboard />;
       default:
         console.log('⚠️ Unknown page, defaulting to DashboardContent. Page was:', currentPage);
-        return <DashboardContent />;
+        return <DashboardContent onNavigate={handleNavigation} />;
     }
   };
 
