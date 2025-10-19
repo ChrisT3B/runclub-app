@@ -8,7 +8,7 @@ interface PasswordResetFormProps {
   onSuccess?: () => void
   onBack?: () => void
 }
-
+console.log('🔄 PasswordResetForm component loaded 1509');
 export const PasswordResetForm: React.FC<PasswordResetFormProps> = ({ 
   onSuccess, 
   onBack 
