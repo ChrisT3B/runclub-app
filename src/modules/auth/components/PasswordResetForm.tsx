@@ -1,5 +1,5 @@
 // src/modules/auth/components/PasswordResetForm.tsx
-// CLEAN VERSION - TypeScript warnings fixed
+// FIXED - Now reads from both URL params and hash fragments
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../services/supabase'
@@ -28,21 +28,29 @@ export const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
         if (currentUser.data.user) {
           // Only sign out if it's not a recovery session
           const urlParams = new URLSearchParams(window.location.search);
-          const type = urlParams.get('type');
-          const accessToken = urlParams.get('access_token');
+          const hashParams = new URLSearchParams(window.location.hash.substring(1)); // Remove # and parse
+          const type = urlParams.get('type') || hashParams.get('type');
+          const accessToken = urlParams.get('access_token') || hashParams.get('access_token');
           
           if (type !== 'recovery' || !accessToken) {
             await supabase.auth.signOut();
           }
         }
         
-        // Check for recovery parameters in URL
+        // Check for recovery parameters in URL (both search params and hash)
         const urlParams = new URLSearchParams(window.location.search);
-        const type = urlParams.get('type');
-        const accessToken = urlParams.get('access_token');
-        const refreshToken = urlParams.get('refresh_token');
+        const hashParams = new URLSearchParams(window.location.hash.substring(1)); // Remove # and parse
         
-        console.log('Password reset params:', { type, hasAccessToken: !!accessToken });
+        const type = urlParams.get('type') || hashParams.get('type');
+        const accessToken = urlParams.get('access_token') || hashParams.get('access_token');
+        const refreshToken = urlParams.get('refresh_token') || hashParams.get('refresh_token');
+        
+        console.log('Password reset params:', { 
+          type, 
+          hasAccessToken: !!accessToken,
+          fromHash: !!hashParams.get('access_token'),
+          fromSearch: !!urlParams.get('access_token')
+        });
         
         if (type === 'recovery' && accessToken && refreshToken) {
           // Set the session using the tokens from URL
