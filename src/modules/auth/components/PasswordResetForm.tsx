@@ -1,3 +1,6 @@
+// src/modules/auth/components/PasswordResetForm.tsx
+// CLEAN VERSION - TypeScript warnings fixed
+
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../../../services/supabase'
 
@@ -17,13 +20,59 @@ export const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
   const [isValidSession, setIsValidSession] = useState(false)
 
   useEffect(() => {
-    // Check if we have a valid password reset session
+    // Check for recovery session
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        setIsValidSession(true)
-      } else {
-        setError('Invalid or expired reset link. Please request a new password reset.')
+      try {
+        // First, clear any potentially cached session that might interfere
+        const currentUser = await supabase.auth.getUser();
+        if (currentUser.data.user) {
+          // Only sign out if it's not a recovery session
+          const urlParams = new URLSearchParams(window.location.search);
+          const type = urlParams.get('type');
+          const accessToken = urlParams.get('access_token');
+          
+          if (type !== 'recovery' || !accessToken) {
+            await supabase.auth.signOut();
+          }
+        }
+        
+        // Check for recovery parameters in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const type = urlParams.get('type');
+        const accessToken = urlParams.get('access_token');
+        const refreshToken = urlParams.get('refresh_token');
+        
+        console.log('Password reset params:', { type, hasAccessToken: !!accessToken });
+        
+        if (type === 'recovery' && accessToken && refreshToken) {
+          // Set the session using the tokens from URL
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+          
+          if (error) {
+            console.error('Recovery session error:', error);
+            setError('Invalid or expired reset link. Please request a new password reset.');
+            setIsValidSession(false);
+          } else {
+            console.log('Valid recovery session established');
+            setIsValidSession(true);
+          }
+        } else {
+          // Fallback: Check if we have a valid password reset session
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session) {
+            setIsValidSession(true)
+          } else {
+            setError('Invalid or expired reset link. Please request a new password reset.')
+            setIsValidSession(false);
+          }
+        }
+      } catch (error) {
+        console.error('Session check error:', error);
+        setError('Failed to verify reset link. Please try again.');
+        setIsValidSession(false);
       }
     }
     
@@ -90,6 +139,19 @@ export const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
         >
           Request New Reset Link
         </button>
+      </div>
+    )
+  }
+
+  // Show loading state while checking session
+  if (!isValidSession && !error) {
+    return (
+      <div className="max-w-md mx-auto text-center">
+        <h2 className="text-2xl font-bold mb-6">Verifying Reset Link</h2>
+        <div className="flex justify-center mb-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+        <p className="text-gray-600">Please wait while we verify your reset link...</p>
       </div>
     )
   }
