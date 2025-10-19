@@ -677,7 +677,7 @@ export const requestPasswordReset = async (data: PasswordResetData): Promise<Aut
     const sanitizedEmail = InputSanitizer.sanitizeEmail(data.email);
     
     const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
 
     if (error) {
