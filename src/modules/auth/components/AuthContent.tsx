@@ -12,14 +12,33 @@ export const AuthContent: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check URL parameters for different auth flows
+    // Check both URL search parameters AND hash parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const type = urlParams.get('type');
-    const token = urlParams.get('token');
+    
+    // Parse hash parameters (where Supabase puts recovery info)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    
+    // Get type from either location
+    const searchType = urlParams.get('type');
+    const hashType = hashParams.get('type');
+    const type = searchType || hashType;
+    
+    // Get token from either location
+    const searchToken = urlParams.get('token');
+    const hashToken = hashParams.get('access_token'); // Supabase uses 'access_token' in hash
+    const token = searchToken || hashToken;
 
-    console.log('AuthContent loaded with params:', { type, token: token ? 'present' : 'none' });
+    console.log('AuthContent loaded with params:', { 
+      searchType, 
+      hashType, 
+      finalType: type,
+      token: token ? 'present' : 'none',
+      fullHash: window.location.hash,
+      fullSearch: window.location.search
+    });
 
     if (type === 'recovery') {
+      console.log('🔄 Setting view to reset for password recovery');
       setCurrentView('reset');
     } else if ((type === 'signup' || type === 'email') && token) {
       // Show debug component for email verification
@@ -71,6 +90,8 @@ export const AuthContent: React.FC = () => {
         <PasswordResetForm 
           onSuccess={() => {
             alert('Password updated successfully! Please log in with your new password.');
+            // Clear URL hash/search params
+            window.history.replaceState({}, document.title, window.location.pathname);
             setCurrentView('login');
           }}
           onBack={() => setCurrentView('forgot')}
