@@ -114,6 +114,7 @@ export const AppContent: React.FC = () => {
       case 'dashboard':
         console.log('✅ Rendering DashboardContent');
         return <DashboardContent />;
+      case 'view-runs':
       case 'scheduled-runs':
         console.log('✅ Rendering ViewScheduledRuns');
         return <ViewScheduledRuns />;
