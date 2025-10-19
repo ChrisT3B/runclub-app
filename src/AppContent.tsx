@@ -46,8 +46,18 @@ export const AppContent: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Show auth content if not authenticated or not initialized
-  if (!state.isAuthenticated || !state.isInitialized) {
+  // Check if we're in a password reset flow
+  const isPasswordResetFlow = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlHash = window.location.hash;
+    
+    // Check for recovery type in URL params or access_token in hash (Supabase redirect)
+    return urlParams.get('type') === 'recovery' || 
+           urlHash.includes('access_token') && urlHash.includes('type=recovery');
+  };
+
+  // Show auth content if not authenticated, not initialized, OR in password reset flow
+  if (!state.isAuthenticated || !state.isInitialized || isPasswordResetFlow()) {
     return <AuthContent />;
   }
 
