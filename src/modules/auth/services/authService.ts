@@ -675,7 +675,7 @@ export const resendVerificationEmail = async (email: string): Promise<AuthRespon
 export const requestPasswordReset = async (data: PasswordResetData): Promise<AuthResponse> => {
   try {
     const sanitizedEmail = InputSanitizer.sanitizeEmail(data.email);
-    
+    console.log('🔗 Using redirect URL:', `${window.location.origin}/reset-password`);
     const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
