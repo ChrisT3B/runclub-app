@@ -24,6 +24,7 @@ export const AppContent: React.FC = () => {
 
   // Simple navigation function
   const handleNavigation = (page: string) => {
+    console.log('🔄 AppContent handleNavigation called with:', page);
     setCurrentPage(page);
   };
 
@@ -93,6 +94,8 @@ export const AppContent: React.FC = () => {
 
   // Main app navigation
   const renderContent = () => {
+    console.log('🎯 AppContent renderContent - currentPage:', currentPage);
+    
     if (attendanceRunId) {
       return (
         <RunAttendance 
@@ -109,16 +112,22 @@ export const AppContent: React.FC = () => {
 
     switch (currentPage) {
       case 'dashboard':
+        console.log('✅ Rendering DashboardContent');
         return <DashboardContent />;
       case 'scheduled-runs':
+        console.log('✅ Rendering ViewScheduledRuns');
         return <ViewScheduledRuns />;
       case 'manage-runs':
+        console.log('✅ Rendering ManageScheduledRuns');
         return <ManageScheduledRuns />;
       case 'profile':
+        console.log('✅ Rendering ProfilePage');
         return <ProfilePage />;
       case 'members':
+        console.log('✅ Rendering MemberList');
         return <MemberList />;
       case 'create-run':
+        console.log('✅ Rendering CreateRunPage');
         return (
           <CreateRunPage
             onSuccess={() => {
@@ -129,6 +138,7 @@ export const AppContent: React.FC = () => {
           />
         );
       case 'lead-your-run':
+        console.log('✅ Rendering LeadYourRun');
         return (
           <LeadYourRun 
             onNavigateToAttendance={(runId: string, runTitle: string) => {
@@ -138,8 +148,10 @@ export const AppContent: React.FC = () => {
           />
         );
       case 'communications':
+        console.log('✅ Rendering CommunicationsDashboard');
         return <CommunicationsDashboard />;
       default:
+        console.log('⚠️ Unknown page, defaulting to DashboardContent. Page was:', currentPage);
         return <DashboardContent />;
     }
   };
