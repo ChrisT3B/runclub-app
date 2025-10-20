@@ -23,7 +23,7 @@ jobs:
           ENCRYPTION_PASSWORD: ${{ secrets.ENCRYPTION_PASSWORD }}
         run: |
           BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
-          pg_dump "$SUPABASE_DB_URL" | gpg --batch --yes --passphrase "$ENCRYPTION_PASSWORD" --symmetric --cipher-algo AES256 -o backup_${BACKUP_DATE}.sql.gpg
+          docker run --rm postgres:17 pg_dump "$SUPABASE_DB_URL" | gpg --batch --yes --passphrase "$ENCRYPTION_PASSWORD" --symmetric --cipher-algo AES256 -o backup_${BACKUP_DATE}.sql.gpg
           echo "Created backup file:"
           ls -lh backup_*.gpg
       
