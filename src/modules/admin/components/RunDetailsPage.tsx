@@ -7,6 +7,7 @@ import { DashboardLayout } from '../../../shared/layouts/DashboardLayout';
 import { ErrorModal } from '../../../shared/components/ui/ErrorModal';
 import { ConfirmationModal } from '../../../shared/components/ui/ConfirmationModal';
 import { formatDate, formatTime } from '../../runs/utils/runUtils';
+import LirfAssignmentManager from '../../runs/components/LirfAssignmentManager';
 
 export const RunDetailsPage: React.FC = () => {
   const { runId } = useParams<{ runId: string }>();
@@ -42,7 +43,14 @@ export const RunDetailsPage: React.FC = () => {
     message: '',
     onConfirm: () => {}
   });
-
+  // LIRF Success Modal State
+  const [lirfSuccessModal, setLirfSuccessModal] = useState<{
+    isOpen: boolean;
+    run: any;
+  }>({
+    isOpen: false,
+    run: null
+  });
   useEffect(() => {
     if (runId) {
       loadRunDetails();
@@ -143,7 +151,43 @@ export const RunDetailsPage: React.FC = () => {
   const closeConfirmModal = () => {
     setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   };
+// LIRF Assignment Handlers
+  const handleLirfAssignmentSuccess = async () => {
+    await loadRunDetails();
+  };
 
+  const handleLirfAssignmentError = (title: string, message: string) => {
+    setErrorModal({
+      isOpen: true,
+      title,
+      message
+    });
+  };
+
+  const handleLirfUnassignmentConfirm = (runTitle: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Unassign LIRF',
+      message: `Are you sure you want to unassign yourself as LIRF from "${runTitle}"?`,
+      onConfirm: async () => {
+        closeConfirmModal();
+        await loadRunDetails();
+      }
+    });
+  };
+    const handleLirfShowSuccessModal = (run: any) => {
+    setLirfSuccessModal({
+      isOpen: true,
+      run: run
+    });
+  };
+
+  const handleLirfCloseSuccessModal = () => {
+    setLirfSuccessModal({
+      isOpen: false,
+      run: null
+    });
+  };
   const handleNavigate = (page: string) => {
     if (page === 'scheduled-runs') {
       navigate('/');
@@ -397,7 +441,19 @@ export const RunDetailsPage: React.FC = () => {
                   {bookingLoading ? 'Booking...' : 'Join'}
                 </button>
               )}
-
+{/* ADD THIS NEW SECTION HERE - LIRF Assignment Button */}
+              {permissions.canManageRuns && run && (
+                <LirfAssignmentManager
+                  run={run}
+                  user={state.user}
+                  onAssignmentSuccess={handleLirfAssignmentSuccess}
+                  onAssignmentError={handleLirfAssignmentError}
+                  onUnassignmentConfirm={handleLirfUnassignmentConfirm}
+                  showSuccessModal={lirfSuccessModal.isOpen && lirfSuccessModal.run?.id === run.id}
+                  onCloseSuccessModal={handleLirfCloseSuccessModal}
+                  onShowSuccessModal={handleLirfShowSuccessModal}
+                />
+              )}
               <button
                 onClick={() => navigate('/')}
                 className="btn btn-secondary"
