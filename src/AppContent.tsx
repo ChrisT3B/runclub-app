@@ -13,7 +13,7 @@ import { CreateRunPage } from './modules/admin/components/CreateRunPage';
 import { LeadYourRun } from './modules/activeruns/components/LeadYourRun';
 import { RunAttendance } from './modules/activeruns/components/RunAttendance';
 import { CommunicationsDashboard } from './modules/communications/components/CommunicationsDashboard';
-
+import { LirfReminderTestPage } from './modules/admin/pages/LirfReminderTestPage';
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -151,6 +151,9 @@ export const AppContent: React.FC = () => {
       case 'communications':
         console.log('✅ Rendering CommunicationsDashboard');
         return <CommunicationsDashboard />;
+              case 'test-lirf-reminder':
+        console.log('✅ Rendering LirfReminderTestPage');
+        return <LirfReminderTestPage />;
       default:
         console.log('⚠️ Unknown page, defaulting to DashboardContent. Page was:', currentPage);
         return <DashboardContent onNavigate={handleNavigation} />;
@@ -165,4 +168,5 @@ export const AppContent: React.FC = () => {
       {renderContent()}
     </DashboardLayout>
   );
+  
 };

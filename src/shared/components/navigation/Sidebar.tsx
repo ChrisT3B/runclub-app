@@ -28,6 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
   if (permissions.canManageMembers) {
     navigation.push(
       { id: 'members', name: 'Members', icon: '👥' },
+      { id: 'test-lirf-reminder', name: '🧪 Test LIRF Reminder', icon: '🧪' }
     
     )
   }
