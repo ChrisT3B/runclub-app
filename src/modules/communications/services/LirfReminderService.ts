@@ -134,7 +134,7 @@ export default class LirfReminderService {
         month: 'short' 
       });
 
-      const runUrl = `https://bookings.runalcester.co.uk/runs/${run.id}`;
+      const runUrl = `https://app.runalcester.co.uk/runs/${run.id}`;
 
       return `
         <div style="background: #f9fafb; border-left: 4px solid #dc2626; padding: 16px; margin-bottom: 12px; border-radius: 4px;">
@@ -210,7 +210,7 @@ export default class LirfReminderService {
           `}
 
           <div style="text-align: center; margin-top: 30px;">
-            <a href="https://bookings.runalcester.co.uk/admin/runs" 
+            <a href="https://app.runalcester.co.uk/admin/runs" 
                style="display: inline-block; background: #dc2626; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">
               Manage Run Assignments
             </a>
@@ -274,7 +274,7 @@ export default class LirfReminderService {
       });
 
       text += `Please log in to assign LIRFs as soon as possible:\n`;
-      text += `https://bookings.runalcester.co.uk/admin/runs\n\n`;
+      text += `https://app.runalcester.co.uk/admin/runs\n\n`;
     } else {
       text += `✅ ALL RUNS IN THE NEXT 7 DAYS HAVE LIRFs ASSIGNED\n\n`;
       text += `Great work! No action required this week.\n\n`;
