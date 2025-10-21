@@ -1,0 +1,57 @@
+  # Force refresh - October 20, 2024
+name: Weekly Encrypted Database Backup
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # Every Sunday at 3 AM UTC
+  workflow_dispatch:  # Allows manual trigger for testing
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Install PostgreSQL client 17
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+      
+      - name: Create and encrypt backup
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          ENCRYPTION_PASSWORD: ${{ secrets.ENCRYPTION_PASSWORD }}
+        run: |
+          BACKUP_DATE=$(date +%Y%m%d_%H%M%S)
+          docker run --rm postgres:17 pg_dump "$SUPABASE_DB_URL" | gpg --batch --yes --passphrase "$ENCRYPTION_PASSWORD" --symmetric --cipher-algo AES256 -o backup_${BACKUP_DATE}.sql.gpg
+          echo "Created backup file:"
+          ls -lh backup_*.gpg
+      
+      - name: Checkout backup repository
+        uses: actions/checkout@v3
+        with:
+          repository: RunAlcester/runclub-app-backups
+          token: ${{ secrets.BACKUP_REPO_TOKEN }}
+          path: backup-repo
+      
+      - name: Move backup and commit to backup repo
+        run: |
+          mv backup_*.gpg backup-repo/
+          cd backup-repo
+          git config user.name "Backup Bot"
+          git config user.email "backup@runningclub.local"
+          git add *.gpg
+          git commit -m "Backup $(date +%Y-%m-%d)"
+          git push
+      
+      - name: Clean up old backups (keep last 8 weeks)
+        run: |
+          cd backup-repo
+          ls -t backup_*.gpg | tail -n +9 | xargs -r git rm
+          if git diff --staged --quiet; then
+            echo "No old backups to remove"
+          else
+            git commit -m "Clean up old backups"
+            git push
+          fi
