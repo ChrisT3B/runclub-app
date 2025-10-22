@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { AppLogo } from '../../../shared/components/ui/AppLogo'
 import type { LoginCredentials } from '../types'
+import { PWAInstallButton } from '../../../shared/components/ui/PWAInstallButton'
 
 interface LoginFormProps {
   onSuccess?: () => void
@@ -243,6 +244,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </div>
           </form>
         </div>
+              {/* PWA Install Button */}
+      <PWAInstallButton />
       </div>
 
       {/* Footer */}
@@ -254,6 +257,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       }}>
         <p style={{ margin: '0 0 4px 0' }}>© 2025 Run Alcester. All rights reserved.</p>
         <p style={{ margin: '0' }}>Questions? Contact us at runalcester@gmail.com</p>
+
       </div>
 
       {/* CSS Animation */}

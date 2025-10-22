@@ -6,7 +6,6 @@ import { AppContent } from './AppContent';
 import { RunDetailsPage } from './modules/admin/components/RunDetailsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import { EmailVerificationHandler } from './modules/auth/components/EmailVerificationHandler';
-import { PWAInstallPrompt } from './shared/components/ui/PWAInstallPrompt';
 import { SessionSecurityWrapper } from './modules/auth/components/SessionSecurityWrapper';
 import './styles/fonts.css';
 import './styles/main.css'; // Ensure main styles are loaded
@@ -61,7 +60,7 @@ function App() {
         </Router>
       </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
-      <PWAInstallPrompt />
+      
     </QueryClientProvider>
   );
 }
