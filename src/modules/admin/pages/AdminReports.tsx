@@ -36,7 +36,11 @@ interface PendingInvitation {
   token: string;
 }
 
-export const AdminReports: React.FC = () => {
+interface AdminReportsProps {
+  onNavigate?: (page: string) => void;
+}
+
+export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
   const { permissions } = useAuth();
   const [loading, setLoading] = useState(true);
   const [registrationStats, setRegistrationStats] = useState<RegistrationStats>({
@@ -411,7 +415,22 @@ export const AdminReports: React.FC = () => {
                         style={{ backgroundColor }}
                       >
                         <td className="member-table__cell">{formatDate(run.date)}</td>
-                        <td className="member-table__cell member-name">{run.runName}</td>
+                        <td className="member-table__cell member-name">
+                          <button
+                            onClick={() => onNavigate?.('scheduled-runs')}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--red-primary)',
+                              textDecoration: 'underline',
+                              cursor: 'pointer',
+                              padding: 0,
+                              font: 'inherit',
+                            }}
+                          >
+                            {run.runName}
+                          </button>
+                        </td>
                         <td className="member-table__cell">
                           {run.lirfCount >= run.lirfsRequired ? (
                             <span className="status-badge status-badge--active">Full ({run.lirfCount}/{run.lirfsRequired})</span>

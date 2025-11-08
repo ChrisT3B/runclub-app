@@ -158,7 +158,7 @@ export const AppContent: React.FC = () => {
         return <LirfReminderTestPage />;
       case 'admin-reports':
         console.log('✅ Rendering AdminReports');
-        return <AdminReports />;
+        return <AdminReports onNavigate={handleNavigation} />;
       case 'help-videos':
         console.log('✅ Rendering HelpVideos');
         return <HelpVideos />;
