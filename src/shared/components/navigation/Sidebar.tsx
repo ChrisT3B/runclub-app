@@ -13,6 +13,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
     { id: 'scheduled-runs', name: 'Scheduled Runs', icon: '🏃‍♂️' },
     { id: 'profile', name: 'My Profile', icon: '👤' },
+    { id: 'help-videos', name: 'Help Videos', icon: '📹' },
   ]
 
   // Add LIRF-specific navigation using permissions
@@ -24,12 +25,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     )
   }
 
-  // Add admin-specific navigation using permissions
+  // Add Reports for LIRFs and Admins
+  if (permissions.canManageRuns || permissions.canManageMembers) {
+    navigation.push({ id: 'admin-reports', name: 'Reports', icon: '📊' })
+  }
+
+  // Add admin-only navigation using permissions
   if (permissions.canManageMembers) {
     navigation.push(
       { id: 'members', name: 'Members', icon: '👥' },
-      { id: 'test-lirf-reminder', name: '🧪 Test LIRF Reminder', icon: '🧪' }
-    
+      { id: 'test-lirf-reminder', name: 'Test LIRF Reminder', icon: '🧪' }
     )
   }
 
