@@ -1,19 +1,35 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { RegistrationData } from '../types/index'
 import { InputSanitizer } from '../../../utils/inputSanitizer'
+import { supabase } from '@/services/supabase'
 interface RegisterFormProps {
   onSuccess?: () => void
   onLogin?: () => void
 }
 
-export const RegisterForm: React.FC<RegisterFormProps> = ({ 
-  onSuccess: _onSuccess, 
-  onLogin 
+interface InvitationData {
+  id: string
+  email: string
+  full_name: string
+  phone: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  token: string
+  expires_at: string
+  status: string
+}
+
+export const RegisterForm: React.FC<RegisterFormProps> = ({
+  onSuccess: _onSuccess,
+  onLogin
 }) => {
   const { state, register } = useAuth()
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [registeredEmail, setRegisteredEmail] = useState('')
+  const [invitationData, setInvitationData] = useState<InvitationData | null>(null)
+  const [invitationToken, setInvitationToken] = useState<string | null>(null)
+  const [invitationError, setInvitationError] = useState<string | null>(null)
   const [formData, setFormData] = useState<RegistrationData>({
     email: '',
     password: '',
@@ -24,19 +40,101 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     healthConditions: '',
   })
 
+  useEffect(() => {
+    // Check for invitation token in URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const token = urlParams.get('token')
+    if (token) {
+      setInvitationToken(token)
+      fetchInvitationData(token)
+    }
+  }, [])
+
+  const fetchInvitationData = async (token: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('pending_invitations')
+        .select('*')
+        .eq('token', token)
+        .eq('status', 'pending')
+        .single()
+
+      if (error || !data) {
+        setInvitationError('Invalid or expired invitation link. Please contact the club.')
+        return
+      }
+
+      // Check if expired
+      if (new Date(data.expires_at) < new Date()) {
+        setInvitationError('This invitation has expired. Please contact the club.')
+        return
+      }
+
+      // Pre-fill form with invitation data
+      setInvitationData(data)
+      setFormData({
+        email: data.email,
+        fullName: data.full_name,
+        phone: data.phone || '',
+        emergencyContactName: data.emergency_contact_name || '',
+        emergencyContactPhone: data.emergency_contact_phone || '',
+        password: '',
+        healthConditions: '',
+      })
+    } catch (error) {
+      console.error('Error fetching invitation data:', error)
+      setInvitationError('Failed to load invitation data. Please try again.')
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const cleanFormData = InputSanitizer.sanitizeFormData(formData);
     try {
       await register(cleanFormData)
+
+      // If registration successful and we have an invitation token, mark it as accepted
+      if (invitationToken && invitationData) {
+        try {
+          await supabase
+            .from('pending_invitations')
+            .update({
+              status: 'accepted',
+              accepted_at: new Date().toISOString(),
+            })
+            .eq('token', invitationToken)
+
+          // Note: We would also update the member's invited_at field, but that happens
+          // after email verification when the user record is created
+        } catch (invError) {
+          console.error('Error updating invitation status:', invError)
+          // Don't fail the registration if we can't update the invitation
+        }
+      }
+
       // If we get here, registration was successful (shouldn't happen with email verification)
       setRegisteredEmail(formData.email)
       setShowSuccessMessage(true)
     } catch (error: any) {
       console.error('Registration error:', error)
-      
+
       // Check if the error is about email verification (this is actually success!)
       if (error.message && error.message.includes('check your email')) {
+        // Mark invitation as accepted if we have one
+        if (invitationToken && invitationData) {
+          try {
+            await supabase
+              .from('pending_invitations')
+              .update({
+                status: 'accepted',
+                accepted_at: new Date().toISOString(),
+              })
+              .eq('token', invitationToken)
+          } catch (invError) {
+            console.error('Error updating invitation status:', invError)
+          }
+        }
+
         setRegisteredEmail(formData.email)
         setShowSuccessMessage(true)
       }
@@ -229,6 +327,60 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         </p>
       </div>
 
+      {/* Invitation Welcome Banner */}
+      {invitationData && !invitationError && (
+        <div style={{
+          background: '#dcfce7',
+          border: '2px solid #16a34a',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '20px'
+        }}>
+          <p style={{
+            color: '#16a34a',
+            fontWeight: '600',
+            margin: '0 0 8px 0',
+            fontSize: '16px'
+          }}>
+            Welcome back, {invitationData.full_name}!
+          </p>
+          <p style={{
+            color: '#15803d',
+            margin: '0',
+            fontSize: '14px'
+          }}>
+            We've pre-filled your details. Please verify them and complete your registration.
+          </p>
+        </div>
+      )}
+
+      {/* Invitation Error Banner */}
+      {invitationError && (
+        <div style={{
+          background: '#fef2f2',
+          border: '2px solid #dc2626',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '20px'
+        }}>
+          <p style={{
+            color: '#dc2626',
+            fontWeight: '600',
+            margin: '0 0 8px 0',
+            fontSize: '16px'
+          }}>
+            Invitation Error
+          </p>
+          <p style={{
+            color: '#991b1b',
+            margin: '0',
+            fontSize: '14px'
+          }}>
+            {invitationError}
+          </p>
+        </div>
+      )}
+
       {/* Registration Form Card */}
       <div className="card" style={{ border: '2px solid var(--red-primary)' }}>
         <div className="card-content">
@@ -279,15 +431,28 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   required
                   value={formData.email}
                   onChange={handleInputChange}
+                  disabled={!!invitationData}
                   className="form-input"
                   placeholder="your.email@example.com"
-                  style={{ 
+                  style={{
                     borderColor: 'var(--gray-300)',
-                    transition: 'all 0.15s ease'
+                    transition: 'all 0.15s ease',
+                    backgroundColor: invitationData ? 'var(--gray-100)' : 'white',
+                    cursor: invitationData ? 'not-allowed' : 'text',
+                    opacity: invitationData ? 0.7 : 1
                   }}
-                  onFocus={(e) => e.target.style.borderColor = 'var(--red-primary)'}
-                  onBlur={(e) => e.target.style.borderColor = 'var(--gray-300)'}
+                  onFocus={(e) => !invitationData && (e.target.style.borderColor = 'var(--red-primary)')}
+                  onBlur={(e) => !invitationData && (e.target.style.borderColor = 'var(--gray-300)')}
                 />
+                {invitationData && (
+                  <div style={{
+                    fontSize: '12px',
+                    color: 'var(--gray-500)',
+                    marginTop: '4px'
+                  }}>
+                    Email locked from invitation
+                  </div>
+                )}
               </div>
 
               <div className="form-group">
