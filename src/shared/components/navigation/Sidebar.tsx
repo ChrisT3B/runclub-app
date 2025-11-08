@@ -13,7 +13,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
     { id: 'scheduled-runs', name: 'Scheduled Runs', icon: '🏃‍♂️' },
     { id: 'profile', name: 'My Profile', icon: '👤' },
-    { id: 'help-videos', name: 'Help Videos', icon: '📹' },
   ]
 
   // Add LIRF-specific navigation using permissions
