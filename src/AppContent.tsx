@@ -14,6 +14,8 @@ import { LeadYourRun } from './modules/activeruns/components/LeadYourRun';
 import { RunAttendance } from './modules/activeruns/components/RunAttendance';
 import { CommunicationsDashboard } from './modules/communications/components/CommunicationsDashboard';
 import { LirfReminderTestPage } from './modules/admin/pages/LirfReminderTestPage';
+import { AdminReports } from './modules/admin/pages/AdminReports';
+import { HelpVideos } from './modules/help/pages/HelpVideos';
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -151,9 +153,15 @@ export const AppContent: React.FC = () => {
       case 'communications':
         console.log('✅ Rendering CommunicationsDashboard');
         return <CommunicationsDashboard />;
-              case 'test-lirf-reminder':
+      case 'test-lirf-reminder':
         console.log('✅ Rendering LirfReminderTestPage');
         return <LirfReminderTestPage />;
+      case 'admin-reports':
+        console.log('✅ Rendering AdminReports');
+        return <AdminReports />;
+      case 'help-videos':
+        console.log('✅ Rendering HelpVideos');
+        return <HelpVideos />;
       default:
         console.log('⚠️ Unknown page, defaulting to DashboardContent. Page was:', currentPage);
         return <DashboardContent onNavigate={handleNavigation} />;
