@@ -23,6 +23,8 @@ interface LirfLookAhead {
   lirfAssigned: boolean;
   lirfName: string;
   runId: string;
+  lirfCount: number;
+  lirfsRequired: number;
 }
 
 interface PendingInvitation {
@@ -198,7 +200,8 @@ export const AdminReports: React.FC = () => {
           run_date,
           assigned_lirf_1,
           assigned_lirf_2,
-          assigned_lirf_3
+          assigned_lirf_3,
+          lirfs_required
         `)
         .gte('run_date', todayStr)
         .lte('run_date', sevenDaysStr)
@@ -241,8 +244,15 @@ export const AdminReports: React.FC = () => {
 
       // Transform the data
       const tableData: LirfLookAhead[] = upcomingRuns.map((run: any) => {
-        // Check if any LIRF is assigned
-        const hasLirf = run.assigned_lirf_1 || run.assigned_lirf_2 || run.assigned_lirf_3;
+        // Count how many LIRF positions are filled
+        const lirfCount = [
+          run.assigned_lirf_1,
+          run.assigned_lirf_2,
+          run.assigned_lirf_3,
+        ].filter(Boolean).length;
+
+        const lirfsRequired = run.lirfs_required || 0;
+        const hasLirf = lirfCount > 0;
 
         // Get all assigned LIRF names
         const lirfNames = [
@@ -257,6 +267,8 @@ export const AdminReports: React.FC = () => {
           lirfAssigned: hasLirf,
           lirfName: lirfNames.length > 0 ? lirfNames.join(', ') : 'None',
           runId: run.id,
+          lirfCount,
+          lirfsRequired,
         };
       });
 
@@ -380,24 +392,39 @@ export const AdminReports: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  lirfLookAhead.map((run) => (
-                    <tr
-                      key={run.runId}
-                      className="member-table__row"
-                      style={{ backgroundColor: run.lirfAssigned ? '#dcfce7' : '#fee2e2' }}
-                    >
-                      <td className="member-table__cell">{formatDate(run.date)}</td>
-                      <td className="member-table__cell member-name">{run.runName}</td>
-                      <td className="member-table__cell">
-                        {run.lirfAssigned ? (
-                          <span className="status-badge status-badge--active">Yes</span>
-                        ) : (
-                          <span className="status-badge status-badge--inactive">No</span>
-                        )}
-                      </td>
-                      <td className="member-table__cell">{run.lirfName}</td>
-                    </tr>
-                  ))
+                  lirfLookAhead.map((run) => {
+                    // Determine background color based on LIRF count vs required
+                    // 0 filled = Red (#fee2e2)
+                    // 1+ vacancy = Amber (#fef3c7)
+                    // All filled = Green (#dcfce7)
+                    let backgroundColor = '#dcfce7'; // Green - all filled
+                    if (run.lirfCount === 0) {
+                      backgroundColor = '#fee2e2'; // Red - none filled
+                    } else if (run.lirfCount < run.lirfsRequired) {
+                      backgroundColor = '#fef3c7'; // Amber - has vacancies
+                    }
+
+                    return (
+                      <tr
+                        key={run.runId}
+                        className="member-table__row"
+                        style={{ backgroundColor }}
+                      >
+                        <td className="member-table__cell">{formatDate(run.date)}</td>
+                        <td className="member-table__cell member-name">{run.runName}</td>
+                        <td className="member-table__cell">
+                          {run.lirfCount >= run.lirfsRequired ? (
+                            <span className="status-badge status-badge--active">Full ({run.lirfCount}/{run.lirfsRequired})</span>
+                          ) : run.lirfCount > 0 ? (
+                            <span className="status-badge" style={{ backgroundColor: '#f59e0b', color: 'white' }}>Partial ({run.lirfCount}/{run.lirfsRequired})</span>
+                          ) : (
+                            <span className="status-badge status-badge--inactive">None (0/{run.lirfsRequired})</span>
+                          )}
+                        </td>
+                        <td className="member-table__cell">{run.lirfName}</td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
