@@ -416,20 +416,22 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
                       >
                         <td className="member-table__cell">{formatDate(run.date)}</td>
                         <td className="member-table__cell member-name">
-                          <button
-                            onClick={() => onNavigate?.('scheduled-runs')}
+                          <a
+                            href={`#scheduled-runs?runId=${run.runId}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              // Store the run ID in session storage so ViewScheduledRuns can scroll to it
+                              sessionStorage.setItem('scrollToRunId', run.runId);
+                              onNavigate?.('scheduled-runs');
+                            }}
                             style={{
-                              background: 'none',
-                              border: 'none',
                               color: 'var(--red-primary)',
                               textDecoration: 'underline',
                               cursor: 'pointer',
-                              padding: 0,
-                              font: 'inherit',
                             }}
                           >
                             {run.runName}
-                          </button>
+                          </a>
                         </td>
                         <td className="member-table__cell">
                           {run.lirfCount >= run.lirfsRequired ? (

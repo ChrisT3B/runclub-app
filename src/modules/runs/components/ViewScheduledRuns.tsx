@@ -125,6 +125,28 @@ const closeShareModal = () => {
     loadScheduledRuns();
   }, [loadScheduledRuns]);
 
+  // Scroll to specific run if coming from Reports page
+  useEffect(() => {
+    const scrollToRunId = sessionStorage.getItem('scrollToRunId');
+    if (scrollToRunId && runs.length > 0 && !loading) {
+      // Clear the session storage
+      sessionStorage.removeItem('scrollToRunId');
+
+      // Find the run card element and scroll to it
+      setTimeout(() => {
+        const runElement = document.getElementById(`run-card-${scrollToRunId}`);
+        if (runElement) {
+          runElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Highlight the run briefly
+          runElement.style.boxShadow = '0 0 20px rgba(220, 38, 38, 0.5)';
+          setTimeout(() => {
+            runElement.style.boxShadow = '';
+          }, 2000);
+        }
+      }, 100);
+    }
+  }, [runs, loading]);
+
   // PERFORMANCE: Use useMemo for expensive calculations
   const { filteredRuns, filterCounts }: { 
     filteredRuns: RunWithDetails[], 
@@ -539,10 +561,10 @@ const handleLirfCloseSuccessModal = () => {
       ) : (
         <div className="runs-grid">
           {filteredRuns.map(run => (
-            // ✅ ENHANCED: RunCard with BookingManager integration
-            <RunCard
-              key={run.id}
-              run={run}
+            <div key={run.id} id={`run-card-${run.id}`}>
+              {/* ✅ ENHANCED: RunCard with BookingManager integration */}
+              <RunCard
+                run={run}
               canManageRuns={canManageRuns}
               isBookingLoading={bookingLoading === run.id}
               isAssignmentLoading={false}
@@ -566,6 +588,7 @@ const handleLirfCloseSuccessModal = () => {
               onCloseLirfSuccessModal={handleLirfCloseSuccessModal}
                  onShowLirfSuccessModal={handleLirfShowSuccessModal}
             />
+            </div>
           ))}
         </div>
       )}
