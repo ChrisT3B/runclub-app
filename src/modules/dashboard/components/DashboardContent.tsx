@@ -16,8 +16,18 @@ interface UserStats {
   membershipStatus: string;
 }
 
+interface LirfLookAhead {
+  date: string;
+  runName: string;
+  lirfAssigned: boolean;
+  lirfName: string;
+  runId: string;
+  lirfCount: number;
+  lirfsRequired: number;
+}
+
 export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }) => {
-  const { state } = useAuth();
+  const { state, permissions } = useAuth();
   const [upcomingBookings, setUpcomingBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -29,14 +39,20 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
     membershipStatus: 'Active'
   });
   const [loadingStats, setLoadingStats] = useState(true);
-  
+  const [lirfLookAhead, setLirfLookAhead] = useState<LirfLookAhead[]>([]);
+  const [loadingLirf, setLoadingLirf] = useState(true);
+
   useEffect(() => {
     if (state.user?.id) {
       loadUpcomingBookings();
       loadUserStats();
       loadNotifications();
+      // Load LIRF look-ahead for LIRF/Admin users
+      if (permissions.accessLevel === 'admin' || permissions.accessLevel === 'lirf') {
+        loadLirfLookAhead();
+      }
     }
-  }, [state.user]);
+  }, [state.user, permissions.accessLevel]);
   
   const loadUpcomingBookings = async () => {
     if (!state.user?.id) {
@@ -135,6 +151,102 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
       console.error('Failed to load user stats:', error);
     } finally {
       setLoadingStats(false);
+    }
+  };
+
+  const loadLirfLookAhead = async () => {
+    try {
+      // Get date range for next 7 days
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(today.getDate() + 7);
+      sevenDaysFromNow.setHours(23, 59, 59, 999);
+
+      const todayStr = today.toISOString().split('T')[0];
+      const sevenDaysStr = sevenDaysFromNow.toISOString().split('T')[0];
+
+      // Fetch scheduled runs with LIRF assignments
+      const { data: upcomingRuns, error: runsError } = await supabase
+        .from('scheduled_runs')
+        .select(`
+          id,
+          run_title,
+          run_date,
+          assigned_lirf_1,
+          assigned_lirf_2,
+          assigned_lirf_3,
+          lirfs_required
+        `)
+        .gte('run_date', todayStr)
+        .lte('run_date', sevenDaysStr)
+        .order('run_date', { ascending: true });
+
+      if (runsError) {
+        console.error('Error fetching LIRF runs:', runsError);
+        throw runsError;
+      }
+
+      if (!upcomingRuns || upcomingRuns.length === 0) {
+        setLirfLookAhead([]);
+        return;
+      }
+
+      // Get all unique LIRF IDs
+      const lirfIds = new Set<string>();
+      upcomingRuns.forEach((run: any) => {
+        if (run.assigned_lirf_1) lirfIds.add(run.assigned_lirf_1);
+        if (run.assigned_lirf_2) lirfIds.add(run.assigned_lirf_2);
+        if (run.assigned_lirf_3) lirfIds.add(run.assigned_lirf_3);
+      });
+
+      // Fetch member names for assigned LIRFs
+      const { data: members, error: membersError } = await supabase
+        .from('members')
+        .select('id, full_name')
+        .in('id', Array.from(lirfIds));
+
+      if (membersError) {
+        console.error('Error fetching LIRF members:', membersError);
+      }
+
+      // Create lookup map
+      const memberMap = new Map(members?.map((m: any) => [m.id, m.full_name]) || []);
+
+      // Transform data
+      const tableData: LirfLookAhead[] = upcomingRuns.map((run: any) => {
+        const lirfCount = [
+          run.assigned_lirf_1,
+          run.assigned_lirf_2,
+          run.assigned_lirf_3,
+        ].filter(Boolean).length;
+
+        const lirfsRequired = run.lirfs_required || 0;
+        const hasLirf = lirfCount > 0;
+
+        const lirfNames = [
+          run.assigned_lirf_1 ? memberMap.get(run.assigned_lirf_1) : null,
+          run.assigned_lirf_2 ? memberMap.get(run.assigned_lirf_2) : null,
+          run.assigned_lirf_3 ? memberMap.get(run.assigned_lirf_3) : null,
+        ].filter(Boolean);
+
+        return {
+          date: run.run_date,
+          runName: run.run_title,
+          lirfAssigned: hasLirf,
+          lirfName: lirfNames.length > 0 ? lirfNames.join(', ') : 'None',
+          runId: run.id,
+          lirfCount,
+          lirfsRequired,
+        };
+      });
+
+      setLirfLookAhead(tableData);
+    } catch (error) {
+      console.error('Failed to load LIRF look-ahead:', error);
+    } finally {
+      setLoadingLirf(false);
     }
   };
 
@@ -264,7 +376,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
       <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-header">
           <h3 className="card-title">📬 Recent Notifications</h3>
-          <button 
+          <button
             className="btn btn-primary"
             onClick={() => onNavigate?.('communications')}
             style={{ fontSize: '14px' }}
@@ -287,14 +399,14 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
               {notifications.map((notification) => {
                 const priorityStyle = getNotificationPriorityColor(notification.priority);
                 const isUnread = !notification.read_at;
-                
+
                 return (
-                  <div 
+                  <div
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
                       alignItems: 'flex-start',
                       padding: '16px',
                       background: isUnread ? '#fef9e7' : priorityStyle.background,
@@ -318,8 +430,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
                         <span style={{ fontSize: '16px' }}>
                           {getNotificationIcon(notification.type, notification.priority)}
                         </span>
-                        <div style={{ 
-                          fontWeight: isUnread ? '600' : '500', 
+                        <div style={{
+                          fontWeight: isUnread ? '600' : '500',
                           color: 'var(--gray-900)',
                           fontSize: '14px'
                         }}>
@@ -334,9 +446,9 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
                           }} />
                         )}
                       </div>
-                      <div style={{ 
-                        fontSize: '13px', 
-                        color: 'var(--gray-600)', 
+                      <div style={{
+                        fontSize: '13px',
+                        color: 'var(--gray-600)',
                         marginBottom: '8px',
                         lineHeight: '1.4',
                         whiteSpace: 'pre-wrap', // Preserve line breaks and formatting
@@ -385,6 +497,95 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
           )}
         </div>
       </div>
+
+      {/* LIRF Look-Ahead Section - Only for LIRF/Admin users */}
+      {(permissions.accessLevel === 'admin' || permissions.accessLevel === 'lirf') && (
+        <div className="card" style={{ marginBottom: '24px' }}>
+          <div className="card-header">
+            <h3 className="card-title">📊 7-Day LIRF Assignment Look-Ahead</h3>
+            <button
+              className="btn btn-primary"
+              onClick={() => onNavigate?.('admin-reports')}
+              style={{ fontSize: '14px' }}
+            >
+              View Full Reports
+            </button>
+          </div>
+          <div className="card-content">
+            {loadingLirf ? (
+              <div style={{ textAlign: 'center', padding: '20px', color: 'var(--gray-500)' }}>
+                Loading LIRF assignments...
+              </div>
+            ) : lirfLookAhead.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--gray-500)' }}>
+                <div style={{ fontSize: '24px', marginBottom: '8px' }}>🏃‍♂️</div>
+                <p style={{ margin: '0' }}>No upcoming runs in the next 7 days</p>
+              </div>
+            ) : (
+              <div className="table-container">
+                <table className="member-table">
+                  <thead className="member-table__header">
+                    <tr>
+                      <th className="member-table__header-cell">Date</th>
+                      <th className="member-table__header-cell">Run Name</th>
+                      <th className="member-table__header-cell">LIRF Assigned</th>
+                      <th className="member-table__header-cell">LIRF Name</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lirfLookAhead.map((run) => {
+                      // Determine background color based on LIRF count vs required
+                      let backgroundColor = '#dcfce7'; // Green - all filled
+                      if (run.lirfCount === 0) {
+                        backgroundColor = '#fee2e2'; // Red - none filled
+                      } else if (run.lirfCount < run.lirfsRequired) {
+                        backgroundColor = '#fef3c7'; // Amber - has vacancies
+                      }
+
+                      return (
+                        <tr
+                          key={run.runId}
+                          className="member-table__row"
+                          style={{ backgroundColor }}
+                        >
+                          <td className="member-table__cell">{formatDate(run.date)}</td>
+                          <td className="member-table__cell member-name">
+                            <a
+                              href={`#scheduled-runs?runId=${run.runId}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                sessionStorage.setItem('scrollToRunId', run.runId);
+                                onNavigate?.('scheduled-runs');
+                              }}
+                              style={{
+                                color: 'var(--red-primary)',
+                                textDecoration: 'underline',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {run.runName}
+                            </a>
+                          </td>
+                          <td className="member-table__cell">
+                            {run.lirfCount >= run.lirfsRequired ? (
+                              <span className="status-badge status-badge--active">Full ({run.lirfCount}/{run.lirfsRequired})</span>
+                            ) : run.lirfCount > 0 ? (
+                              <span className="status-badge" style={{ backgroundColor: '#f59e0b', color: 'white' }}>Partial ({run.lirfCount}/{run.lirfsRequired})</span>
+                            ) : (
+                              <span className="status-badge status-badge--inactive">None (0/{run.lirfsRequired})</span>
+                            )}
+                          </td>
+                          <td className="member-table__cell">{run.lirfName}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Upcoming Runs Section */}
       <div className="card" style={{ marginBottom: '24px' }}>
