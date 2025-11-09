@@ -185,7 +185,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
 
       if (runsError) {
         console.error('Error fetching LIRF runs:', runsError);
-        throw runsError;
+        setLirfLookAhead([]);
+        return;
       }
 
       if (!upcomingRuns || upcomingRuns.length === 0) {
@@ -201,18 +202,20 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
         if (run.assigned_lirf_3) lirfIds.add(run.assigned_lirf_3);
       });
 
-      // Fetch member names for assigned LIRFs
-      const { data: members, error: membersError } = await supabase
-        .from('members')
-        .select('id, full_name')
-        .in('id', Array.from(lirfIds));
+      // Only fetch members if we have LIRF IDs
+      let memberMap = new Map();
+      if (lirfIds.size > 0) {
+        const { data: members, error: membersError } = await supabase
+          .from('members')
+          .select('id, full_name')
+          .in('id', Array.from(lirfIds));
 
-      if (membersError) {
-        console.error('Error fetching LIRF members:', membersError);
+        if (membersError) {
+          console.error('Error fetching LIRF members:', membersError);
+        } else {
+          memberMap = new Map(members?.map((m: any) => [m.id, m.full_name]) || []);
+        }
       }
-
-      // Create lookup map
-      const memberMap = new Map(members?.map((m: any) => [m.id, m.full_name]) || []);
 
       // Transform data
       const tableData: LirfLookAhead[] = upcomingRuns.map((run: any) => {
@@ -245,6 +248,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
       setLirfLookAhead(tableData);
     } catch (error) {
       console.error('Failed to load LIRF look-ahead:', error);
+      setLirfLookAhead([]);
     } finally {
       setLoadingLirf(false);
     }
