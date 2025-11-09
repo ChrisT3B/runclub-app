@@ -15,6 +15,7 @@ interface UserMetrics {
   activeUsers: number;
   bookingsThisMonth: number;
   attendanceThisMonth: number;
+  guestsAddedThisMonth: number;
 }
 
 interface LirfLookAhead {
@@ -54,6 +55,7 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
     activeUsers: 0,
     bookingsThisMonth: 0,
     attendanceThisMonth: 0,
+    guestsAddedThisMonth: 0,
   });
   const [lirfLookAhead, setLirfLookAhead] = useState<LirfLookAhead[]>([]);
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
@@ -108,17 +110,18 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
 
   const fetchUserMetrics = async () => {
     try {
-      // Total users
+      // Total users (excluding guests)
       const { count: totalUsers, error: totalUsersError } = await supabase
         .from('members')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .neq('membership_status', 'guest');
 
       if (totalUsersError) {
         console.error('Error fetching total users:', totalUsersError);
         throw totalUsersError;
       }
 
-      console.log('Total users count:', totalUsers);
+      console.log('Total users count (excluding guests):', totalUsers);
 
       // Active users (booked in last 30 days)
       const thirtyDaysAgo = new Date();
@@ -170,11 +173,26 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
 
       console.log('Attendance this month:', attendanceThisMonth);
 
+      // Guests added this month
+      const { count: guestsAddedThisMonth, error: guestsError } = await supabase
+        .from('members')
+        .select('*', { count: 'exact', head: true })
+        .eq('membership_status', 'guest')
+        .gte('created_at', startOfMonth.toISOString());
+
+      if (guestsError) {
+        console.error('Error fetching guests added this month:', guestsError);
+        throw guestsError;
+      }
+
+      console.log('Guests added this month:', guestsAddedThisMonth);
+
       setUserMetrics({
         totalUsers: totalUsers || 0,
         activeUsers,
         bookingsThisMonth: bookingsThisMonth || 0,
         attendanceThisMonth: attendanceThisMonth || 0,
+        guestsAddedThisMonth: guestsAddedThisMonth || 0,
       });
     } catch (error) {
       console.error('Error fetching user metrics:', error);
@@ -481,6 +499,10 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
                 <tr className="member-table__row">
                   <td className="member-table__cell">Attendance This Month</td>
                   <td className="member-table__cell" style={{ textAlign: 'right', fontWeight: '600', fontSize: '18px', color: '#8b5cf6' }}>{userMetrics.attendanceThisMonth}</td>
+                </tr>
+                <tr className="member-table__row">
+                  <td className="member-table__cell">Guests Added This Month</td>
+                  <td className="member-table__cell" style={{ textAlign: 'right', fontWeight: '600', fontSize: '18px', color: '#ec4899' }}>{userMetrics.guestsAddedThisMonth}</td>
                 </tr>
               </tbody>
             </table>
