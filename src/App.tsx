@@ -7,6 +7,7 @@ import { RunDetailsPage } from './modules/admin/components/RunDetailsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import { EmailVerificationHandler } from './modules/auth/components/EmailVerificationHandler';
 import { SessionSecurityWrapper } from './modules/auth/components/SessionSecurityWrapper';
+import { UpdatePrompt } from './shared/components/ui/UpdatePrompt';
 import './styles/fonts.css';
 import './styles/main.css'; // Ensure main styles are loaded
 
@@ -60,7 +61,7 @@ function App() {
         </Router>
       </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
-      
+      <UpdatePrompt />
     </QueryClientProvider>
   );
 }
