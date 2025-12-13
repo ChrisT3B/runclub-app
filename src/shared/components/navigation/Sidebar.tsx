@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../../../modules/auth/context/AuthContext'
+import { SendInvitationModal } from '../ui/SendInvitationModal'
 
 interface SidebarProps {
   currentPage?: string
@@ -8,6 +9,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
   const { permissions } = useAuth()
+  const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false)
 
   const navigation = [
     { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
@@ -61,6 +63,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
               {item.name}
             </button>
           ))}
+
+          {/* Send Invitation Button - visible to Admin and LIRF users */}
+          {(permissions.canManageRuns || permissions.canManageMembers) && (
+            <button
+              onClick={() => setIsInvitationModalOpen(true)}
+              className="nav-item"
+              style={{
+                marginTop: '8px',
+                borderTop: '1px solid var(--gray-200)',
+                paddingTop: '16px'
+              }}
+            >
+              <span style={{ marginRight: '12px', fontSize: '16px' }}>📧</span>
+              Send Invitation
+            </button>
+          )}
         </nav>
 
         {/* Club Information Section */}
@@ -111,6 +129,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
         </a>
               </div>
       </div>
+
+      {/* Send Invitation Modal */}
+      <SendInvitationModal
+        isOpen={isInvitationModalOpen}
+        onClose={() => setIsInvitationModalOpen(false)}
+      />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { BookingService } from '../../admin/services/bookingService';
 import { supabase } from '../../../services/supabase';
+import { InvitationService } from '../../../services/invitationService';
 
 interface Member {
   id: string;
@@ -74,6 +75,8 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
     health_conditions: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [sendInvitationToGuest, setSendInvitationToGuest] = useState(false);
+  const [guestEmail, setGuestEmail] = useState('');
 
   useEffect(() => {
     loadRunData();
@@ -311,17 +314,29 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
       setSaving('adding-manual');
       setError('');
 
+      // Validate email if sending invitation
+      if (sendInvitationToGuest && !guestEmail) {
+        setError('Email is required to send invitation');
+        setSaving(null);
+        return;
+      }
+
+      // Use real email if provided, otherwise temp email
+      const emailToUse = sendInvitationToGuest && guestEmail
+        ? guestEmail.toLowerCase().trim()
+        : `temp-${Date.now()}@runalcester.temp`;
+
       // Create a temporary member record for the manual runner
       const tempMember = {
         full_name: manualRunner.full_name,
-        email: `temp-${Date.now()}@runalcester.temp`, // Temporary email
+        email: emailToUse,
         phone: manualRunner.phone || null,
         emergency_contact_name: manualRunner.emergency_contact_name || null,
         emergency_contact_phone: manualRunner.emergency_contact_phone || null,
         health_conditions: manualRunner.health_conditions || null,
         membership_status: 'guest',
         is_temp_runner: true,
-        date_joined: new Date().toISOString().split('T')[0] // Add required field
+        date_joined: new Date().toISOString().split('T')[0]
       };
 
       const { data: newMember, error: memberError } = await supabase
@@ -348,15 +363,39 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
       const { error: attendanceError } = await supabase
         .from('run_attendance')
         .insert([attendanceData]);
-      
+
       if (attendanceError) {
         console.error('Attendance creation error:', attendanceError);
         throw attendanceError;
       }
 
+      // Send invitation if requested
+      if (sendInvitationToGuest && guestEmail) {
+        try {
+          const invitationResult = await InvitationService.sendInvitation(guestEmail, state.user.id);
+
+          if (invitationResult.success) {
+            // Link invitation to guest member
+            if (invitationResult.invitationId) {
+              await supabase
+                .from('pending_invitations')
+                .update({ guest_member_id: newMember.id })
+                .eq('id', invitationResult.invitationId);
+            }
+
+            alert(`${manualRunner.full_name} added as guest! ${invitationResult.message}`);
+          } else {
+            alert(`${manualRunner.full_name} added as guest, but invitation failed: ${invitationResult.message}`);
+          }
+        } catch (invError) {
+          console.error('Invitation error:', invError);
+          alert(`${manualRunner.full_name} added as guest, but invitation sending failed.`);
+        }
+      }
+
       // Reload data
       await loadRunData();
-      
+
       // Reset form
       setManualRunner({
         full_name: '',
@@ -365,6 +404,8 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
         emergency_contact_phone: '',
         health_conditions: ''
       });
+      setGuestEmail('');
+      setSendInvitationToGuest(false);
       setShowAddRunner(false);
 
     } catch (err: any) {
@@ -832,6 +873,94 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
                         resize: 'vertical'
                       }}
                     />
+                  </div>
+
+                  {/* Invitation Checkbox Section */}
+                  <div style={{
+                    marginTop: '12px',
+                    paddingTop: '12px',
+                    borderTop: '1px solid var(--gray-200)'
+                  }}>
+                    <label
+                      style={{
+                        display: 'flex',
+                        alignItems: 'start',
+                        cursor: 'pointer',
+                        gap: '12px'
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={sendInvitationToGuest}
+                        onChange={(e) => setSendInvitationToGuest(e.target.checked)}
+                        style={{
+                          marginTop: '4px',
+                          width: '18px',
+                          height: '18px',
+                          cursor: 'pointer'
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <span style={{
+                          display: 'block',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: 'var(--gray-700)',
+                          marginBottom: '4px'
+                        }}>
+                          Send registration invitation
+                        </span>
+                        <span style={{
+                          display: 'block',
+                          fontSize: '13px',
+                          color: 'var(--gray-500)'
+                        }}>
+                          Invite this guest to create a full member account
+                        </span>
+                      </div>
+                    </label>
+
+                    {sendInvitationToGuest && (
+                      <div style={{
+                        marginTop: '12px',
+                        padding: '12px',
+                        background: '#eff6ff',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: '6px'
+                      }}>
+                        <label style={{
+                          display: 'block',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: '#1e40af',
+                          marginBottom: '8px'
+                        }}>
+                          Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          value={guestEmail}
+                          onChange={(e) => setGuestEmail(e.target.value)}
+                          required={sendInvitationToGuest}
+                          placeholder="guest@example.com"
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            border: '1px solid #93c5fd',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                        <p style={{
+                          margin: '8px 0 0 0',
+                          fontSize: '12px',
+                          color: '#1e40af'
+                        }}>
+                          We'll send them a link to complete their registration
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 

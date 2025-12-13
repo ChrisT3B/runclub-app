@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
+import { InvitationService } from '../../../services/invitationService';
 
 interface RegistrationStats {
   totalInvited: number;
@@ -30,11 +31,14 @@ interface LirfLookAhead {
 
 interface PendingInvitation {
   id: string;
-  full_name: string;
   email: string;
-  created_at: string;
-  expires_at: string;
   token: string;
+  status: string;
+  invited_by: string | null;
+  invited_at: string;
+  expires_at: string;
+  invitation_sent: boolean;
+  invited_by_member?: { full_name: string };
 }
 
 interface AdminReportsProps {
@@ -88,12 +92,12 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
       const { data: invitationStats, error } = await supabase
         .from('pending_invitations')
         .select('status')
-        .in('status', ['pending', 'accepted']);
+        .in('status', ['pending', 'registered']);
 
       if (error) throw error;
 
       const totalInvited = invitationStats?.length || 0;
-      const registered = invitationStats?.filter((i) => i.status === 'accepted').length || 0;
+      const registered = invitationStats?.filter((i) => i.status === 'registered').length || 0;
       const pending = invitationStats?.filter((i) => i.status === 'pending').length || 0;
       const registrationRate = totalInvited > 0 ? ((registered / totalInvited) * 100).toFixed(1) : '0';
 
@@ -305,9 +309,12 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
     try {
       const { data, error } = await supabase
         .from('pending_invitations')
-        .select('*')
+        .select(`
+          *,
+          invited_by_member:members!invited_by(full_name)
+        `)
         .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+        .order('invited_at', { ascending: false });
 
       if (error) throw error;
 
@@ -317,32 +324,17 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
     }
   };
 
-  const resendInvitation = async (invitationId: string) => {
+  const resendInvitation = async (invitationId: string, email: string) => {
     setResending(invitationId);
     try {
-      const invitation = pendingInvitations.find((inv) => inv.id === invitationId);
-      if (!invitation) return;
+      const result = await InvitationService.sendInvitation(email);
 
-      // Generate new token
-      const newToken = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-
-      // Update invitation with new token and reset expiry
-      const { error: updateError } = await supabase
-        .from('pending_invitations')
-        .update({
-          token: newToken,
-          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        })
-        .eq('id', invitationId);
-
-      if (updateError) throw updateError;
-
-      const registrationLink = `${window.location.origin}/register?token=${newToken}`;
-      alert(`Invitation resent to ${invitation.email}\n\nNew registration link:\n${registrationLink}\n\n(Email functionality to be implemented)`);
-
-      await fetchPendingInvitations();
+      if (result.success) {
+        alert(`Invitation resent to ${email}`);
+        await fetchPendingInvitations();
+      } else {
+        alert(`Failed to resend: ${result.message}`);
+      }
     } catch (error) {
       console.error('Error resending invitation:', error);
       alert('Failed to resend invitation. Please try again.');
@@ -547,16 +539,26 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
 
       {/* Section 4: Pending Invitations */}
       <section style={{ marginBottom: '32px' }}>
-        <h2 className="card-title">Pending Invitations</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h2 className="card-title" style={{ margin: 0 }}>Pending Invitations ({pendingInvitations.length})</h2>
+          {permissions.accessLevel === 'admin' && (
+            <button
+              onClick={() => onNavigate?.('bulk-invitations')}
+              className="btn btn--primary"
+            >
+              Bulk Invite Members
+            </button>
+          )}
+        </div>
         <div className="card">
           <div className="table-container">
             <table className="member-table">
               <thead className="member-table__header">
                 <tr>
-                  <th className="member-table__header-cell">Name</th>
                   <th className="member-table__header-cell">Email</th>
+                  <th className="member-table__header-cell">Invited By</th>
                   <th className="member-table__header-cell">Sent</th>
-                  <th className="member-table__header-cell">Expires</th>
+                  <th className="member-table__header-cell">Expires In</th>
                   <th className="member-table__header-cell">Actions</th>
                 </tr>
               </thead>
@@ -568,35 +570,47 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
                     </td>
                   </tr>
                 ) : (
-                  pendingInvitations.map((inv) => (
-                    <tr key={inv.id} className="member-table__row">
-                      <td className="member-table__cell member-name">{inv.full_name}</td>
-                      <td className="member-table__cell">{inv.email}</td>
-                      <td className="member-table__cell member-table__cell--small-gray">
-                        {new Date(inv.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="member-table__cell member-table__cell--small-gray">
-                        {new Date(inv.expires_at).toLocaleDateString()}
-                      </td>
-                      <td className="member-table__cell">
-                        <div className="member-actions">
-                          <button
-                            onClick={() => resendInvitation(inv.id)}
-                            disabled={resending === inv.id}
-                            className="btn btn-secondary member-actions__btn"
-                          >
-                            {resending === inv.id ? 'Resending...' : 'Resend'}
-                          </button>
-                          <button
-                            onClick={() => copyInvitationLink(inv.token)}
-                            className="btn btn-secondary member-actions__btn"
-                          >
-                            Copy Link
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                  pendingInvitations.map((inv) => {
+                    const daysUntilExpiry = Math.floor(
+                      (new Date(inv.expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                    );
+                    const isExpiringSoon = daysUntilExpiry <= 7;
+
+                    return (
+                      <tr key={inv.id} className="member-table__row">
+                        <td className="member-table__cell">{inv.email}</td>
+                        <td className="member-table__cell member-table__cell--small-gray">
+                          {inv.invited_by_member?.full_name || 'Unknown'}
+                        </td>
+                        <td className="member-table__cell member-table__cell--small-gray">
+                          {new Date(inv.invited_at).toLocaleDateString()}
+                        </td>
+                        <td className="member-table__cell member-table__cell--small-gray" style={{
+                          color: isExpiringSoon ? '#dc2626' : 'inherit'
+                        }}>
+                          {isExpiringSoon && '⚠️ '}
+                          {daysUntilExpiry} days
+                        </td>
+                        <td className="member-table__cell">
+                          <div className="member-actions">
+                            <button
+                              onClick={() => resendInvitation(inv.id, inv.email)}
+                              disabled={resending === inv.id}
+                              className="btn btn-secondary member-actions__btn"
+                            >
+                              {resending === inv.id ? 'Resending...' : 'Resend'}
+                            </button>
+                            <button
+                              onClick={() => copyInvitationLink(inv.token)}
+                              className="btn btn-secondary member-actions__btn"
+                            >
+                              Copy Link
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

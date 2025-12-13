@@ -16,6 +16,8 @@ import { CommunicationsDashboard } from './modules/communications/components/Com
 import { LirfReminderTestPage } from './modules/admin/pages/LirfReminderTestPage';
 import { AdminReports } from './modules/admin/pages/AdminReports';
 import { HelpVideos } from './modules/help/pages/HelpVideos';
+import { BulkInvitations } from './modules/admin/pages/BulkInvitations';
+
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -162,6 +164,9 @@ export const AppContent: React.FC = () => {
       case 'help-videos':
         console.log('✅ Rendering HelpVideos');
         return <HelpVideos />;
+      case 'bulk-invitations':
+        console.log('✅ Rendering BulkInvitations');
+        return <BulkInvitations onNavigate={handleNavigation} />;
       default:
         console.log('⚠️ Unknown page, defaulting to DashboardContent. Page was:', currentPage);
         return <DashboardContent onNavigate={handleNavigation} />;

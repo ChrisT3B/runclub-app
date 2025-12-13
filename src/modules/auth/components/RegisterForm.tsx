@@ -2,22 +2,16 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import type { RegistrationData } from '../types/index'
 import { InputSanitizer } from '../../../utils/inputSanitizer'
-import { supabase } from '@/services/supabase'
+import { InvitationService } from '../../../services/invitationService'
+
 interface RegisterFormProps {
   onSuccess?: () => void
   onLogin?: () => void
 }
 
 interface InvitationData {
-  id: string
   email: string
-  full_name: string
-  phone: string | null
-  emergency_contact_name: string | null
-  emergency_contact_phone: string | null
-  token: string
-  expires_at: string
-  status: string
+  invitationId: string
 }
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({
@@ -30,6 +24,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [invitationData, setInvitationData] = useState<InvitationData | null>(null)
   const [invitationToken, setInvitationToken] = useState<string | null>(null)
   const [invitationError, setInvitationError] = useState<string | null>(null)
+  const [validatingInvitation, setValidatingInvitation] = useState(false)
   const [formData, setFormData] = useState<RegistrationData>({
     email: '',
     password: '',
@@ -46,44 +41,36 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     const token = urlParams.get('token')
     if (token) {
       setInvitationToken(token)
-      fetchInvitationData(token)
+      validateInvitationToken(token)
     }
   }, [])
 
-  const fetchInvitationData = async (token: string) => {
+  const validateInvitationToken = async (token: string) => {
+    setValidatingInvitation(true)
     try {
-      const { data, error } = await supabase
-        .from('pending_invitations')
-        .select('*')
-        .eq('token', token)
-        .eq('status', 'pending')
-        .single()
+      const validation = await InvitationService.validateToken(token)
 
-      if (error || !data) {
-        setInvitationError('Invalid or expired invitation link. Please contact the club.')
+      if (!validation.valid) {
+        setInvitationError(validation.error || 'Invalid invitation link')
+        setValidatingInvitation(false)
         return
       }
 
-      // Check if expired
-      if (new Date(data.expires_at) < new Date()) {
-        setInvitationError('This invitation has expired. Please contact the club.')
-        return
-      }
-
-      // Pre-fill form with invitation data
-      setInvitationData(data)
-      setFormData({
-        email: data.email,
-        fullName: data.full_name,
-        phone: data.phone || '',
-        emergencyContactName: data.emergency_contact_name || '',
-        emergencyContactPhone: data.emergency_contact_phone || '',
-        password: '',
-        healthConditions: '',
+      // Set invitation data and pre-fill email
+      setInvitationData({
+        email: validation.email!,
+        invitationId: validation.invitationId!
       })
+
+      setFormData(prev => ({
+        ...prev,
+        email: validation.email!
+      }))
     } catch (error) {
-      console.error('Error fetching invitation data:', error)
-      setInvitationError('Failed to load invitation data. Please try again.')
+      console.error('Error validating invitation:', error)
+      setInvitationError('Failed to validate invitation. Please try again.')
+    } finally {
+      setValidatingInvitation(false)
     }
   }
 
@@ -93,19 +80,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     try {
       await register(cleanFormData)
 
-      // If registration successful and we have an invitation token, mark it as accepted
-      if (invitationToken && invitationData) {
+      // If registration successful and we have an invitation token, mark it as registered
+      if (invitationToken) {
         try {
-          await supabase
-            .from('pending_invitations')
-            .update({
-              status: 'accepted',
-              accepted_at: new Date().toISOString(),
-            })
-            .eq('token', invitationToken)
-
-          // Note: We would also update the member's invited_at field, but that happens
-          // after email verification when the user record is created
+          await InvitationService.markAsRegistered(invitationToken)
+          console.log('Invitation marked as registered')
         } catch (invError) {
           console.error('Error updating invitation status:', invError)
           // Don't fail the registration if we can't update the invitation
@@ -120,16 +99,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
       // Check if the error is about email verification (this is actually success!)
       if (error.message && error.message.includes('check your email')) {
-        // Mark invitation as accepted if we have one
-        if (invitationToken && invitationData) {
+        // Mark invitation as registered if we have one
+        if (invitationToken) {
           try {
-            await supabase
-              .from('pending_invitations')
-              .update({
-                status: 'accepted',
-                accepted_at: new Date().toISOString(),
-              })
-              .eq('token', invitationToken)
+            await InvitationService.markAsRegistered(invitationToken)
+            console.log('Invitation marked as registered')
           } catch (invError) {
             console.error('Error updating invitation status:', invError)
           }
@@ -327,8 +301,24 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         </p>
       </div>
 
+      {/* Invitation Validating Banner */}
+      {validatingInvitation && (
+        <div style={{
+          padding: '16px',
+          background: '#f3f4f6',
+          border: '1px solid #d1d5db',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          textAlign: 'center'
+        }}>
+          <p style={{ margin: 0, color: '#6b7280' }}>
+            Validating invitation...
+          </p>
+        </div>
+      )}
+
       {/* Invitation Welcome Banner */}
-      {invitationData && !invitationError && (
+      {invitationData && !invitationError && !validatingInvitation && (
         <div style={{
           background: '#dcfce7',
           border: '2px solid #16a34a',
@@ -342,14 +332,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             margin: '0 0 8px 0',
             fontSize: '16px'
           }}>
-            Welcome back, {invitationData.full_name}!
+            Valid Invitation
           </p>
           <p style={{
             color: '#15803d',
             margin: '0',
             fontSize: '14px'
           }}>
-            We've pre-filled your details. Please verify them and complete your registration.
+            You've been invited to join Run Alcester! Complete the form below to create your account.
           </p>
         </div>
       )}
