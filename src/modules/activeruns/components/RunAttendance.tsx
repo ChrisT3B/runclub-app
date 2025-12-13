@@ -321,15 +321,14 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
         return;
       }
 
-      // Use real email if provided, otherwise temp email
-      const emailToUse = sendInvitationToGuest && guestEmail
-        ? guestEmail.toLowerCase().trim()
-        : `temp-${Date.now()}@runalcester.temp`;
+      // CRITICAL: ALWAYS use temp email for guest member record
+      // Real email is ONLY used for the invitation, not the member record
+      const tempEmail = `temp-${Date.now()}@runalcester.temp`;
 
       // Create a temporary member record for the manual runner
       const tempMember = {
         full_name: manualRunner.full_name,
-        email: emailToUse,
+        email: tempEmail,
         phone: manualRunner.phone || null,
         emergency_contact_name: manualRunner.emergency_contact_name || null,
         emergency_contact_phone: manualRunner.emergency_contact_phone || null,
@@ -369,7 +368,7 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
         throw attendanceError;
       }
 
-      // Send invitation if requested
+      // Send invitation if requested (using REAL email for invitation only)
       if (sendInvitationToGuest && guestEmail) {
         try {
           const invitationResult = await InvitationService.sendInvitation(guestEmail, state.user.id);
@@ -391,6 +390,8 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
           console.error('Invitation error:', invError);
           alert(`${manualRunner.full_name} added as guest, but invitation sending failed.`);
         }
+      } else {
+        alert(`${manualRunner.full_name} added as guest member!`);
       }
 
       // Reload data

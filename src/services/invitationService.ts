@@ -44,12 +44,19 @@ export class InvitationService {
   }> {
     const cleanEmail = email.toLowerCase().trim();
 
-    // Check members table
+    // Check members table - EXCLUDE guest members and temp runners
     const { data: memberData } = await supabase
       .from('members')
-      .select('id, email')
+      .select('id, email, membership_status, is_temp_runner')
       .eq('email', cleanEmail)
       .maybeSingle();
+
+    // Only count as "existing member" if they're a real member (not a guest)
+    const isRealMember = memberData &&
+                         memberData.membership_status !== 'guest' &&
+                         !memberData.is_temp_runner &&
+                         !memberData.email?.includes('temp-') &&
+                         !memberData.email?.includes('@runalcester.temp');
 
     // Check pending_members table
     const { data: pendingData } = await supabase
@@ -67,7 +74,7 @@ export class InvitationService {
       .maybeSingle();
 
     return {
-      existsInMembers: !!memberData,
+      existsInMembers: !!isRealMember,
       existsInPending: !!pendingData,
       hasInvitation: !!invitationData,
       invitationData

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '../../../shared/layouts/AuthLayout';
 import { LoginForm } from '../components/LoginForm';
 import { RegisterForm } from '../components/RegisterForm';
@@ -7,44 +7,62 @@ import { ForgotPasswordForm } from '../components/ForgotPasswordForm';
 import { PasswordResetForm } from '../components/PasswordResetForm';
 import { SimpleAuthDebug } from '../../../utils/SimpleAuthDebug';
 
-export const AuthContent: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'login' | 'register' | 'forgot' | 'reset' | 'debug'>('login');
-  const navigate = useNavigate();
+// Determine initial view based on URL parameters
+const determineInitialView = (): 'login' | 'register' | 'forgot' | 'reset' | 'debug' => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
 
-  useEffect(() => {
-    // Check both URL search parameters AND hash parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    // Parse hash parameters (where Supabase puts recovery info)
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    
-    // Get type from either location
-    const searchType = urlParams.get('type');
-    const hashType = hashParams.get('type');
-    const type = searchType || hashType;
-    
-    // Get token from either location
-    const searchToken = urlParams.get('token');
-    const hashToken = hashParams.get('access_token'); // Supabase uses 'access_token' in hash
-    const token = searchToken || hashToken;
+  // Check for password reset flow first
+  const searchType = urlParams.get('type');
+  const hashType = hashParams.get('type');
+  const type = searchType || hashType;
 
-    console.log('AuthContent loaded with params:', { 
-      searchType, 
-      hashType, 
-      finalType: type,
-      token: token ? 'present' : 'none',
-      fullHash: window.location.hash,
-      fullSearch: window.location.search
+  const hashToken = hashParams.get('access_token');
+
+  // Check for password recovery
+  if (type === 'recovery') {
+    console.log('🔄 Initial view: reset (password recovery)');
+    return 'reset';
+  }
+
+  // Check for email verification
+  if ((type === 'signup' || type === 'email') && hashToken) {
+    console.log('🔄 Initial view: debug (email verification)');
+    return 'debug';
+  }
+
+  // Check for invitation token (registration intent)
+  const invitationToken = urlParams.get('token');
+  const isRegisterPath = window.location.pathname.includes('/register');
+  const isRegisterHash = window.location.hash.includes('register');
+
+  if (invitationToken || isRegisterPath || isRegisterHash) {
+    console.log('🔗 Invitation detected - showing registration form', {
+      hasInvitationToken: !!invitationToken,
+      isRegisterPath,
+      isRegisterHash,
+      token: invitationToken
     });
+    return 'register';
+  }
 
-    if (type === 'recovery') {
-      console.log('🔄 Setting view to reset for password recovery');
-      setCurrentView('reset');
-    } else if ((type === 'signup' || type === 'email') && token) {
-      // Show debug component for email verification
-      setCurrentView('debug');
+  // Default to login
+  return 'login';
+};
+
+export const AuthContent: React.FC = () => {
+  const [currentView, setCurrentView] = useState<'login' | 'register' | 'forgot' | 'reset' | 'debug'>(determineInitialView);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Re-check if URL changes (e.g., user clicks invitation link while already on auth page)
+  useEffect(() => {
+    const newView = determineInitialView();
+    if (newView !== currentView) {
+      console.log('🔄 URL changed, updating view to:', newView);
+      setCurrentView(newView);
     }
-  }, []);
+  }, [searchParams]);
 
   const handleLoginSuccess = () => {
     // Check if there's a stored redirect path
