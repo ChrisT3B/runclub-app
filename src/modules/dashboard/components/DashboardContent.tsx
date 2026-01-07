@@ -5,6 +5,8 @@ import { NotificationService, Notification } from '../../../modules/communicatio
 import { NotificationModal } from '../../../shared/components/ui/NotificationModal';
 import { supabase } from '../../../services/supabase';
 import { renderTextWithLinks } from '../../../utils/linkHelper';
+import { AffiliatedMemberService } from '../../membership/services/affiliatedMemberService';
+import { AffiliatedMemberApplication, EAApplicationSettings } from '../../../types/affiliatedMember';
 
 interface DashboardContentProps {
   onNavigate?: (page: string) => void;
@@ -42,11 +44,18 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
   const [lirfLookAhead, setLirfLookAhead] = useState<LirfLookAhead[]>([]);
   const [loadingLirf, setLoadingLirf] = useState(true);
 
+  // EA Membership state
+  const [eaSettings, setEaSettings] = useState<EAApplicationSettings | null>(null);
+  const [eaPendingApp, setEaPendingApp] = useState<AffiliatedMemberApplication | null>(null);
+  const [eaCurrentYear, setEaCurrentYear] = useState('');
+  const [loadingEA, setLoadingEA] = useState(true);
+
   useEffect(() => {
     if (state.user?.id) {
       loadUpcomingBookings();
       loadUserStats();
       loadNotifications();
+      loadEAMembershipStatus();
       // Load LIRF look-ahead for LIRF/Admin users
       if (permissions.accessLevel === 'admin' || permissions.accessLevel === 'lirf') {
         loadLirfLookAhead();
@@ -251,6 +260,31 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
       setLirfLookAhead([]);
     } finally {
       setLoadingLirf(false);
+    }
+  };
+
+  const loadEAMembershipStatus = async () => {
+    if (!state.member?.id) {
+      setLoadingEA(false);
+      return;
+    }
+
+    try {
+      // Get current membership year
+      const year = await AffiliatedMemberService.getCurrentMembershipYear();
+      setEaCurrentYear(year);
+
+      // Get application settings
+      const settings = await AffiliatedMemberService.getApplicationSettings(year);
+      setEaSettings(settings);
+
+      // Check for pending application
+      const pendingApp = await AffiliatedMemberService.getMemberApplication(state.member.id, year);
+      setEaPendingApp(pendingApp);
+    } catch (error) {
+      console.error('Failed to load EA membership status:', error);
+    } finally {
+      setLoadingEA(false);
     }
   };
 
@@ -759,6 +793,177 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* EA Membership Card */}
+      <div className="card" style={{ marginTop: '24px' }}>
+        <div className="card-header">
+          <h3 className="card-title">England Athletics Membership</h3>
+        </div>
+        <div className="card-content">
+          {loadingEA ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--gray-500)' }}>
+              Loading membership status...
+            </div>
+          ) : (
+            <>
+              {/* Case 1: Already affiliated for current year */}
+              {state.member?.is_paid_member && state.member?.ea_affiliation_year === eaCurrentYear && (
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        background: '#dcfce7',
+                        color: '#166534',
+                        padding: '4px 12px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                      }}
+                    >
+                      EA Affiliated {eaCurrentYear}
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>
+                      <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>Type:</div>
+                      <div>
+                        {state.member?.ea_membership_type === 'first_claim' ? '1st Claim' : '2nd Claim'}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>EA URN:</div>
+                      <div style={{ fontFamily: 'monospace' }}>{state.member?.ea_urn || 'Not set'}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Case 2: Has pending application */}
+              {eaPendingApp && eaPendingApp.status !== 'ea_confirmed' && (
+                <div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <span style={{ color: 'var(--gray-600)', fontSize: '14px' }}>Submitted: </span>
+                    <span>{new Date(eaPendingApp.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <span style={{ color: 'var(--gray-600)', fontSize: '14px' }}>Status: </span>
+                    <span
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        background:
+                          eaPendingApp.status === 'submitted'
+                            ? '#fef3c7'
+                            : eaPendingApp.status === 'payment_confirmed'
+                            ? '#dbeafe'
+                            : '#dcfce7',
+                        color:
+                          eaPendingApp.status === 'submitted'
+                            ? '#92400e'
+                            : eaPendingApp.status === 'payment_confirmed'
+                            ? '#1d4ed8'
+                            : '#166534',
+                      }}
+                    >
+                      {eaPendingApp.status === 'submitted'
+                        ? 'Awaiting Payment Confirmation'
+                        : eaPendingApp.status === 'payment_confirmed'
+                        ? 'Payment Confirmed - EA Registration Pending'
+                        : 'Confirmed'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>
+                    Payment Ref: <strong style={{ fontFamily: 'monospace' }}>{eaPendingApp.payment_reference}</strong>
+                  </div>
+                  {eaPendingApp.status === 'submitted' && (
+                    <button
+                      className="btn btn-secondary"
+                      style={{ marginTop: '12px' }}
+                      onClick={() => onNavigate?.('ea-membership')}
+                    >
+                      View Application
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Case 3: Not affiliated and no pending application */}
+              {!state.member?.is_paid_member && !eaPendingApp && (
+                <div>
+                  {eaSettings?.applications_open ? (
+                    <>
+                      <p style={{ marginBottom: '12px' }}>
+                        Join EA affiliation for £{eaSettings.first_claim_fee?.toFixed(2) || '30.00'}/year
+                      </p>
+                      <p style={{ fontSize: '14px', color: 'var(--gray-600)', marginBottom: '8px' }}>
+                        Benefits include:
+                      </p>
+                      <ul
+                        style={{
+                          fontSize: '14px',
+                          color: 'var(--gray-600)',
+                          marginLeft: '20px',
+                          marginBottom: '16px',
+                        }}
+                      >
+                        <li>Reduced race entry fees</li>
+                        <li>London Marathon ballot entry</li>
+                        <li>Discounts from sports retailers</li>
+                      </ul>
+                      <button className="btn btn-primary" onClick={() => onNavigate?.('ea-membership')}>
+                        Apply for Membership
+                      </button>
+                    </>
+                  ) : (
+                    <p style={{ color: 'var(--gray-600)' }}>
+                      Applications are currently closed. Please check back later.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Case 4: Affiliated but for a previous year (show renewal option) */}
+              {state.member?.is_paid_member &&
+                state.member?.ea_affiliation_year !== eaCurrentYear &&
+                !eaPendingApp && (
+                  <div>
+                    <div
+                      style={{
+                        background: '#fef3c7',
+                        border: '1px solid #fcd34d',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <p style={{ color: '#92400e', margin: 0 }}>
+                        Your EA affiliation from {state.member?.ea_affiliation_year} has expired.
+                      </p>
+                    </div>
+                    {eaSettings?.applications_open ? (
+                      <button className="btn btn-primary" onClick={() => onNavigate?.('ea-membership')}>
+                        Renew for {eaCurrentYear}
+                      </button>
+                    ) : (
+                      <p style={{ color: 'var(--gray-600)' }}>
+                        Renewal applications are currently closed. Please check back later.
+                      </p>
+                    )}
+                  </div>
+                )}
+            </>
+          )}
         </div>
       </div>
 

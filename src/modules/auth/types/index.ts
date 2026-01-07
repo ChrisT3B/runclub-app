@@ -44,9 +44,21 @@ export interface Member {
   emergency_contact_name: string;
   emergency_contact_phone: string;
   health_conditions: string;
-  email_notifications_enabled?: boolean; // ADD THIS LINE
+  email_notifications_enabled?: boolean;
   created_at: string;
   updated_at: string;
+
+  // EA Affiliation fields
+  is_paid_member?: boolean;
+  ea_urn?: string;
+  ea_membership_type?: 'first_claim' | 'second_claim';
+  ea_affiliation_year?: string;
+  title?: string;
+  date_of_birth?: string;
+  sex_at_birth?: 'male' | 'female';
+  address_postcode?: string;
+  nationality?: string;
+  emergency_contact_relationship?: string;
 }
 
 // Enhanced AuthState with React Query integration

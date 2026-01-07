@@ -17,6 +17,8 @@ import { LirfReminderTestPage } from './modules/admin/pages/LirfReminderTestPage
 import { AdminReports } from './modules/admin/pages/AdminReports';
 import { HelpVideos } from './modules/help/pages/HelpVideos';
 import { BulkInvitations } from './modules/admin/pages/BulkInvitations';
+import { AffiliatedMemberApplicationForm } from './modules/membership/components/AffiliatedMemberApplicationForm';
+import { AffiliatedApplicationsManagement } from './modules/admin/components/AffiliatedApplicationsManagement';
 
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
@@ -167,6 +169,12 @@ export const AppContent: React.FC = () => {
       case 'bulk-invitations':
         console.log('✅ Rendering BulkInvitations');
         return <BulkInvitations onNavigate={handleNavigation} />;
+      case 'ea-membership':
+        console.log('✅ Rendering AffiliatedMemberApplicationForm');
+        return <AffiliatedMemberApplicationForm onBack={() => handleNavigation('dashboard')} />;
+      case 'ea-applications':
+        console.log('✅ Rendering AffiliatedApplicationsManagement');
+        return <AffiliatedApplicationsManagement />;
       default:
         console.log('⚠️ Unknown page, defaulting to DashboardContent. Page was:', currentPage);
         return <DashboardContent onNavigate={handleNavigation} />;
