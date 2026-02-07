@@ -196,6 +196,31 @@
   margin-top: 2px;
 }
 
+/* EA Affiliation badges */
+.ea-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ea-badge--affiliated {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.ea-badge--not-affiliated {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.ea-details {
+  font-size: 11px;
+  color: var(--gray-500);
+  margin-top: 2px;
+}
+
 /* ==============================================
    LAYOUT AND UTILITY STYLES
    ============================================== */
@@ -270,11 +295,16 @@
     padding: 6px 4px;
     font-size: 11px;
   }
-  
+
   .status-badge,
   .access-badge,
-  .dbs-badge {
+  .dbs-badge,
+  .ea-badge {
     font-size: 10px;
     padding: 3px 6px;
+  }
+
+  .ea-details {
+    font-size: 10px;
   }
 }

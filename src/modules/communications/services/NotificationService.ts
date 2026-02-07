@@ -48,7 +48,8 @@ export interface CreateNotificationData {
   recipient_ids?: string[]; // If not provided, will be determined by type and run_id
   scheduled_for?: string;
   expires_at?: string;
-  send_email?: boolean; // NEW: Whether to send email notifications
+  send_email?: boolean; // Whether to send email notifications
+  affiliated_only?: boolean; // Filter to EA affiliated members only
 }
 
 export class NotificationService {
@@ -88,7 +89,7 @@ export class NotificationService {
     // Determine recipients if not provided
     let recipientIds = data.recipient_ids;
     if (!recipientIds) {
-      recipientIds = await this.determineRecipients(data.type, data.run_id);
+      recipientIds = await this.determineRecipients(data.type, data.run_id, data.affiliated_only);
     }
 
     console.log('👥 Recipients determined:', recipientIds);
@@ -205,24 +206,32 @@ export class NotificationService {
    * Determine who should receive a notification based on type and run_id
    */
   private static async determineRecipients(
-    type: string, 
-    runId?: string
+    type: string,
+    runId?: string,
+    affiliatedOnly?: boolean
   ): Promise<string[]> {
-    console.log('🔍 Determining recipients for:', { type, runId });
-    
+    console.log('🔍 Determining recipients for:', { type, runId, affiliatedOnly });
+
     if (type === 'general' || type === 'urgent') {
-      // Send to all active members
-      const { data: members, error } = await supabase
+      // Build query for active members
+      let query = supabase
         .from('members')
         .select('id')
         .eq('membership_status', 'active');
 
+      // Filter to EA affiliated members only if requested
+      if (affiliatedOnly) {
+        query = query.eq('is_paid_member', true);
+      }
+
+      const { data: members, error } = await query;
+
       if (error) {
-        console.error('Failed to get all members:', error);
+        console.error('Failed to get members:', error);
         return [];
       }
 
-      console.log('📧 Found', members.length, 'active members for general notification');
+      console.log('📧 Found', members.length, affiliatedOnly ? 'affiliated' : 'active', 'members for general notification');
       return members.map(member => member.id);
     }
 
@@ -527,5 +536,40 @@ export class NotificationService {
     total: number;
   }> {
     return await EmailService.canSendEmails();
+  }
+
+  /**
+   * Get count of active members
+   */
+  static async getActiveMembersCount(): Promise<number> {
+    const { count, error } = await supabase
+      .from('members')
+      .select('id', { count: 'exact', head: true })
+      .eq('membership_status', 'active');
+
+    if (error) {
+      console.error('Failed to get active members count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  }
+
+  /**
+   * Get count of EA affiliated members
+   */
+  static async getAffiliatedMembersCount(): Promise<number> {
+    const { count, error } = await supabase
+      .from('members')
+      .select('id', { count: 'exact', head: true })
+      .eq('membership_status', 'active')
+      .eq('is_paid_member', true);
+
+    if (error) {
+      console.error('Failed to get affiliated members count:', error);
+      return 0;
+    }
+
+    return count || 0;
   }
 }

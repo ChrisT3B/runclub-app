@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "import-invitations": "tsx scripts/import-invitations.ts",
+    "send-invitations": "tsx scripts/send-invitations.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

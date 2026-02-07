@@ -22,6 +22,10 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
     remaining: number;
     total: number;
   }>({ canSend: true, remaining: 500, total: 500 });
+  const [memberCounts, setMemberCounts] = useState<{
+    active: number;
+    affiliated: number;
+  }>({ active: 0, affiliated: 0 });
   
   const [formData, setFormData] = useState<CreateNotificationData>({
     title: '',
@@ -31,7 +35,8 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
     run_id: '',
     scheduled_for: '',
     expires_at: '',
-    send_email: true // NEW: Default to sending emails
+    send_email: true,
+    affiliated_only: false
   });
 
   useEffect(() => {
@@ -39,6 +44,7 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
       loadAssignedRuns();
     }
     loadEmailStatus();
+    loadMemberCounts();
   }, [formData.type]);
 
   const loadAssignedRuns = async () => {
@@ -60,6 +66,18 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
       setEmailStatus(status);
     } catch (error) {
       console.error('Failed to load email status:', error);
+    }
+  };
+
+  const loadMemberCounts = async () => {
+    try {
+      const [active, affiliated] = await Promise.all([
+        NotificationService.getActiveMembersCount(),
+        NotificationService.getAffiliatedMembersCount()
+      ]);
+      setMemberCounts({ active, affiliated });
+    } catch (error) {
+      console.error('Failed to load member counts:', error);
     }
   };
 
@@ -106,7 +124,8 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
         run_id: formData.type === 'run_specific' ? formData.run_id : undefined,
         scheduled_for: formData.scheduled_for || undefined,
         expires_at: formData.expires_at || undefined,
-        send_email: formData.send_email
+        send_email: formData.send_email,
+        affiliated_only: (formData.type === 'general' || formData.type === 'urgent') ? formData.affiliated_only : undefined
       });
       
       onSuccess();
@@ -186,6 +205,78 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
               {getTypeDescription()}
             </div>
           </div>
+
+          {/* EA Affiliated Only Filter (for general/urgent notifications) */}
+          {(formData.type === 'general' || formData.type === 'urgent') && (
+            <div className="form-group">
+              <div style={{
+                padding: '16px',
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <input
+                    type="checkbox"
+                    id="affiliated_only"
+                    name="affiliated_only"
+                    checked={formData.affiliated_only || false}
+                    onChange={handleInputChange}
+                    style={{
+                      marginTop: '2px',
+                      width: '18px',
+                      height: '18px',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <label
+                      htmlFor="affiliated_only"
+                      style={{
+                        fontWeight: '500',
+                        color: 'var(--gray-900)',
+                        cursor: 'pointer',
+                        display: 'block',
+                        marginBottom: '4px'
+                      }}
+                    >
+                      EA Affiliated Members Only
+                    </label>
+                    <div style={{ fontSize: '14px', color: 'var(--gray-600)', lineHeight: '1.4' }}>
+                      Only send to members with EA affiliation status.
+                    </div>
+                    <div style={{
+                      marginTop: '8px',
+                      fontSize: '13px',
+                      color: 'var(--gray-700)',
+                      display: 'flex',
+                      gap: '16px'
+                    }}>
+                      <span>
+                        All active members: <strong>{memberCounts.active}</strong>
+                      </span>
+                      <span>
+                        EA affiliated: <strong>{memberCounts.affiliated}</strong>
+                      </span>
+                    </div>
+                    {formData.affiliated_only && (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '8px 12px',
+                        background: '#dcfce7',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        color: '#166534',
+                        fontWeight: '500'
+                      }}>
+                        Will be sent to {memberCounts.affiliated} EA affiliated member{memberCounts.affiliated !== 1 ? 's' : ''}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Run Selection (for run-specific notifications) */}
           {formData.type === 'run_specific' && (
@@ -456,6 +547,18 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
                       fontWeight: '500'
                     }}>
                       📧 EMAIL
+                    </span>
+                  )}
+                  {formData.affiliated_only && (formData.type === 'general' || formData.type === 'urgent') && (
+                    <span style={{
+                      background: '#dcfce7',
+                      color: '#166534',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: '500'
+                    }}>
+                      EA ONLY
                     </span>
                   )}
                 </div>

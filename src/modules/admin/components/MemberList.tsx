@@ -203,6 +203,7 @@ export const MemberList: React.FC = () => {
                     <th className="member-table__header-cell">Email</th>
                     <th className="member-table__header-cell">Status</th>
                     <th className="member-table__header-cell">Access Level</th>
+                    <th className="member-table__header-cell">EA Affiliation</th>
                     <th className="member-table__header-cell">DBS Status</th>
                     <th className="member-table__header-cell">Joined</th>
                   </tr>
@@ -258,6 +259,29 @@ export const MemberList: React.FC = () => {
                           <span className={`access-badge ${getAccessBadgeClass(member.access_level)}`}>
                             {member.access_level}
                           </span>
+                        </td>
+                        <td className="member-table__cell">
+                          {member.is_paid_member ? (
+                            <div>
+                              <span className="ea-badge ea-badge--affiliated">
+                                ✓ Affiliated
+                              </span>
+                              {member.ea_affiliation_year && (
+                                <div className="ea-details">
+                                  {member.ea_affiliation_year}
+                                </div>
+                              )}
+                              {member.ea_membership_type && (
+                                <div className="ea-details">
+                                  {member.ea_membership_type === 'first_claim' ? '1st Claim' : '2nd Claim'}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="ea-badge ea-badge--not-affiliated">
+                              Not Affiliated
+                            </span>
+                          )}
                         </td>
                         <td className="member-table__cell">
                           {isLIRFOrAdmin ? (

@@ -13,11 +13,13 @@ export interface Member {
   membership_status: string;
   is_paid_member: boolean;
   ea_urn?: string;
+  ea_membership_type?: 'first_claim' | 'second_claim';
+  ea_affiliation_year?: string;
   ea_conduct_accepted: boolean;
   access_level: string;
-  dbs_expiry_date?: string; // New DBS expiry field
-  email_notifications_enabled?: boolean; // New field for email notifications
-  date_joined?: string; // ✅ ADD THIS LINE IF MISSING
+  dbs_expiry_date?: string;
+  email_notifications_enabled?: boolean;
+  date_joined?: string;
   created_at: string;
   updated_at: string;
 }
