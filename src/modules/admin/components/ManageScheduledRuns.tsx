@@ -8,7 +8,7 @@ import { CreateScheduledRunForm } from './CreateScheduledRunForm';
 import { EditScheduledRunForm } from './EditScheduledRunForm';
 
 export const ManageScheduledRuns: React.FC = () => {
-  const { state, permissions } = useAuth();
+  const { state, permissions, logout } = useAuth();
   const [runs, setRuns] = useState<ScheduledRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -89,9 +89,22 @@ export const ManageScheduledRuns: React.FC = () => {
 
     try {
       await ScheduledRunsService.deleteScheduledRun(runId, state.user.id, permissions.accessLevel);
+      setError('');
       loadScheduledRuns(); // This will also refresh deletable runs
     } catch (err: any) {
-      setError(err.message || 'Failed to delete scheduled run');
+      const errorMessage = err instanceof Error ? err.message : String(err);
+
+      // ========== CSRF ERROR HANDLING ==========
+      if (errorMessage.includes('CSRF_TOKEN_MISSING') ||
+          errorMessage.includes('CSRF_VALIDATION_FAILED')) {
+        console.log('🔒 CSRF validation failed - logging out user');
+        setError('Your session has expired. Please log in again.');
+        await logout();
+        return;
+      }
+      // ========== END: CSRF ERROR HANDLING ==========
+
+      setError(errorMessage || 'Failed to delete scheduled run');
     }
   };
 

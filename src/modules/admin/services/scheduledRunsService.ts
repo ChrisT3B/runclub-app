@@ -1,5 +1,6 @@
 import { supabase } from '../../../services/supabase';
 import { BookingError } from './bookingService';
+import { validateCsrfToken, getCsrfToken } from '../../../utils/csrfProtection';
 
 export interface ScheduledRun {
   id: string;
@@ -538,7 +539,22 @@ export class ScheduledRunsService {
       if (!permissionCheck.canDelete) {
         throw new Error(permissionCheck.reason || 'You cannot delete this run');
       }
-      
+
+      // ========== CSRF VALIDATION ==========
+      console.log('🔒 Validating CSRF token for delete operation...');
+      const csrfToken = getCsrfToken();
+      if (!csrfToken) {
+        console.error('❌ CSRF validation failed: No token found');
+        throw new Error('CSRF_TOKEN_MISSING');
+      }
+      const csrfValidation = await validateCsrfToken(csrfToken, userId);
+      if (!csrfValidation.isValid) {
+        console.error('❌ CSRF validation failed:', csrfValidation.error);
+        throw new Error('CSRF_VALIDATION_FAILED');
+      }
+      console.log('✅ CSRF token validated - proceeding with deletion');
+      // ========== END: CSRF VALIDATION ==========
+
       // Proceed with deletion if permissions are valid
       const { error } = await supabase
         .from('scheduled_runs')
