@@ -67,23 +67,84 @@ export const clearCsrfToken = (): void => {
 
 /**
  * Validate CSRF token against database
- * This will be implemented in Phase 2
- * For now, just a placeholder that returns true
+ * @param token - The CSRF token from the client request
+ * @param userId - The user ID making the request
+ * @returns Object with isValid boolean and optional error message
  */
 export const validateCsrfToken = async (
   token: string | null,
-  _userId: string
+  userId: string
 ): Promise<{ isValid: boolean; error?: string }> => {
-  // PHASE 1: Not implemented yet - always return true
-  // PHASE 2: Will add actual validation
-  console.log('ℹ️ CSRF validation not yet implemented (Phase 2)');
-
+  // Step 1: Check if token exists
   if (!token) {
-    return { isValid: false, error: 'CSRF token is required' };
+    console.warn('⚠️ CSRF validation failed: No token provided');
+    return {
+      isValid: false,
+      error: 'Security token is required. Please refresh and try again.'
+    };
   }
 
-  // Placeholder - will be implemented in Phase 2
-  return { isValid: true };
+  // Step 2: Basic format check (should be a UUID)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(token)) {
+    console.warn('⚠️ CSRF validation failed: Invalid token format');
+    return {
+      isValid: false,
+      error: 'Invalid security token format. Please log in again.'
+    };
+  }
+
+  try {
+    // Step 3: Query database for matching token
+    const { data, error } = await supabase
+      .from('active_sessions')
+      .select('csrf_token, user_id, expires_at')
+      .eq('user_id', userId)
+      .eq('csrf_token', token)
+      .maybeSingle();
+
+    if (error) {
+      console.error('❌ CSRF validation database error:', error);
+      return {
+        isValid: false,
+        error: 'Security verification failed. Please try again.'
+      };
+    }
+
+    // Step 4: Check if token exists in database
+    if (!data) {
+      console.warn('⚠️ CSRF validation failed: Token not found in database');
+      return {
+        isValid: false,
+        error: 'Security token not found. Please log in again.'
+      };
+    }
+
+    // Step 5: Check if session has expired
+    if (data.expires_at) {
+      const expirationDate = new Date(data.expires_at);
+      const now = new Date();
+
+      if (expirationDate < now) {
+        console.warn('⚠️ CSRF validation failed: Session expired');
+        return {
+          isValid: false,
+          error: 'Your session has expired. Please log in again.'
+        };
+      }
+    }
+
+    // All validations passed
+    console.log('✅ CSRF token validated successfully for user:', userId);
+    return { isValid: true };
+
+  } catch (error) {
+    console.error('❌ CSRF validation error:', error);
+    return {
+      isValid: false,
+      error: 'Security verification error. Please try again.'
+    };
+  }
 };
 
 /**
@@ -114,6 +175,39 @@ export const storeCsrfTokenInDatabase = async (
     console.error('❌ Error storing CSRF token in database:', error);
     throw error;
   }
+};
+
+/**
+ * Handle CSRF validation errors with user-friendly messaging
+ * @param error - Error message from validation
+ * @param showToast - Whether to show a toast notification (default: true)
+ */
+export const handleCsrfError = (error: string, showToast: boolean = true): void => {
+  console.error('🔒 CSRF validation failed:', error);
+
+  if (showToast) {
+    // TODO: Integrate with toast notification system in Phase 3+
+    console.log('📢 User should see error:', error);
+  }
+};
+
+/**
+ * Check if error is CSRF-related
+ * @param error - Error object or message
+ * @returns true if error is CSRF-related
+ */
+export const isCsrfError = (error: unknown): boolean => {
+  if (typeof error === 'string') {
+    return error.toLowerCase().includes('csrf') ||
+           error.toLowerCase().includes('security token');
+  }
+
+  if (error && typeof error === 'object' && 'message' in error) {
+    const msg = (error as { message: string }).message.toLowerCase();
+    return msg.includes('csrf') || msg.includes('security token');
+  }
+
+  return false;
 };
 
 /**
