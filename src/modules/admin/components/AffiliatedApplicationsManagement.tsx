@@ -23,7 +23,7 @@ export const AffiliatedApplicationsManagement: React.FC = () => {
   const [success, setSuccess] = useState('');
 
   const [settings, setSettings] = useState<EAApplicationSettings | null>(null);
-  const [currentYear, setCurrentYear] = useState('');
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -57,6 +57,7 @@ export const AffiliatedApplicationsManagement: React.FC = () => {
   useEffect(() => {
     if (selectedYear) {
       loadApplications();
+      AffiliatedMemberService.getApplicationSettings(selectedYear).then(setSettings);
     }
   }, [selectedYear]);
 
@@ -64,11 +65,18 @@ export const AffiliatedApplicationsManagement: React.FC = () => {
     setIsLoading(true);
     setError('');
     try {
-      const year = await AffiliatedMemberService.getCurrentMembershipYear();
-      setCurrentYear(year);
-      setSelectedYear(year);
+      const [years, currentYear] = await Promise.all([
+        AffiliatedMemberService.getAvailableYears(),
+        AffiliatedMemberService.getCurrentMembershipYear(),
+      ]);
 
-      const appSettings = await AffiliatedMemberService.getApplicationSettings(year);
+      setAvailableYears(years);
+
+      // Default to current fiscal year if it exists in settings, otherwise most recent
+      const defaultYear = years.includes(currentYear) ? currentYear : years[0] || currentYear;
+      setSelectedYear(defaultYear);
+
+      const appSettings = await AffiliatedMemberService.getApplicationSettings(defaultYear);
       setSettings(appSettings);
     } catch (err: any) {
       console.error('Failed to load initial data:', err);
@@ -409,8 +417,9 @@ export const AffiliatedApplicationsManagement: React.FC = () => {
                 value={selectedYear}
                 onChange={e => setSelectedYear(e.target.value)}
               >
-                <option value={currentYear}>{currentYear}</option>
-                {/* Add previous years if needed */}
+                {availableYears.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
               </select>
             </div>
 

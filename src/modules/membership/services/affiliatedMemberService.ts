@@ -52,6 +52,28 @@ export class AffiliatedMemberService {
   }
 
   /**
+   * Get all available membership years from settings (descending order)
+   */
+  static async getAvailableYears(): Promise<string[]> {
+    try {
+      const { data, error } = await supabase
+        .from('ea_application_settings')
+        .select('membership_year')
+        .order('membership_year', { ascending: false });
+
+      if (error) {
+        console.error('Failed to load available years:', error);
+        return [];
+      }
+
+      return (data || []).map(setting => setting.membership_year);
+    } catch (error) {
+      console.error('AffiliatedMemberService.getAvailableYears error:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get application settings for a specific year
    */
   static async getApplicationSettings(year?: string): Promise<EAApplicationSettings | null> {
