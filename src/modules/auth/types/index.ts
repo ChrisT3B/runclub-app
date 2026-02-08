@@ -103,6 +103,12 @@ export interface AuthError {
 export interface AuthResponse<T = any> {
   data: T | null;
   error: AuthError | null;
+  csrfToken?: string;
+}
+
+export interface CsrfTokenValidation {
+  isValid: boolean;
+  error?: string;
 }
 
 export interface PasswordResetData {

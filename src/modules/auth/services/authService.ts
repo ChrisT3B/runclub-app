@@ -18,6 +18,13 @@ import { AuthSecurityManager } from '../../../utils/authSecurity';
 import { InputSanitizer } from '../../../utils/inputSanitizer';
 import { SQLSecurityValidator } from '../../../utils/sqlSecurityValidator';
 import { SecureAuthService } from './secureAuthService';
+import {
+  generateCsrfToken,
+  storeCsrfToken,
+  storeCsrfTokenInDatabase,
+  clearCsrfToken,
+  clearCsrfTokenFromDatabase
+} from '../../../utils/csrfProtection';
 
 // =====================================
 // 🆕 NEW: MINIMAL DATABASE LOGGING SERVICE
@@ -288,6 +295,19 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
         session_id: session.access_token.slice(-20),
         has_security_info: !!result.securityInfo
       });
+
+      // ========== CSRF TOKEN GENERATION ==========
+      try {
+        const csrfToken = generateCsrfToken();
+        storeCsrfToken(csrfToken);
+        await storeCsrfTokenInDatabase(result.data.id, csrfToken, session.access_token);
+        console.log('✅ CSRF token generated and stored for user:', result.data.id);
+        result.csrfToken = csrfToken;
+      } catch (csrfError) {
+        // Don't fail login if CSRF token creation fails
+        console.error('⚠️ Failed to create CSRF token (non-critical):', csrfError);
+      }
+      // ========== END: CSRF TOKEN GENERATION ==========
     }
 
     console.log('✅ Enhanced secure login completed');
@@ -426,7 +446,11 @@ export const logoutUser = async (): Promise<void> => {
     // Cleanup session security tracking
     if (session && user) {
       await SessionSecurityService.cleanupSession(user.id, session.access_token);
-      
+
+      // ========== CSRF TOKEN CLEANUP (before signOut while auth is still valid) ==========
+      await clearCsrfTokenFromDatabase(user.id);
+      // ========== END: CSRF TOKEN CLEANUP ==========
+
       // Log secure logout event
       await SessionSecurityService.logSecurityEvent('secure_logout', {
         user_id: user.id,
@@ -434,13 +458,16 @@ export const logoutUser = async (): Promise<void> => {
       });
     }
 
-    // Your existing logout logic
+    // Now sign out (auth token still valid above)
     await supabase.auth.signOut();
-localStorage.removeItem('device_fingerprint');
+    localStorage.removeItem('device_fingerprint');
     localStorage.removeItem('session_fingerprint');
     localStorage.removeItem('last_activity');
     sessionStorage.removeItem('redirectAfterLogin');
-    
+
+    // Clear CSRF from sessionStorage (doesn't need auth)
+    clearCsrfToken();
+
     console.log('✅ Enhanced secure logout completed with cache clear');
   } catch (error) {
 window.location.reload();
