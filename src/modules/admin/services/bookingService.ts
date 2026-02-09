@@ -1,4 +1,5 @@
 import { supabase } from '../../../services/supabase';
+import { validateCsrfToken, getCsrfToken } from '../../../utils/csrfProtection';
 
 export interface RunBooking {
   id: string;
@@ -91,6 +92,21 @@ export class BookingService {
           'Authentication Required'
         );
       }
+
+      // ========== CSRF VALIDATION ==========
+      console.log('🔒 Validating CSRF token for run booking...');
+      const csrfToken = getCsrfToken();
+      if (!csrfToken) {
+        console.error('❌ CSRF validation failed: No token found');
+        throw new Error('CSRF_TOKEN_MISSING');
+      }
+      const csrfValidation = await validateCsrfToken(csrfToken, bookingData.member_id);
+      if (!csrfValidation.isValid) {
+        console.error('❌ CSRF validation failed:', csrfValidation.error);
+        throw new Error('CSRF_VALIDATION_FAILED');
+      }
+      console.log('✅ CSRF token validated - proceeding with booking');
+      // ========== END: CSRF VALIDATION ==========
 
       // 2. Get run data (cached)
       const runData = await this.getRunData(bookingData.run_id);

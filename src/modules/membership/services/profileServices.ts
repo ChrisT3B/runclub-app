@@ -3,6 +3,7 @@ import { supabase } from '../../../services/supabase';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SQLSecurityValidator, SecureQueryBuilder } from '../../../utils/sqlSecurityValidator';
 import { InputSanitizer } from '../../../utils/inputSanitizer';
+import { validateCsrfToken, getCsrfToken } from '../../../utils/csrfProtection';
 
 export interface ProfileUpdateData {
   fullName: string;
@@ -50,6 +51,21 @@ export class ProfileService {
           throw new Error('Invalid input detected');
         }
       }
+
+      // ========== CSRF VALIDATION ==========
+      console.log('🔒 Validating CSRF token for profile update...');
+      const csrfToken = getCsrfToken();
+      if (!csrfToken) {
+        console.error('❌ CSRF validation failed: No token found');
+        throw new Error('CSRF_TOKEN_MISSING');
+      }
+      const csrfValidation = await validateCsrfToken(csrfToken, cleanUserId);
+      if (!csrfValidation.isValid) {
+        console.error('❌ CSRF validation failed:', csrfValidation.error);
+        throw new Error('CSRF_VALIDATION_FAILED');
+      }
+      console.log('✅ CSRF token validated - proceeding with profile update');
+      // ========== END: CSRF VALIDATION ==========
 
       // Update profile in database
       const { data, error } = await supabase

@@ -11,7 +11,7 @@ interface ProfileEditFormProps {
 }
 
 export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSave }) => {
-  const { state } = useAuth();
+  const { state, logout } = useAuth();
   const queryClient = useQueryClient();
   const invalidateProfile = useInvalidateProfile();
   const [isLoading, setIsLoading] = useState(false);
@@ -78,6 +78,18 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
       
     } catch (err: any) {
       console.error('Profile update failed:', err);
+
+      // ========== CSRF ERROR HANDLING ==========
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('CSRF_TOKEN_MISSING') ||
+          errorMessage.includes('CSRF_VALIDATION_FAILED')) {
+        console.log('🔒 CSRF validation failed - logging out user');
+        setError('Your session has expired. Please log in again.');
+        await logout();
+        return;
+      }
+      // ========== END: CSRF ERROR HANDLING ==========
+
       setError(err.message || 'Failed to update profile. Please try again.');
     } finally {
       setIsLoading(false);

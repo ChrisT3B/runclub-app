@@ -5,6 +5,7 @@ import { UserPlus, UserMinus, UserX, Loader2 } from 'lucide-react';
 import { BookingService, BookingError } from '../../admin/services/bookingService';
 import { RunWithDetails } from '../../admin/services/scheduledRunsService';
 import { BookingSuccessModal } from './BookingSuccessModal';
+import { useAuth } from '../../auth/context/AuthContext';
 
 interface BookingManagerProps {
   // Core data
@@ -48,6 +49,8 @@ export const BookingManager: React.FC<BookingManagerProps> = ({
   showSuccessModal = true,
   className = ''
 }) => {
+  const { logout } = useAuth();
+
   const [state, setState] = useState<BookingManagerState>({
     isLoading: false,
     lastAction: null,
@@ -157,6 +160,18 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
 
     } catch (err) {
       console.error('Booking error:', err);
+
+      // ========== CSRF ERROR HANDLING ==========
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('CSRF_TOKEN_MISSING') ||
+          errorMessage.includes('CSRF_VALIDATION_FAILED')) {
+        console.log('🔒 CSRF validation failed - logging out user');
+        rollbackOptimisticUpdate();
+        await logout();
+        return;
+      }
+      // ========== END: CSRF ERROR HANDLING ==========
+
       const bookingError = err instanceof BookingError ? err : new BookingError(
         'Failed to book run. Please try again.',
         'GENERAL'
