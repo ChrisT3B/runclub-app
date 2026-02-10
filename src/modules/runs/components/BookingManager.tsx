@@ -227,6 +227,18 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
 
     } catch (err) {
       console.error('Cancellation error:', err);
+
+      // ========== CSRF ERROR HANDLING ==========
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('CSRF_TOKEN_MISSING') ||
+          errorMessage.includes('CSRF_VALIDATION_FAILED')) {
+        console.log('🔒 CSRF validation failed - logging out user');
+        rollbackOptimisticUpdate();
+        await logout();
+        return;
+      }
+      // ========== END: CSRF ERROR HANDLING ==========
+
       const bookingError = err instanceof BookingError ? err : new BookingError(
         'Failed to cancel booking. Please try again.',
         'GENERAL'

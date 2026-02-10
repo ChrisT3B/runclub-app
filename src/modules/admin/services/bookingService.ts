@@ -287,6 +287,21 @@ export class BookingService {
         throw new Error('Authentication required');
       }
 
+      // ========== CSRF VALIDATION ==========
+      console.log('🔒 Validating CSRF token for cancel booking...');
+      const csrfToken = getCsrfToken();
+      if (!csrfToken) {
+        console.error('❌ CSRF validation failed: No token found');
+        throw new Error('CSRF_TOKEN_MISSING');
+      }
+      const csrfValidation = await validateCsrfToken(csrfToken, user.id);
+      if (!csrfValidation.isValid) {
+        console.error('❌ CSRF validation failed:', csrfValidation.error);
+        throw new Error('CSRF_VALIDATION_FAILED');
+      }
+      console.log('✅ CSRF token validated - proceeding with cancellation');
+      // ========== END: CSRF VALIDATION ==========
+
       const { data, error } = await supabase
         .from('run_bookings')
         .update({
