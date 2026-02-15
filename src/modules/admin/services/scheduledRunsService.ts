@@ -87,6 +87,9 @@ export class ScheduledRunsService {
     try {
       const { data, error } = await supabase.rpc('get_lirf_names');
 
+      // DEBUG: Temporary logging to diagnose member RPC issue
+      console.log('🔍 get_lirf_names RPC result:', { data, error, dataLength: data?.length });
+
       if (error) {
         console.error('Failed to fetch LIRFs:', error);
         throw new Error(error.message);
@@ -98,6 +101,8 @@ export class ScheduledRunsService {
         this.lirfCache.set(lirf.id, lirf);
       });
       this.lirfCacheExpiry = now + this.CACHE_DURATION;
+
+      console.log('🔍 LIRF cache populated:', this.lirfCache.size, 'entries');
 
       return data || [];
     } catch (error) {
@@ -167,11 +172,22 @@ export class ScheduledRunsService {
       const lirfs = await this.getAvailableLirfs();
       const lirfMap = new Map(lirfs.map(lirf => [lirf.id, lirf]));
 
+      // DEBUG: Log first run's LIRF fields to check if data comes through
+      if (runs.length > 0) {
+        console.log('🔍 First run LIRF fields:', {
+          title: runs[0].run_title,
+          lirf1: runs[0].assigned_lirf_1,
+          lirf2: runs[0].assigned_lirf_2,
+          lirf3: runs[0].assigned_lirf_3,
+          lirfMapSize: lirfMap.size
+        });
+      }
+
       // 5. Process everything in memory - much faster
       const runsWithDetails: RunWithDetails[] = runs.map(run => {
         const runBookings = (allBookings || []).filter(booking => booking.run_id === run.id);
         const bookingCount = runBookings.length;
-        
+
         // User booking info
         const userBookingId = userBookingsMap[run.id];
         const isBooked = !!userBookingId;
