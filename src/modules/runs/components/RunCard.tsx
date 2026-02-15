@@ -244,6 +244,20 @@ export const RunCard: React.FC<RunCardProps> = ({
               
           <div className="run-info-item">
             <div className="run-info-item__primary">
+              🏅 {run.assigned_lirfs.length > 0
+                ? `Run Leader${run.assigned_lirfs.length > 1 ? 's' : ''}: ${
+                    run.assigned_lirfs.length === 1
+                      ? run.assigned_lirfs[0].name
+                      : run.assigned_lirfs.length === 2
+                        ? `${run.assigned_lirfs[0].name} & ${run.assigned_lirfs[1].name}`
+                        : `${run.assigned_lirfs.slice(0, -1).map(l => l.name).join(', ')} & ${run.assigned_lirfs[run.assigned_lirfs.length - 1].name}`
+                  }`
+                : 'Run Leader: TBA'}
+            </div>
+          </div>
+
+          <div className="run-info-item">
+            <div className="run-info-item__primary">
               👥 {run.booking_count}/{run.max_participants} booked
             </div>
             {canManageRuns && (
