@@ -85,11 +85,7 @@ export class ScheduledRunsService {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('members')
-        .select('id, full_name')
-        .in('access_level', ['lirf', 'admin'])
-        .order('full_name', { ascending: true });
+      const { data, error } = await supabase.rpc('get_lirf_names');
 
       if (error) {
         console.error('Failed to fetch LIRFs:', error);
