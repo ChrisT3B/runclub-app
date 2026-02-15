@@ -85,7 +85,7 @@ export class ScheduledRunsService {
     }
 
     try {
-      const { data, error } = await supabase.rpc('get_lirf_names');
+      const { data, error } = await supabase.rpc('get_lirf_names') as { data: Array<{id: string, full_name: string}> | null, error: any };
 
       // DEBUG: Temporary logging to diagnose member RPC issue
       console.log('🔍 get_lirf_names RPC result:', { data, error, dataLength: data?.length });
