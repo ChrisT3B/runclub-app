@@ -1129,8 +1129,28 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
                   style={{ marginTop: '4px' }}
                 />
                 <span style={{ fontSize: '14px' }}>
-                  Personal information will not be disclosed to any third party with the exception of
-                  England Athletics for affiliation or registering purposes. All athletes will be
+                  I have read the{' '}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--red-primary)', textDecoration: 'underline' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Digital Privacy Policy
+                  </a>
+                  {' '}and the{' '}
+                  <a
+                    href="https://www.runalcester.co.uk/_files/ugd/795936_8d30fcd1c3cf456894a51e2e7d0bacc8.pdf"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--red-primary)', textDecoration: 'underline' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Run Alcester Privacy Notice
+                  </a>
+                  . Personal information will not be disclosed to any third party with the exception of
+                  England Athletics for affiliation or registration purposes. All athletes will be
                   registered with EA
                 </span>
               </label>

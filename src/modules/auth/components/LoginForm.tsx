@@ -256,6 +256,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         fontSize: '12px'
       }}>
         <p style={{ margin: '0 0 4px 0' }}>© 2025 Run Alcester. All rights reserved.</p>
+        <p style={{ margin: '0 0 4px 0' }}>
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--red-primary)', textDecoration: 'underline' }}
+          >
+            Digital Privacy Policy
+          </a>
+        </p>
         <p style={{ margin: '0' }}>Questions? Contact us at runalcester@gmail.com</p>
 
       </div>

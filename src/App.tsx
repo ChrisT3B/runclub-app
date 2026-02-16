@@ -8,6 +8,7 @@ import { ProtectedRoute } from './utils/ProtectedRoute';
 import { EmailVerificationHandler } from './modules/auth/components/EmailVerificationHandler';
 import { SessionSecurityWrapper } from './modules/auth/components/SessionSecurityWrapper';
 import { UpdatePrompt } from './shared/components/ui/UpdatePrompt';
+import { PrivacyPolicy } from './modules/auth/components/PrivacyPolicy';
 import './styles/fonts.css';
 import './styles/main.css'; // Ensure main styles are loaded
 
@@ -30,10 +31,13 @@ function App() {
       <AuthProvider>
         <Router>
           <Routes>
+            {/* Public pages */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+
             {/* Handle email verification specifically */}
-            <Route 
-              path="/auth" 
-              element={<EmailVerificationHandler />} 
+            <Route
+              path="/auth"
+              element={<EmailVerificationHandler />}
             />
             
             {/* Handle shared run links */}

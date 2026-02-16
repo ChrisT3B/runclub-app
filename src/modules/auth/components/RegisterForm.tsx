@@ -688,6 +688,16 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         fontSize: '12px'
       }}>
         <p>© 2025 Run Alcester. All rights reserved.</p>
+        <p>
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--red-primary)', textDecoration: 'underline' }}
+          >
+            Digital Privacy Policy
+          </a>
+        </p>
         <p>Questions? Contact us at runalcester@gmail.com</p>
       </div>
 
