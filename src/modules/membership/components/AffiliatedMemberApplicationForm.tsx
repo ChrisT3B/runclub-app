@@ -74,16 +74,15 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
     setError('');
 
     try {
-      // Get current membership year
-      const year = await AffiliatedMemberService.getCurrentMembershipYear();
-      setCurrentYear(year);
-
-      // Get application settings
-      const appSettings = await AffiliatedMemberService.getApplicationSettings(year);
+      // Find whichever membership year is currently open
+      const appSettings = await AffiliatedMemberService.getOpenApplicationSettings();
       setSettings(appSettings);
 
+      const year = appSettings?.membership_year || '';
+      setCurrentYear(year);
+
       // Check if member is already affiliated for this year
-      const affiliatedThisYear = member.is_paid_member === true && member.ea_affiliation_year === year;
+      const affiliatedThisYear = !!year && member.is_paid_member === true && member.ea_affiliation_year === year;
       setIsAffiliatedCurrentYear(affiliatedThisYear);
 
       // Check if this is a renewal (has been affiliated before, but not for current year)

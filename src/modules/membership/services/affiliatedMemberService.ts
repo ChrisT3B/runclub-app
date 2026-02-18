@@ -74,6 +74,31 @@ export class AffiliatedMemberService {
   }
 
   /**
+   * Get the application settings for whichever year is currently open.
+   * Returns null if no year has applications_open = true.
+   */
+  static async getOpenApplicationSettings(): Promise<EAApplicationSettings | null> {
+    try {
+      const { data, error } = await supabase
+        .from('ea_application_settings')
+        .select('*')
+        .eq('applications_open', true)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Failed to fetch open application settings:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('AffiliatedMemberService.getOpenApplicationSettings error:', error);
+      return null;
+    }
+  }
+
+  /**
    * Get application settings for a specific year
    */
   static async getApplicationSettings(year?: string): Promise<EAApplicationSettings | null> {
