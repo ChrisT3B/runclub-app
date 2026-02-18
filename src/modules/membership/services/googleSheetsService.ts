@@ -66,6 +66,8 @@ export class GoogleSheetsService {
       });
 
       const text = await response.text();
+      console.log('GAS response status:', response.status, 'type:', response.type);
+      console.log('GAS response body (first 500 chars):', text.substring(0, 500));
 
       try {
         const result: GoogleSheetsResponse = JSON.parse(text);
@@ -73,11 +75,14 @@ export class GoogleSheetsService {
           throw new Error(result.message || 'Failed to submit application');
         }
         return result;
-      } catch {
-        if (response.ok) {
-          return { success: true, message: 'Application submitted successfully' };
-        }
-        throw new Error('Unexpected response from server. Please try again.');
+      } catch (parseError) {
+        // JSON parse failed — GAS likely returned HTML (redirect page, error, etc.)
+        console.error('GAS response was not JSON:', parseError);
+        throw new Error(
+          'Google Sheets did not confirm receipt. ' +
+          'Response status: ' + response.status + '. ' +
+          'Body preview: ' + text.substring(0, 200)
+        );
       }
     } catch (error) {
       console.error('GAS submission error:', error);
