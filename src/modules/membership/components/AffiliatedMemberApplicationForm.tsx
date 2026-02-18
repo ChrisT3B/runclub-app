@@ -4,11 +4,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { AffiliatedMemberService } from '../services/affiliatedMemberService';
+import { GoogleSheetsService, GoogleSheetsSubmissionData } from '../services/googleSheetsService';
 import { MembershipInformationCard } from './MembershipInformationCard';
 import { AffiliatedMemberCard } from './AffiliatedMemberCard';
 import {
   EAApplicationSettings,
-  AffiliatedMemberApplication,
   ApplicationFormData,
   TitleOption,
   MembershipType,
@@ -31,7 +31,6 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
   const [success, setSuccess] = useState('');
 
   const [settings, setSettings] = useState<EAApplicationSettings | null>(null);
-  const [existingApplication, setExistingApplication] = useState<AffiliatedMemberApplication | null>(null);
   const [currentYear, setCurrentYear] = useState('');
   const [isRenewal, setIsRenewal] = useState(false);
   const [showPreviousClub, setShowPreviousClub] = useState(false);
@@ -82,10 +81,6 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
       // Get application settings
       const appSettings = await AffiliatedMemberService.getApplicationSettings(year);
       setSettings(appSettings);
-
-      // Check for existing application
-      const existingApp = await AffiliatedMemberService.getMemberApplication(member.id, year);
-      setExistingApplication(existingApp);
 
       // Check if member is already affiliated for this year
       const affiliatedThisYear = member.is_paid_member === true && member.ea_affiliation_year === year;
@@ -203,7 +198,7 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
       return;
     }
 
-    if (!member?.id) {
+    if (!member) {
       setError('User not found. Please log in again.');
       return;
     }
@@ -211,9 +206,49 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
     setIsSubmitting(true);
 
     try {
-      const application = await AffiliatedMemberService.submitApplication(member.id, formData);
-      setSuccess(`Application submitted successfully! Your application ID is ${application.id.substring(0, 8)}...`);
-      setExistingApplication(application);
+      const hasPreviousClub = !!(formData.previous_club_name && formData.previous_club_name.trim().length > 0);
+
+      const allDeclarationsAccepted =
+        formData.declaration_amateur &&
+        formData.declaration_own_risk &&
+        formData.declaration_data_privacy &&
+        formData.declaration_policies &&
+        formData.payment_sent_confirmed &&
+        formData.payment_reference_confirmed;
+
+      const submissionData: GoogleSheetsSubmissionData = {
+        full_name: member.full_name || '',
+        email: member.email || '',
+        phone: member.phone || '',
+        title: formData.title,
+        date_of_birth: formData.date_of_birth,
+        sex_at_birth: formData.sex_at_birth,
+        address_postcode: formData.address_postcode,
+        nationality: formData.nationality,
+        membership_type: formData.membership_type,
+        ea_urn_at_application: formData.ea_urn_at_application,
+        has_previous_club: hasPreviousClub,
+        previous_club_name: formData.previous_club_name,
+        has_health_conditions: formData.has_health_conditions,
+        health_conditions_details: formData.health_conditions_details,
+        emergency_contact_name: formData.emergency_contact_name,
+        emergency_contact_relationship: formData.emergency_contact_relationship,
+        emergency_contact_number: formData.emergency_contact_number,
+        additional_info: formData.additional_info,
+        payment_sent_confirmed: formData.payment_sent_confirmed,
+        all_declarations_accepted: allDeclarationsAccepted,
+        payment_reference: formData.payment_reference,
+      };
+
+      await GoogleSheetsService.submitApplication(submissionData);
+
+      setSuccess(
+        'Application submitted successfully! ' +
+        'Thank you for your EA membership application. ' +
+        'We will review your application and contact you once payment is confirmed. ' +
+        'Your payment reference: ' + formData.payment_reference
+      );
+      setShowApplicationForm(false);
     } catch (err: any) {
       console.error('Failed to submit application:', err);
       setError(err.message || 'Failed to submit application. Please try again.');
@@ -286,112 +321,43 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
     );
   }
 
-  // Existing application - show status
-  if (existingApplication && existingApplication.status !== 'cancelled') {
-    return (
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">EA Membership Application</h3>
-          <p className="card-description">Membership Year: {currentYear}</p>
-        </div>
-        <div className="card-content">
-          {success && (
-            <div
-              style={{
-                background: '#f0fdf4',
-                border: '1px solid #bbf7d0',
-                color: '#166534',
-                padding: '12px',
-                borderRadius: '6px',
-                marginBottom: '20px',
-              }}
-            >
-              {success}
-            </div>
-          )}
-
-          <div
-            style={{
-              background: 'var(--gray-50)',
-              borderRadius: '8px',
-              padding: '24px',
-            }}
-          >
-            <h4 style={{ marginBottom: '16px', color: 'var(--gray-900)' }}>
-              Application Status
-            </h4>
-
-            <div style={{ marginBottom: '12px' }}>
-              <span style={{ color: 'var(--gray-600)', fontSize: '14px' }}>Submitted: </span>
-              <span>{new Date(existingApplication.created_at).toLocaleDateString()}</span>
-            </div>
-
-            <div style={{ marginBottom: '12px' }}>
-              <span style={{ color: 'var(--gray-600)', fontSize: '14px' }}>Status: </span>
-              <span
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  background:
-                    existingApplication.status === 'submitted'
-                      ? '#fef3c7'
-                      : existingApplication.status === 'payment_confirmed'
-                      ? '#dbeafe'
-                      : '#dcfce7',
-                  color:
-                    existingApplication.status === 'submitted'
-                      ? '#92400e'
-                      : existingApplication.status === 'payment_confirmed'
-                      ? '#1d4ed8'
-                      : '#166534',
-                }}
-              >
-                {existingApplication.status === 'submitted'
-                  ? 'Awaiting Payment Confirmation'
-                  : existingApplication.status === 'payment_confirmed'
-                  ? 'Payment Confirmed - EA Registration Pending'
-                  : 'EA Confirmed'}
-              </span>
-            </div>
-
-            <div style={{ marginBottom: '12px' }}>
-              <span style={{ color: 'var(--gray-600)', fontSize: '14px' }}>Payment Reference: </span>
-              <strong>{existingApplication.payment_reference}</strong>
-            </div>
-
-            <div>
-              <span style={{ color: 'var(--gray-600)', fontSize: '14px' }}>Membership Type: </span>
-              <span>
-                {existingApplication.membership_type === 'first_claim' ? '1st Claim' : '2nd Claim'} -
-                £{existingApplication.membership_fee.toFixed(2)}
-              </span>
-            </div>
-          </div>
-
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="btn btn-secondary"
-              style={{ marginTop: '24px' }}
-            >
-              Back to Dashboard
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   // Application form with info card above
   return (
     <>
       {/* Membership Information Card */}
       <MembershipInformationCard settings={settings} />
 
+      {/* Success message after submission */}
+      {success && (
+        <div className="card">
+          <div className="card-content">
+            <div
+              style={{
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                color: '#166534',
+                padding: '20px',
+                borderRadius: '8px',
+                marginBottom: '16px',
+              }}
+            >
+              {success}
+            </div>
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="btn btn-secondary"
+                style={{ width: '100%' }}
+              >
+                Back to Dashboard
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Apply Button or Application Form */}
-      {!showApplicationForm ? (
+      {!showApplicationForm && !success ? (
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">Apply for Membership</h3>

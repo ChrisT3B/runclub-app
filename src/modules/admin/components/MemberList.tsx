@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { AdminService, Member } from '../services/adminService';
 import { MemberEditModal } from './MemberEditModal';
 import { MemberProfileModal } from '../../membership/components/MemberProfileModal';
+import { EAApplicationSettingsModal } from './EAApplicationSettingsModal';
+import { AffiliatedMemberService } from '../../membership/services/affiliatedMemberService';
 
 export const MemberList: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
@@ -12,9 +14,14 @@ export const MemberList: React.FC = () => {
   const [filterAccessLevel, setFilterAccessLevel] = useState('all');
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
+  const [showEASettings, setShowEASettings] = useState(false);
+  const [membershipYear, setMembershipYear] = useState('');
 
   useEffect(() => {
     loadMembers();
+    AffiliatedMemberService.getCurrentMembershipYear()
+      .then(year => setMembershipYear(year))
+      .catch(err => console.error('Failed to load membership year:', err));
   }, []);
 
   const loadMembers = async () => {
@@ -114,9 +121,20 @@ export const MemberList: React.FC = () => {
 
   return (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">Members</h1>
-        <p className="page-description">Manage club members and their access levels</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 className="page-title">Members</h1>
+          <p className="page-description">Manage club members and their access levels</p>
+        </div>
+        {membershipYear && (
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowEASettings(true)}
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            EA Membership Settings
+          </button>
+        )}
       </div>
 
       {error && (
@@ -341,6 +359,13 @@ export const MemberList: React.FC = () => {
           onClose={() => setViewingMember(null)}
         />
       )}
+
+      {/* EA Membership Settings Modal */}
+      <EAApplicationSettingsModal
+        isOpen={showEASettings}
+        onClose={() => setShowEASettings(false)}
+        membershipYear={membershipYear}
+      />
     </div>
   );
 };

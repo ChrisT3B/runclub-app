@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../../../modules/auth/context/AuthContext'
 import { SendInvitationModal } from '../ui/SendInvitationModal'
-import { AffiliatedMemberService } from '../../../modules/membership/services/affiliatedMemberService'
 
 interface SidebarProps {
   currentPage?: string
@@ -11,17 +10,6 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
   const { permissions } = useAuth()
   const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false)
-  const [pendingEACount, setPendingEACount] = useState(0)
-
-  // Load pending EA applications count for admin badge
-  // Refresh when page changes to catch updates from EA Applications page
-  useEffect(() => {
-    if (permissions.canManageMembers) {
-      AffiliatedMemberService.getPendingApplicationsCount()
-        .then(count => setPendingEACount(count))
-        .catch(err => console.error('Failed to load pending EA count:', err))
-    }
-  }, [permissions.canManageMembers, currentPage])
 
   const navigation: { id: string; name: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
@@ -48,7 +36,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
   if (permissions.canManageMembers) {
     navigation.push(
       { id: 'members', name: 'Members', icon: '👥' },
-      { id: 'ea-applications', name: 'EA Applications', icon: '📋', badge: pendingEACount },
       { id: 'test-lirf-reminder', name: 'Test LIRF Reminder', icon: '🧪' }
     )
   }
