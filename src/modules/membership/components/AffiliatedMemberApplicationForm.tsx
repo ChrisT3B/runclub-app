@@ -91,7 +91,8 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
 
       // Pre-populate form with member data
       const surname = member.full_name?.split(' ').pop() || '';
-      const paymentRef = '25MEM' + surname.substring(0, 5).toUpperCase();
+      const yearPrefix = year ? year.substring(2, 4) : new Date().getFullYear().toString().substring(2);
+      const paymentRef = yearPrefix + 'MEM' + surname.substring(0, 5).toUpperCase();
 
       setFormData(prev => ({
         ...prev,
