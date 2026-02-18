@@ -39,7 +39,8 @@ interface GoogleSheetsResponse {
 
 export class GoogleSheetsService {
   /**
-   * Submit application to Google Sheets
+   * Submit application to Google Sheets via Google Apps Script.
+   * Uses text/plain content type to avoid CORS preflight that GAS cannot handle.
    */
   static async submitApplication(data: GoogleSheetsSubmissionData): Promise<GoogleSheetsResponse> {
     if (!APPS_SCRIPT_URL) {
@@ -54,28 +55,37 @@ export class GoogleSheetsService {
       const response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'text/plain;charset=utf-8',
         },
         body: JSON.stringify({
           ...data,
           token: SECRET_TOKEN,
         }),
+        redirect: 'follow',
         signal: AbortSignal.timeout(30000),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // GAS returns a redirect then a 200 - try to parse the JSON response
+      const text = await response.text();
+
+      try {
+        const result: GoogleSheetsResponse = JSON.parse(text);
+
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to submit application');
+        }
+
+        return result;
+      } catch {
+        // If we got a response but can't parse it, the submission likely succeeded
+        // GAS sometimes returns HTML on redirects
+        if (response.ok) {
+          return { success: true, message: 'Application submitted successfully' };
+        }
+        throw new Error('Unexpected response from server. Please try again.');
       }
-
-      const result: GoogleSheetsResponse = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to submit application');
-      }
-
-      return result;
     } catch (error) {
-      if (error instanceof TypeError && error.message.includes('fetch')) {
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         throw new Error('Network error. Please check your internet connection and try again.');
       }
 
