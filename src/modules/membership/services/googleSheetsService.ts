@@ -53,9 +53,11 @@ export class GoogleSheetsService {
     }
 
     try {
-      console.log('Submitting to GAS URL:', APPS_SCRIPT_URL.substring(0, 50) + '...');
+      const url = APPS_SCRIPT_URL.trim();
+      console.log('GAS submit - URL starts with:', url.substring(0, 60));
+      console.log('GAS submit - URL length:', url.length);
 
-      await fetch(APPS_SCRIPT_URL, {
+      const response = await fetch(url, {
         method: 'POST',
         body: JSON.stringify({
           ...data,
@@ -64,22 +66,18 @@ export class GoogleSheetsService {
         mode: 'no-cors',
       });
 
-      // With no-cors, the response is opaque (status 0, empty body) but the
-      // request IS delivered to the server. If we reach here without an
-      // exception, the request was sent successfully.
+      console.log('GAS submit - response type:', response.type, 'status:', response.status);
       return { success: true, message: 'Application submitted successfully' };
     } catch (error) {
       console.error('GAS submission error:', error);
 
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        throw new Error('Network error. Please check your internet connection and try again.');
-      }
-
-      if (error instanceof Error && error.message.includes('timeout')) {
-        throw new Error('Request timed out. Please try again.');
-      }
-
-      throw error;
+      // Surface the real error to the UI for diagnosis
+      const rawMessage = error instanceof Error ? error.message : String(error);
+      const errorType = error instanceof TypeError ? 'TypeError' : error?.constructor?.name || 'Unknown';
+      throw new Error(
+        `Submission failed [${errorType}]: ${rawMessage}. ` +
+        `URL prefix: ${APPS_SCRIPT_URL.substring(0, 40)}...`
+      );
     }
   }
 }
