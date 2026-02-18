@@ -128,9 +128,14 @@ export const MemberList: React.FC = () => {
         </div>
         {membershipYear && (
           <button
-            className="btn btn-secondary"
+            className="btn btn-primary"
             onClick={() => setShowEASettings(true)}
-            style={{ whiteSpace: 'nowrap' }}
+            style={{
+              whiteSpace: 'nowrap',
+              padding: '10px 20px',
+              fontSize: '14px',
+              fontWeight: '600',
+            }}
           >
             EA Membership Settings
           </button>

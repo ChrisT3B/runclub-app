@@ -21,6 +21,8 @@ export const EAApplicationSettingsModal: React.FC<EAApplicationSettingsModalProp
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
+  const [selectedYear, setSelectedYear] = useState(membershipYear);
 
   const [formData, setFormData] = useState({
     applications_open: false,
@@ -34,16 +36,25 @@ export const EAApplicationSettingsModal: React.FC<EAApplicationSettingsModalProp
   });
 
   useEffect(() => {
-    if (isOpen && membershipYear) {
-      loadSettings();
+    if (isOpen) {
+      setSelectedYear(membershipYear);
+      AffiliatedMemberService.getAvailableYears()
+        .then(years => setAvailableYears(years))
+        .catch(err => console.error('Failed to load years:', err));
     }
   }, [isOpen, membershipYear]);
+
+  useEffect(() => {
+    if (isOpen && selectedYear) {
+      loadSettings();
+    }
+  }, [isOpen, selectedYear]);
 
   const loadSettings = async () => {
     setIsLoading(true);
     setError('');
     try {
-      const settings = await AffiliatedMemberService.getApplicationSettings(membershipYear);
+      const settings = await AffiliatedMemberService.getApplicationSettings(selectedYear);
       if (settings) {
         setFormData({
           applications_open: settings.applications_open || false,
@@ -135,7 +146,7 @@ export const EAApplicationSettingsModal: React.FC<EAApplicationSettingsModalProp
 
     setIsSaving(true);
     try {
-      await AffiliatedMemberService.updateApplicationSettings(membershipYear, {
+      await AffiliatedMemberService.updateApplicationSettings(selectedYear, {
         applications_open: formData.applications_open,
         open_date: formData.open_date || undefined,
         close_date: formData.close_date || undefined,
@@ -216,15 +227,32 @@ export const EAApplicationSettingsModal: React.FC<EAApplicationSettingsModalProp
               >
                 EA Application Settings
               </h2>
-              <p
+              <div
                 style={{
                   margin: '0 0 16px 0',
-                  color: 'var(--gray-600)',
-                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
                 }}
               >
-                Membership Year: {membershipYear}
-              </p>
+                <label
+                  htmlFor="settings-year-select"
+                  style={{ color: 'var(--gray-600)', fontSize: '14px' }}
+                >
+                  Membership Year:
+                </label>
+                <select
+                  id="settings-year-select"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="form-input"
+                  style={{ width: 'auto', padding: '4px 8px', fontSize: '14px' }}
+                >
+                  {availableYears.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <button
               onClick={onClose}
