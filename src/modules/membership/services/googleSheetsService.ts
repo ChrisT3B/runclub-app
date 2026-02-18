@@ -40,8 +40,8 @@ interface GoogleSheetsResponse {
 export class GoogleSheetsService {
   /**
    * Submit application to Google Sheets via Google Apps Script.
-   * Uses no-cors mode because GAS redirects break standard CORS flow.
-   * The request is sent and processed; we just can't read the response body.
+   * Uses text/plain to avoid CORS preflight. CSP in vercel.json must allow
+   * script.google.com and script.googleusercontent.com in connect-src.
    */
   static async submitApplication(data: GoogleSheetsSubmissionData): Promise<GoogleSheetsResponse> {
     if (!APPS_SCRIPT_URL) {
@@ -53,31 +53,40 @@ export class GoogleSheetsService {
     }
 
     try {
-      const url = APPS_SCRIPT_URL.trim();
-      console.log('GAS submit - URL starts with:', url.substring(0, 60));
-      console.log('GAS submit - URL length:', url.length);
-
-      const response = await fetch(url, {
+      const response = await fetch(APPS_SCRIPT_URL.trim(), {
         method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
         body: JSON.stringify({
           ...data,
           token: SECRET_TOKEN,
         }),
-        mode: 'no-cors',
+        redirect: 'follow',
       });
 
-      console.log('GAS submit - response type:', response.type, 'status:', response.status);
-      return { success: true, message: 'Application submitted successfully' };
+      const text = await response.text();
+
+      try {
+        const result: GoogleSheetsResponse = JSON.parse(text);
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to submit application');
+        }
+        return result;
+      } catch {
+        if (response.ok) {
+          return { success: true, message: 'Application submitted successfully' };
+        }
+        throw new Error('Unexpected response from server. Please try again.');
+      }
     } catch (error) {
       console.error('GAS submission error:', error);
 
-      // Surface the real error to the UI for diagnosis
-      const rawMessage = error instanceof Error ? error.message : String(error);
-      const errorType = error instanceof TypeError ? 'TypeError' : error?.constructor?.name || 'Unknown';
-      throw new Error(
-        `Submission failed [${errorType}]: ${rawMessage}. ` +
-        `URL prefix: ${APPS_SCRIPT_URL.substring(0, 40)}...`
-      );
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      }
+
+      throw error;
     }
   }
 }
