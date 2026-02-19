@@ -599,6 +599,7 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
                 className="form-input"
                 rows={2}
                 required
+                autoComplete="street-address"
                 placeholder="Your full address including postcode"
               />
             </div>
