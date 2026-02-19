@@ -163,7 +163,8 @@ export class AffiliatedMemberService {
    */
   static async submitApplication(
     memberId: string,
-    applicationData: ApplicationFormData
+    applicationData: ApplicationFormData,
+    membershipYear?: string
   ): Promise<AffiliatedMemberApplication> {
     try {
       // Validate member ID
@@ -243,17 +244,17 @@ export class AffiliatedMemberService {
         }
       }
 
-      // Get current membership year
-      const membershipYear = await this.getCurrentMembershipYear();
+      // Get membership year (use provided year or fall back to current)
+      const resolvedYear = membershipYear || await this.getCurrentMembershipYear();
 
       // Check if applications are open
-      const settings = await this.getApplicationSettings(membershipYear);
+      const settings = await this.getApplicationSettings(resolvedYear);
       if (!settings?.applications_open) {
         throw new Error('Applications are currently closed');
       }
 
       // Check for existing application
-      const existingApp = await this.getMemberApplication(cleanMemberId, membershipYear);
+      const existingApp = await this.getMemberApplication(cleanMemberId, resolvedYear);
       if (existingApp) {
         throw new Error('You already have an active application for this membership year');
       }
@@ -298,7 +299,7 @@ export class AffiliatedMemberService {
         nationality: sanitizedData.nationality,
         membership_type: membershipTypeValidation.clean,
         membership_fee: membershipFee,
-        membership_year: membershipYear,
+        membership_year: resolvedYear,
         is_renewal: isRenewal,
         ea_urn_at_application: sanitizedData.ea_urn_at_application || null,
         previous_club_name: sanitizedData.previous_club_name || null,

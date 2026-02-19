@@ -216,7 +216,7 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
 
     try {
       // Submit to Supabase
-      await AffiliatedMemberService.submitApplication(member.id, formData);
+      await AffiliatedMemberService.submitApplication(member.id, formData, currentYear);
 
       setSuccess(
         'Application submitted successfully! ' +
