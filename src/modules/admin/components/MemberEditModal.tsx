@@ -26,7 +26,8 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
     membership_status: member.membership_status || 'pending',
     access_level: member.access_level || 'member',
     dbs_expiry_date: member.dbs_expiry_date || '',
-    email_notifications_enabled: member.email_notifications_enabled !== false // Default to true if undefined
+    email_notifications_enabled: member.email_notifications_enabled !== false, // Default to true if undefined
+    is_c25k_participant: member.is_c25k_participant || false
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -363,6 +364,48 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
                     )}
                   </div>
                 )}
+
+                {/* C25k Participant Status */}
+                <div style={{
+                  padding: '16px',
+                  background: '#f0f9ff',
+                  border: '1px solid #bae6fd',
+                  borderRadius: '8px',
+                  marginTop: '16px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <input
+                      type="checkbox"
+                      id="is_c25k_participant"
+                      name="is_c25k_participant"
+                      checked={formData.is_c25k_participant}
+                      onChange={handleInputChange}
+                      style={{
+                        marginTop: '2px',
+                        width: '18px',
+                        height: '18px',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <label
+                        htmlFor="is_c25k_participant"
+                        style={{
+                          fontWeight: '500',
+                          color: 'var(--gray-900)',
+                          cursor: 'pointer',
+                          display: 'block',
+                          marginBottom: '4px'
+                        }}
+                      >
+                        Couch to 5k Participant
+                      </label>
+                      <div style={{ fontSize: '12px', color: 'var(--gray-600)' }}>
+                        C25k participants see both C25k-specific runs and regular club runs
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Medical Information */}

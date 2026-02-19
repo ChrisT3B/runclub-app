@@ -17,6 +17,7 @@ export interface RegistrationData {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   healthConditions?: string;
+  isC25kParticipant?: boolean;
 }
 
 // Enhanced User interface to match your database structure
@@ -45,6 +46,7 @@ export interface Member {
   emergency_contact_phone: string;
   health_conditions: string;
   email_notifications_enabled?: boolean;
+  is_c25k_participant?: boolean;
   created_at: string;
   updated_at: string;
 

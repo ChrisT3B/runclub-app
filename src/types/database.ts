@@ -13,6 +13,7 @@ export interface PendingInvitation {
   invitation_sent: boolean;
   email_sent_at: string | null;
   guest_member_id: string | null;
+  is_c25k_participant: boolean;
   created_at: string;
   updated_at: string;
 }

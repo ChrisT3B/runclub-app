@@ -390,7 +390,24 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
     // Your existing pending member logic (UNCHANGED)
     if (data.user) {
       console.log('👤 Creating pending member profile for user:', data.user.id);
-      
+
+      // Check if this registration is from a C25k invitation or direct C25k signup link
+      let isC25kParticipant = registerData.isC25kParticipant || false;
+      try {
+        const { data: invitation } = await supabase
+          .from('pending_invitations')
+          .select('is_c25k_participant')
+          .eq('email', emailValidation.clean)
+          .eq('status', 'pending')
+          .maybeSingle();
+
+        if (invitation && invitation.is_c25k_participant) {
+          isC25kParticipant = true;
+        }
+      } catch (c25kErr) {
+        console.error('C25k: Error checking invitation:', c25kErr);
+      }
+
       const pendingMemberData = {
         id: data.user.id,
         email: emailValidation.clean,
@@ -399,6 +416,7 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
         emergency_contact_name: sanitizedData.emergencyContactName,
         emergency_contact_phone: sanitizedData.emergencyContactPhone,
         health_conditions: sanitizedData.healthConditions || 'None disclosed',
+        is_c25k_participant: isC25kParticipant,
       };
 
       console.log('📋 Pending member data to insert:', pendingMemberData);
@@ -608,6 +626,7 @@ export const verifyEmail = async (token: string): Promise<EmailVerificationResul
           emergency_contact_phone: pendingMember.emergency_contact_phone || '',
           health_conditions: pendingMember.health_conditions || 'None disclosed',
           email_notifications_enabled: true, // Default to enabled
+          is_c25k_participant: pendingMember.is_c25k_participant || false,
         };
 
         const { error: memberError } = await supabase

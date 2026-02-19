@@ -18,6 +18,7 @@ interface ScheduledRunData {
   approximate_distance: string;
   max_participants: number;
   description: string;
+  is_c25k_run: boolean;
   lirfs_required: number;
   assigned_lirf_1?: string;
   assigned_lirf_2?: string;
@@ -44,6 +45,7 @@ export const EditScheduledRunForm: React.FC<EditScheduledRunFormProps> = ({
     approximate_distance: '',
     max_participants: 20,
     description: '',
+    is_c25k_run: false,
     lirfs_required: 1,
     assigned_lirf_1: '',
     assigned_lirf_2: '',
@@ -70,6 +72,7 @@ export const EditScheduledRunForm: React.FC<EditScheduledRunFormProps> = ({
         approximate_distance: runData.approximate_distance || '',
         max_participants: runData.max_participants || 20,
         description: runData.description || '',
+        is_c25k_run: runData.is_c25k_run || false,
         lirfs_required: runData.lirfs_required || 1,
         assigned_lirf_1: runData.assigned_lirf_1 || '',
         assigned_lirf_2: runData.assigned_lirf_2 || '',
@@ -95,8 +98,14 @@ export const EditScheduledRunForm: React.FC<EditScheduledRunFormProps> = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
-    if (type === 'number') {
+
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }));
+    } else if (type === 'number') {
       setFormData(prev => ({
         ...prev,
         [name]: parseInt(value) || 0
@@ -304,6 +313,22 @@ const handleDescriptionChange = (value: string) => {
                 placeholder="Run description, route info, what to bring..."
                 rows={6}
               />
+            </div>
+
+            {/* C25k Run Toggle */}
+            <div className="form-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  name="is_c25k_run"
+                  checked={formData.is_c25k_run}
+                  onChange={handleInputChange}
+                />
+                <span className="form-label" style={{ margin: 0 }}>This is a Couch to 5k Run</span>
+              </label>
+              <p style={{ fontSize: '12px', color: 'var(--gray-600)', marginTop: '4px', marginLeft: '24px' }}>
+                C25k runs are only visible to C25k participants, LIRFs, and admins
+              </p>
             </div>
           </div>
 

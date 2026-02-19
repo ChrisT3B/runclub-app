@@ -9,6 +9,7 @@ import { EmailVerificationHandler } from './modules/auth/components/EmailVerific
 import { SessionSecurityWrapper } from './modules/auth/components/SessionSecurityWrapper';
 import { UpdatePrompt } from './shared/components/ui/UpdatePrompt';
 import { PrivacyPolicy } from './modules/auth/components/PrivacyPolicy';
+import { C25kRegisterForm } from './modules/auth/components/C25kRegisterForm';
 import './styles/fonts.css';
 import './styles/main.css'; // Ensure main styles are loaded
 
@@ -33,6 +34,7 @@ function App() {
           <Routes>
             {/* Public pages */}
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/c25k" element={<C25kRegisterForm />} />
 
             {/* Handle email verification specifically */}
             <Route

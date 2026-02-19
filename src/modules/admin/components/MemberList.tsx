@@ -226,6 +226,7 @@ export const MemberList: React.FC = () => {
                     <th className="member-table__header-cell">Email</th>
                     <th className="member-table__header-cell">Status</th>
                     <th className="member-table__header-cell">Access Level</th>
+                    <th className="member-table__header-cell">C25k</th>
                     <th className="member-table__header-cell">EA Affiliation</th>
                     <th className="member-table__header-cell">DBS Status</th>
                     <th className="member-table__header-cell">Joined</th>
@@ -282,6 +283,23 @@ export const MemberList: React.FC = () => {
                           <span className={`access-badge ${getAccessBadgeClass(member.access_level)}`}>
                             {member.access_level}
                           </span>
+                        </td>
+                        <td className="member-table__cell">
+                          {member.is_c25k_participant ? (
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '4px 8px',
+                              background: '#dbeafe',
+                              color: '#1e40af',
+                              borderRadius: '12px',
+                              fontSize: '11px',
+                              fontWeight: '600'
+                            }}>
+                              C25K
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--gray-400)', fontSize: '11px' }}>&mdash;</span>
+                          )}
                         </td>
                         <td className="member-table__cell">
                           {member.is_paid_member ? (

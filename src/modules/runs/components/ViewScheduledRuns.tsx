@@ -108,8 +108,13 @@ const closeShareModal = () => {
     try {
       setLoading(true);
       
-      // Use the ultra-optimized method
-      const runsWithDetails = await ScheduledRunsService.getScheduledRunsWithDetails(state.user?.id);
+      // Use the ultra-optimized method with C25k visibility filtering
+      const memberContext = state.member ? {
+        accessLevel: state.member.access_level || 'member',
+        isC25kParticipant: state.member.is_c25k_participant || false
+      } : undefined;
+
+      const runsWithDetails = await ScheduledRunsService.getScheduledRunsWithDetails(state.user?.id, memberContext);
       setRuns(runsWithDetails);
 
     } catch (err: any) {
@@ -118,7 +123,7 @@ const closeShareModal = () => {
     } finally {
       setLoading(false);
     }
-  }, [state.user?.id]);
+  }, [state.user?.id, state.member?.access_level, state.member?.is_c25k_participant]);
 
   // Load runs when user changes
   useEffect(() => {

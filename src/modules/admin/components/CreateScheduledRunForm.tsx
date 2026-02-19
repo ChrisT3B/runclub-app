@@ -18,6 +18,7 @@ interface ScheduledRunData {
   description: string;
   is_recurring: boolean;
   weekly_recurrences: number;
+  is_c25k_run: boolean;
   lirfs_required: number;
   assigned_lirf_1: string;
   assigned_lirf_2: string;
@@ -45,6 +46,7 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
     description: '',
     is_recurring: false,
     weekly_recurrences: 2, // CHANGED: from 1 to 2 to match dropdown
+    is_c25k_run: false,
     lirfs_required: 1,
     assigned_lirf_1: '',
     assigned_lirf_2: '',
@@ -348,6 +350,22 @@ const generateWeeklyRuns = (baseData: ScheduledRunData) => {
                   placeholder="Run description, route info, what to bring..."
                   rows={6}
                 />
+              </div>
+
+              {/* C25k Run Toggle */}
+              <div className="form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    name="is_c25k_run"
+                    checked={formData.is_c25k_run}
+                    onChange={handleInputChange}
+                  />
+                  <span className="form-label" style={{ margin: 0 }}>This is a Couch to 5k Run</span>
+                </label>
+                <p style={{ fontSize: '12px', color: 'var(--gray-600)', marginTop: '4px', marginLeft: '24px' }}>
+                  C25k runs are only visible to C25k participants, LIRFs, and admins
+                </p>
               </div>
             </div>
 

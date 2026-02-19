@@ -95,6 +95,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
               Send Invitation
             </button>
           )}
+
+          {/* C25k Invitations - Admin only */}
+          {permissions.canManageMembers && (
+            <button
+              onClick={() => onNavigate?.('c25k-invitations')}
+              className={`nav-item ${currentPage === 'c25k-invitations' ? 'active' : ''}`}
+            >
+              <span style={{ marginRight: '12px', fontSize: '16px' }}>🏃</span>
+              C25k Invitations
+            </button>
+          )}
         </nav>
 
         {/* Club Information Section */}

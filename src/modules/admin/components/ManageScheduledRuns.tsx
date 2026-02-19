@@ -259,6 +259,18 @@ export const ManageScheduledRuns: React.FC = () => {
                          run.run_status === 'in_progress' ? 'In Progress' :
                          run.run_status === 'completed' ? 'Completed' : 'Cancelled'}
                       </span>
+                      {run.is_c25k_run && (
+                        <span style={{
+                          background: '#dbeafe',
+                          color: '#1e40af',
+                          padding: '4px 12px',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>
+                          C25K
+                        </span>
+                      )}
                     </div>
                   </div>
                   

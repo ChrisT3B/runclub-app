@@ -17,6 +17,7 @@ import { LirfReminderTestPage } from './modules/admin/pages/LirfReminderTestPage
 import { AdminReports } from './modules/admin/pages/AdminReports';
 import { HelpVideos } from './modules/help/pages/HelpVideos';
 import { BulkInvitations } from './modules/admin/pages/BulkInvitations';
+import { C25kInvitations } from './modules/admin/pages/C25kInvitations';
 import { AffiliatedMemberApplicationForm } from './modules/membership/components/AffiliatedMemberApplicationForm';
 
 export const AppContent: React.FC = () => {
@@ -168,6 +169,9 @@ export const AppContent: React.FC = () => {
       case 'bulk-invitations':
         console.log('✅ Rendering BulkInvitations');
         return <BulkInvitations onNavigate={handleNavigation} />;
+      case 'c25k-invitations':
+        console.log('✅ Rendering C25kInvitations');
+        return <C25kInvitations onNavigate={handleNavigation} />;
       case 'ea-membership':
         console.log('✅ Rendering AffiliatedMemberApplicationForm');
         return <AffiliatedMemberApplicationForm onBack={() => handleNavigation('dashboard')} />;

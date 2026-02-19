@@ -86,7 +86,8 @@ export class InvitationService {
    */
   public static async sendInvitation(
     email: string,
-    invitedById?: string
+    invitedById?: string,
+    isC25kParticipant: boolean = false
   ): Promise<InvitationResult> {
     try {
       // Validate email
@@ -156,7 +157,8 @@ export class InvitationService {
           token,
           invited_by: invitedById || null,
           expires_at: expiresAt.toISOString(),
-          status: 'pending'
+          status: 'pending',
+          is_c25k_participant: isC25kParticipant
         })
         .select()
         .single();
@@ -328,6 +330,7 @@ If you didn't expect this email, you can safely ignore it.
   public static async sendBulkInvitations(
     emails: string[],
     invitedById?: string,
+    isC25kParticipant: boolean = false,
     progressCallback?: (current: number, total: number, email: string, result: InvitationResult) => void
   ): Promise<{
     total: number;
@@ -342,7 +345,7 @@ If you didn't expect this email, you can safely ignore it.
     for (let i = 0; i < emails.length; i++) {
       const email = emails[i];
 
-      const result = await this.sendInvitation(email, invitedById);
+      const result = await this.sendInvitation(email, invitedById, isC25kParticipant);
 
       if (result.success) {
         successful++;

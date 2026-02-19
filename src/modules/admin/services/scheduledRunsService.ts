@@ -21,6 +21,7 @@ export interface ScheduledRun {
   assigned_lirf_1?: string;
   assigned_lirf_2?: string;
   assigned_lirf_3?: string;
+  is_c25k_run?: boolean;
   created_by: string;
   created_by_name?: string;
   created_at: string;
@@ -43,6 +44,7 @@ export interface CreateScheduledRunData {
   assigned_lirf_1?: string;
   assigned_lirf_2?: string;
   assigned_lirf_3?: string;
+  is_c25k_run?: boolean;
   created_by: string;
   created_by_name?: string;     // ADD: Name for display
 }
@@ -113,13 +115,17 @@ export class ScheduledRunsService {
 
   /**
    * ULTRA-OPTIMIZED: Get all scheduled runs with minimal queries
+   * C25k filtering: regular members only see non-C25k runs; C25k participants and LIRFs/admins see all
    */
-  static async getScheduledRunsWithDetails(userId?: string): Promise<RunWithDetails[]> {
+  static async getScheduledRunsWithDetails(
+    userId?: string,
+    memberContext?: { accessLevel: string; isC25kParticipant: boolean }
+  ): Promise<RunWithDetails[]> {
     try {
       const today = new Date().toISOString().split('T')[0];
-      
+
       // 1. Get runs with a more specific query
-      const { data: runs, error: runsError } = await supabase
+      let query = supabase
         .from('scheduled_runs')
         .select('*')
         .gte('run_date', today)
@@ -127,6 +133,18 @@ export class ScheduledRunsService {
         .order('run_date', { ascending: true })
         .order('run_time', { ascending: true })
         .limit(50); // Limit to prevent massive queries
+
+      // Apply C25k visibility filtering
+      // Admins and LIRFs see everything, C25k participants see everything
+      // Regular members only see non-C25k runs
+      if (memberContext) {
+        const isPrivileged = memberContext.accessLevel === 'admin' || memberContext.accessLevel === 'lirf';
+        if (!isPrivileged && !memberContext.isC25kParticipant) {
+          query = query.or('is_c25k_run.eq.false,is_c25k_run.is.null');
+        }
+      }
+
+      const { data: runs, error: runsError } = await query;
 
       if (runsError) {
         console.error('Failed to fetch scheduled runs:', runsError);
@@ -355,6 +373,7 @@ export class ScheduledRunsService {
           weekly_recurrences: runData.weekly_recurrences,
           end_date: runData.end_date || null,
           lirfs_required: runData.lirfs_required,
+          is_c25k_run: runData.is_c25k_run || false,
           assigned_lirf_1: null, // Set to null initially
           assigned_lirf_2: null,
           assigned_lirf_3: null,

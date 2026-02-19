@@ -86,6 +86,7 @@ export const BulkInvitations: React.FC<BulkInvitationsProps> = ({ onNavigate }) 
     const bulkResults = await InvitationService.sendBulkInvitations(
       parsedEmails,
       state.user?.id,
+      false, // not C25k invitations
       (current, total, email, result) => {
         setProgress({ current, total });
         setResults(prev => [...prev, { email, result }]);

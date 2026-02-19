@@ -219,6 +219,19 @@ export const RunCard: React.FC<RunCardProps> = ({
               {run.is_full && <span className="badge badge--full">Full</span>}
               {run.user_is_assigned_lirf && <span className="badge badge--assigned">LIRF</span>}
               {isUrgent && <span className="badge badge--urgent">Urgent</span>}
+              {run.is_c25k_run && (
+                <span style={{
+                  display: 'inline-block',
+                  padding: '4px 8px',
+                  background: '#dbeafe',
+                  color: '#1e40af',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: '600'
+                }}>
+                  C25K
+                </span>
+              )}
             </div>
           </div>
         </div>

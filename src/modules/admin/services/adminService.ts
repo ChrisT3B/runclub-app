@@ -19,6 +19,7 @@ export interface Member {
   access_level: string;
   dbs_expiry_date?: string;
   email_notifications_enabled?: boolean;
+  is_c25k_participant?: boolean;
   date_joined?: string;
   created_at: string;
   updated_at: string;
@@ -181,6 +182,10 @@ static async updateMemberDetails(memberId: string, memberData: Partial<Member>):
     // Handle boolean fields safely
     if (typeof sanitizedData.email_notifications_enabled === 'boolean') {
       updateObject.email_notifications_enabled = sanitizedData.email_notifications_enabled;
+    }
+
+    if (typeof sanitizedData.is_c25k_participant === 'boolean') {
+      updateObject.is_c25k_participant = sanitizedData.is_c25k_participant;
     }
 
     // Handle DBS date if present
