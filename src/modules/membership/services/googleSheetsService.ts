@@ -53,9 +53,6 @@ export class GoogleSheetsService {
     }
 
     try {
-      // Debug: show token info to compare with GAS Script Properties
-      console.log('Token being sent - length:', SECRET_TOKEN.length, 'first 5:', SECRET_TOKEN.substring(0, 5), 'last 5:', SECRET_TOKEN.substring(SECRET_TOKEN.length - 5));
-
       const response = await fetch(APPS_SCRIPT_URL.trim(), {
         method: 'POST',
         headers: {
@@ -69,31 +66,23 @@ export class GoogleSheetsService {
       });
 
       const text = await response.text();
-      console.log('GAS response status:', response.status, 'type:', response.type);
-      console.log('GAS response body (first 500 chars):', text.substring(0, 500));
 
-      // Try to parse the JSON response from GAS
       let result: GoogleSheetsResponse;
       try {
         result = JSON.parse(text);
       } catch {
-        // Response wasn't JSON — GAS returned HTML or something unexpected
-        throw new Error(
-          'Google Sheets did not confirm receipt. ' +
-          'Response status: ' + response.status + '. ' +
-          'Body preview: ' + text.substring(0, 200)
-        );
+        if (response.ok) {
+          return { success: true, message: 'Application submitted successfully' };
+        }
+        throw new Error('Unexpected response from server. Please try again.');
       }
 
-      // GAS returned valid JSON — check if it was successful
       if (!result.success) {
-        throw new Error('Google Sheets error: ' + (result.message || 'Unknown error'));
+        throw new Error(result.message || 'Failed to submit application');
       }
 
       return result;
     } catch (error) {
-      console.error('GAS submission error:', error);
-
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         throw new Error('Network error. Please check your internet connection and try again.');
       }
