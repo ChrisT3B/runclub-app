@@ -53,6 +53,9 @@ export class GoogleSheetsService {
     }
 
     try {
+      // Debug: show token info to compare with GAS Script Properties
+      console.log('Token being sent - length:', SECRET_TOKEN.length, 'first 5:', SECRET_TOKEN.substring(0, 5), 'last 5:', SECRET_TOKEN.substring(SECRET_TOKEN.length - 5));
+
       const response = await fetch(APPS_SCRIPT_URL.trim(), {
         method: 'POST',
         headers: {
