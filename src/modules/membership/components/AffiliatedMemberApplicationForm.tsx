@@ -4,12 +4,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { AffiliatedMemberService } from '../services/affiliatedMemberService';
-import { GoogleSheetsService, GoogleSheetsSubmissionData } from '../services/googleSheetsService';
 import { MembershipInformationCard } from './MembershipInformationCard';
 import { AffiliatedMemberCard } from './AffiliatedMemberCard';
 import {
   EAApplicationSettings,
   ApplicationFormData,
+  AffiliatedMemberApplication,
   TitleOption,
   MembershipType,
   SexAtBirth,
@@ -36,6 +36,7 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
   const [showPreviousClub, setShowPreviousClub] = useState(false);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [isAffiliatedCurrentYear, setIsAffiliatedCurrentYear] = useState(false);
+  const [existingApplication, setExistingApplication] = useState<AffiliatedMemberApplication | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<ApplicationFormData>({
@@ -84,6 +85,14 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
       // Check if member is already affiliated for this year
       const affiliatedThisYear = !!year && member.is_paid_member === true && member.ea_affiliation_year === year;
       setIsAffiliatedCurrentYear(affiliatedThisYear);
+
+      // Check for existing application (submitted but not yet confirmed)
+      if (year && !affiliatedThisYear) {
+        const existing = await AffiliatedMemberService.getMemberApplication(member.id, year);
+        setExistingApplication(existing);
+      } else {
+        setExistingApplication(null);
+      }
 
       // Check if this is a renewal (has been affiliated before, but not for current year)
       const renewal = member.is_paid_member === true && !affiliatedThisYear;
@@ -206,49 +215,19 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
     setIsSubmitting(true);
 
     try {
-      const hasPreviousClub = !!(formData.previous_club_name && formData.previous_club_name.trim().length > 0);
-
-      const allDeclarationsAccepted =
-        formData.declaration_amateur &&
-        formData.declaration_own_risk &&
-        formData.declaration_data_privacy &&
-        formData.declaration_policies &&
-        formData.payment_sent_confirmed &&
-        formData.payment_reference_confirmed;
-
-      const submissionData: GoogleSheetsSubmissionData = {
-        full_name: member.full_name || '',
-        email: member.email || '',
-        phone: member.phone || '',
-        title: formData.title,
-        date_of_birth: formData.date_of_birth,
-        sex_at_birth: formData.sex_at_birth,
-        address_postcode: formData.address_postcode,
-        nationality: formData.nationality,
-        membership_type: formData.membership_type,
-        ea_urn_at_application: formData.ea_urn_at_application,
-        has_previous_club: hasPreviousClub,
-        previous_club_name: formData.previous_club_name,
-        has_health_conditions: formData.has_health_conditions,
-        health_conditions_details: formData.health_conditions_details,
-        emergency_contact_name: formData.emergency_contact_name,
-        emergency_contact_relationship: formData.emergency_contact_relationship,
-        emergency_contact_number: formData.emergency_contact_number,
-        additional_info: formData.additional_info,
-        payment_sent_confirmed: formData.payment_sent_confirmed,
-        all_declarations_accepted: allDeclarationsAccepted,
-        payment_reference: formData.payment_reference,
-      };
-
-      await GoogleSheetsService.submitApplication(submissionData);
+      // Submit to Supabase
+      await AffiliatedMemberService.submitApplication(member.id, formData);
 
       setSuccess(
         'Application submitted successfully! ' +
         'Thank you for your EA membership application. ' +
-        'We will review your application and contact you once payment is confirmed. ' +
+        'You can view your application status from this page. ' +
         'Your payment reference: ' + formData.payment_reference
       );
       setShowApplicationForm(false);
+
+      // Reload to show the submitted application status
+      await loadInitialData();
     } catch (err: any) {
       console.error('Failed to submit application:', err);
       setError(err.message || 'Failed to submit application. Please try again.');
@@ -311,6 +290,67 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
                 onClick={onBack}
                 className="btn btn-secondary"
                 style={{ marginTop: '24px' }}
+              >
+                Back to Dashboard
+              </button>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Existing application submitted - show status
+  if (existingApplication) {
+    const statusLabels: Record<string, { label: string; color: string; bg: string; border: string }> = {
+      submitted: { label: 'Submitted - Awaiting Review', color: '#1d4ed8', bg: '#dbeafe', border: '#93c5fd' },
+      payment_confirmed: { label: 'Payment Confirmed', color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+      ea_confirmed: { label: 'EA Registration Complete', color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+    };
+    const statusInfo = statusLabels[existingApplication.status] || statusLabels.submitted;
+
+    return (
+      <>
+        <MembershipInformationCard settings={settings} />
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Your Membership Application</h3>
+            <p className="card-description">Application for {currentYear}</p>
+          </div>
+          <div className="card-content">
+            <div style={{
+              background: statusInfo.bg,
+              border: `1px solid ${statusInfo.border}`,
+              borderRadius: '8px',
+              padding: '20px',
+              marginBottom: '20px',
+            }}>
+              <p style={{ color: statusInfo.color, fontWeight: '600', fontSize: '16px', marginBottom: '4px' }}>
+                Status: {statusInfo.label}
+              </p>
+              <p style={{ color: statusInfo.color, fontSize: '14px', margin: 0 }}>
+                Submitted on {new Date(existingApplication.created_at).toLocaleDateString('en-GB')}
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px' }}>
+              <div><strong>Membership Type:</strong></div>
+              <div>{existingApplication.membership_type === 'first_claim' ? '1st Claim' : '2nd Claim'}</div>
+              <div><strong>Payment Reference:</strong></div>
+              <div>{existingApplication.payment_reference}</div>
+              {existingApplication.new_ea_urn && (
+                <>
+                  <div><strong>EA URN:</strong></div>
+                  <div>{existingApplication.new_ea_urn}</div>
+                </>
+              )}
+            </div>
+
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="btn btn-secondary"
+                style={{ width: '100%', marginTop: '20px' }}
               >
                 Back to Dashboard
               </button>
