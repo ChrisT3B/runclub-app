@@ -25,7 +25,7 @@ export const PrivacyPolicy: React.FC = () => {
           fontSize: '14px',
           margin: '0',
         }}>
-          Last Updated: March 1, 2026 | Version 1.0
+          Last Updated: February 19, 2026 | Version 1.1
         </p>
       </div>
 
@@ -64,6 +64,7 @@ export const PrivacyPolicy: React.FC = () => {
               <li style={{ marginBottom: '6px' }}>We send automated emails for bookings and reminders</li>
               <li style={{ marginBottom: '6px' }}>We maintain security logs to protect your account</li>
               <li style={{ marginBottom: '6px' }}>Your session expires after 8 hours of inactivity</li>
+              <li style={{ marginBottom: '6px' }}>EA affiliation data is shared with authorised administrators via Google Sheets for processing</li>
               <li>You have full control over your data</li>
             </ul>
           </section>
@@ -97,8 +98,20 @@ export const PrivacyPolicy: React.FC = () => {
             <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--gray-800)', marginBottom: '8px' }}>
               Emergency Information
             </h3>
-            <ul style={{ color: 'var(--gray-700)', paddingLeft: '20px', margin: '0' }}>
+            <ul style={{ color: 'var(--gray-700)', paddingLeft: '20px', margin: '0 0 16px 0' }}>
               <li>Emergency contact name, relationship, and phone number (for safety during runs)</li>
+            </ul>
+
+            <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--gray-800)', marginBottom: '8px' }}>
+              EA Affiliation Applications
+            </h3>
+            <ul style={{ color: 'var(--gray-700)', paddingLeft: '20px', margin: '0' }}>
+              <li style={{ marginBottom: '4px' }}>Personal details (title, date of birth, sex at birth, nationality, address and postcode)</li>
+              <li style={{ marginBottom: '4px' }}>Membership type and EA URN (if renewing)</li>
+              <li style={{ marginBottom: '4px' }}>Health condition declarations and details</li>
+              <li style={{ marginBottom: '4px' }}>Emergency contact details</li>
+              <li style={{ marginBottom: '4px' }}>Payment reference and confirmation status</li>
+              <li>Application status and processing history</li>
             </ul>
           </section>
 
@@ -115,7 +128,9 @@ export const PrivacyPolicy: React.FC = () => {
               <li style={{ marginBottom: '4px' }}>Authenticating your login and maintaining your session</li>
               <li style={{ marginBottom: '4px' }}>Processing run bookings and managing session vouchers</li>
               <li style={{ marginBottom: '4px' }}>Sending automated emails (booking confirmations, reminders, password resets)</li>
-              <li>Generating attendance reports for LIRFs and administrators</li>
+              <li style={{ marginBottom: '4px' }}>Generating attendance reports for LIRFs and administrators</li>
+              <li style={{ marginBottom: '4px' }}>Processing EA affiliation applications and tracking membership status</li>
+              <li>Syncing application data with administrative tools for membership processing</li>
             </ul>
 
             <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--gray-800)', marginBottom: '8px' }}>
@@ -141,6 +156,7 @@ export const PrivacyPolicy: React.FC = () => {
             <ul style={{ color: 'var(--gray-700)', paddingLeft: '20px', margin: '0' }}>
               <li style={{ marginBottom: '4px' }}><strong>Supabase</strong> — PostgreSQL database hosted in AWS EU data centres (GDPR compliant)</li>
               <li style={{ marginBottom: '4px' }}><strong>Vercel</strong> — Application hosting with EU data processing (GDPR compliant)</li>
+              <li style={{ marginBottom: '4px' }}><strong>Google Workspace (Google Sheets)</strong> — EA affiliation application data is synced to Google Sheets for administrative processing. Data is stored in Google's data centres and access is restricted to authorised club administrators</li>
               <li style={{ marginBottom: '4px' }}><strong>Encryption</strong> — All data encrypted in transit (HTTPS) and at rest</li>
               <li><strong>Backups</strong> — Regular automated encrypted backups stored securely</li>
             </ul>
@@ -208,7 +224,8 @@ export const PrivacyPolicy: React.FC = () => {
             <ul style={{ color: 'var(--gray-700)', paddingLeft: '20px', margin: '0 0 12px 0' }}>
               <li style={{ marginBottom: '4px' }}><strong>Supabase</strong> — Database and authentication (EU hosting)</li>
               <li style={{ marginBottom: '4px' }}><strong>Vercel</strong> — Application hosting (EU data centres)</li>
-              <li><strong>Gmail SMTP</strong> — Email delivery service (Google Workspace)</li>
+              <li style={{ marginBottom: '4px' }}><strong>Gmail SMTP</strong> — Email delivery service (Google Workspace)</li>
+              <li><strong>Google Sheets</strong> — EA affiliation application processing and administration (Google Workspace)</li>
             </ul>
             <p style={{ color: 'var(--gray-700)' }}>
               All third-party processors have appropriate data processing agreements in place.
@@ -224,6 +241,7 @@ export const PrivacyPolicy: React.FC = () => {
               <li style={{ marginBottom: '4px' }}><strong>Active account data</strong> — Retained while you are a member plus 1 year</li>
               <li style={{ marginBottom: '4px' }}><strong>Booking history</strong> — Retained for 3 years for attendance records</li>
               <li style={{ marginBottom: '4px' }}><strong>Payment records</strong> — Retained for 6 years (legal requirement)</li>
+              <li style={{ marginBottom: '4px' }}><strong>EA affiliation applications</strong> — Retained for the duration of the membership year plus 1 year</li>
               <li style={{ marginBottom: '4px' }}><strong>Security logs</strong> — Login attempts: 7 days, security events: 30 days</li>
               <li><strong>Account deletion</strong> — When you leave the club, your account is deactivated within 30 days and all non-essential data deleted within 1 year</li>
             </ul>
