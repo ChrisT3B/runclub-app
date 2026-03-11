@@ -271,12 +271,17 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
     }
 
     try {
-      // Get current membership year
-      const year = await AffiliatedMemberService.getCurrentMembershipYear();
+      // Find whichever membership year is currently open (matches Club Membership page logic)
+      const openSettings = await AffiliatedMemberService.getOpenApplicationSettings();
+
+      // If no year is open, fall back to the calculated current year
+      const year = openSettings?.membership_year || await AffiliatedMemberService.getCurrentMembershipYear();
       setEaCurrentYear(year);
 
-      // Get application settings
-      const settings = await AffiliatedMemberService.getApplicationSettings(year);
+      // Use the open settings if they match, otherwise fetch for the calculated year
+      const settings = openSettings?.membership_year === year
+        ? openSettings
+        : await AffiliatedMemberService.getApplicationSettings(year);
       setEaSettings(settings);
 
       // Check for pending application
