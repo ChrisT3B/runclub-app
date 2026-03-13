@@ -7,7 +7,6 @@ import { supabase } from '../../../services/supabase';
 import { renderTextWithLinks } from '../../../utils/linkHelper';
 import { AffiliatedMemberService } from '../../membership/services/affiliatedMemberService';
 import { AffiliatedMemberApplication, EAApplicationSettings } from '../../../types/affiliatedMember';
-import CsrfTestButton from '../../../components/CsrfTestButton';
 
 interface DashboardContentProps {
   onNavigate?: (page: string) => void;
@@ -414,10 +413,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
         <p className="page-description">Welcome to your Run Alcester member portal</p>
       </div>
 
-      {/* CSRF Test Button - Admin only */}
-      {permissions.accessLevel === 'admin' && <CsrfTestButton />}
-      
-      
 
       {/* Notifications Section */}
       <div className="card" style={{ marginBottom: '24px' }}>
