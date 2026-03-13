@@ -251,8 +251,15 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
         if (error) throw error;
       }
 
-      // Reload attendance records
-      await loadRunData();
+      // Refresh only attendance state — avoids resetting bookings/loading which would reset scroll position
+      const { data: updatedAttendance, error: fetchError } = await supabase
+        .from('run_attendance')
+        .select('*')
+        .eq('run_id', runId);
+
+      if (!fetchError && updatedAttendance) {
+        setAttendance(updatedAttendance);
+      }
 
     } catch (err: any) {
       console.error('Failed to mark attendance:', err);
