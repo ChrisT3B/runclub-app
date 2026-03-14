@@ -7,6 +7,7 @@ import { supabase } from '../../../services/supabase';
 import { renderTextWithLinks } from '../../../utils/linkHelper';
 import { AffiliatedMemberService } from '../../membership/services/affiliatedMemberService';
 import { AffiliatedMemberApplication, EAApplicationSettings } from '../../../types/affiliatedMember';
+import { LeagueDashboardCard } from '../../leagues/components/LeagueDashboardCard';
 
 interface DashboardContentProps {
   onNavigate?: (page: string) => void;
@@ -738,6 +739,10 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
           </div>
         </div>
       </div>
+
+          {/* Club Leagues Card */}
+          <LeagueDashboardCard onNavigate={onNavigate ?? (() => {})} />
+
           {/* Profile Summary Card */}
           <div className="card">
             <div className="card-header">

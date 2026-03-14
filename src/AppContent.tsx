@@ -19,6 +19,9 @@ import { HelpVideos } from './modules/help/pages/HelpVideos';
 import { BulkInvitations } from './modules/admin/pages/BulkInvitations';
 import { C25kInvitations } from './modules/admin/pages/C25kInvitations';
 import { AffiliatedMemberApplicationForm } from './modules/membership/components/AffiliatedMemberApplicationForm';
+import { LeaguePage } from './modules/leagues/pages/LeaguePage';
+import { SubmitEntryPage } from './modules/leagues/pages/SubmitEntryPage';
+import { AdminLeaguePage } from './modules/leagues/pages/AdminLeaguePage';
 
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
@@ -175,6 +178,12 @@ export const AppContent: React.FC = () => {
       case 'ea-membership':
         console.log('✅ Rendering AffiliatedMemberApplicationForm');
         return <AffiliatedMemberApplicationForm onBack={() => handleNavigation('dashboard')} />;
+      case 'leagues':
+        return <LeaguePage onNavigate={handleNavigation} />;
+      case 'leagues-submit':
+        return <SubmitEntryPage onNavigate={handleNavigation} />;
+      case 'admin-leagues':
+        return <AdminLeaguePage onNavigate={handleNavigation} />;
       default:
         console.log('⚠️ Unknown page, defaulting to DashboardContent. Page was:', currentPage);
         return <DashboardContent onNavigate={handleNavigation} />;

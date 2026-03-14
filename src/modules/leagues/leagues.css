@@ -1,0 +1,321 @@
+/* ── League Arrow Indicators ─────────────────────────────────────────── */
+.league-arrow { display: inline-flex; align-items: center; }
+.league-arrow--up   { color: var(--success-color); }
+.league-arrow--down { color: var(--danger-color); }
+.league-arrow--none { color: var(--gray-500); }
+
+/* ── League Table ────────────────────────────────────────────────────── */
+.league-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.league-table th,
+.league-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--gray-200);
+  font-size: 14px;
+}
+
+.league-table th {
+  font-weight: 600;
+  color: var(--gray-700);
+  background: var(--gray-50);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.league-table td:first-child,
+.league-table th:first-child {
+  width: 36px;
+  text-align: center;
+  padding-right: 4px;
+}
+
+.league-table__age-grade {
+  text-align: right;
+}
+
+.league-table tr:last-child td {
+  border-bottom: none;
+}
+
+.league-table tbody tr:hover {
+  background: var(--gray-50);
+}
+
+/* ── Dashboard Card ──────────────────────────────────────────────────── */
+.league-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.league-card-name {
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.league-card-position {
+  color: var(--gray-700);
+}
+
+.league-card-pending {
+  font-size: 13px;
+  color: var(--warning-color);
+  font-style: italic;
+}
+
+.league-card-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.league-card-actions button {
+  font-size: 13px;
+  color: var(--info-color);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.league-card-actions button:hover {
+  color: var(--gray-900);
+}
+
+/* ── My League Status ────────────────────────────────────────────────── */
+.league-status {
+  margin-bottom: 24px;
+}
+
+.league-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.league-status-badge--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.league-status-badge--approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.league-status-badge--rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.league-status-badge--neutral {
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+
+.league-progression-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.league-progression-table th,
+.league-progression-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--gray-200);
+  font-size: 13px;
+}
+
+.league-progression-table th {
+  font-weight: 600;
+  color: var(--gray-700);
+  background: var(--gray-50);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.league-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.league-trend--up { color: var(--success-color); }
+.league-trend--down { color: var(--danger-color); }
+
+/* ── Submit Form ─────────────────────────────────────────────────────── */
+.league-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+}
+
+.league-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.league-form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.league-form-group input {
+  padding: 8px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--gray-900);
+}
+
+.league-form-group input:focus {
+  outline: none;
+  border-color: var(--info-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.league-form-error {
+  color: var(--danger-color);
+  font-size: 12px;
+}
+
+.league-form-helper {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.league-form-helper a {
+  color: var(--info-color);
+  text-decoration: underline;
+}
+
+/* ── Pending Entry Card (Admin) ──────────────────────────────────────── */
+.pending-entry-card {
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: white;
+}
+
+.pending-entry-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.pending-entry-card__name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--gray-900);
+}
+
+.pending-entry-card__date {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.pending-entry-card__details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.pending-entry-card__detail-label {
+  color: var(--gray-500);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pending-entry-card__detail-value {
+  color: var(--gray-900);
+  font-weight: 500;
+}
+
+.pending-entry-card__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pending-entry-card__reject-notes {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.pending-entry-card__reject-notes input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* ── Success / Empty States ──────────────────────────────────────────── */
+.league-success {
+  text-align: center;
+  padding: 32px;
+}
+
+.league-success p {
+  color: var(--gray-600);
+  margin-bottom: 16px;
+}
+
+.league-empty {
+  text-align: center;
+  padding: 32px;
+  color: var(--gray-500);
+}
+
+/* ── Page Layout ─────────────────────────────────────────────────────── */
+.league-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.league-page-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--gray-900);
+}
+
+.league-pending-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+}
