@@ -308,6 +308,65 @@
   color: var(--gray-900);
 }
 
+/* ── League Info Panel ────────────────────────────────────────────────── */
+.league-info-panel {
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.league-info-panel__toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  background: var(--gray-100);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--font-sm);
+  color: var(--gray-900);
+  text-align: left;
+}
+
+.league-info-panel__toggle:hover {
+  background: var(--gray-200);
+}
+
+.league-info-panel__content {
+  padding: var(--space-4) var(--space-6);
+  background: white;
+}
+
+.league-info-panel__content h3 {
+  margin-top: 0;
+}
+
+.league-info-panel__content h4 {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-1);
+}
+
+.league-info-panel__content p,
+.league-info-panel__content li {
+  font-size: var(--font-sm);
+  line-height: 1.6;
+  color: var(--gray-600);
+}
+
+.league-info-panel__content ol,
+.league-info-panel__content ul {
+  padding-left: var(--space-6);
+  margin-bottom: var(--space-3);
+}
+
+.league-info-panel__content a {
+  color: var(--info-color);
+  text-decoration: underline;
+}
+
 .league-pending-count {
   display: inline-flex;
   align-items: center;

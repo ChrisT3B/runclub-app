@@ -3,6 +3,7 @@ import { League, ParkrunLeagueEntry, LeaderboardRow } from '../types';
 import { ParkrunLeagueService } from '../services/ParkrunLeagueService';
 import { LeagueTable } from '../components/LeagueTable';
 import { MyLeagueStatus } from '../components/MyLeagueStatus';
+import { LeagueInfoPanel } from '../components/LeagueInfoPanel';
 import '../leagues.css';
 
 interface LeaguePageProps {
@@ -62,6 +63,8 @@ export const LeaguePage: React.FC<LeaguePageProps> = ({ onNavigate }) => {
           Submit a New Entry
         </button>
       </div>
+
+      <LeagueInfoPanel />
 
       <MyLeagueStatus
         leagueId={league.id}
