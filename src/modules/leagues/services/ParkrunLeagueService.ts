@@ -68,9 +68,10 @@ export class ParkrunLeagueService {
     cutoff.setMonth(cutoff.getMonth() - 6);
     const cutoffStr = cutoff.toISOString().split('T')[0];
 
+    // Fetch entries without members join — avoids FK resolution issues
     const { data, error } = await supabase
       .from('parkrun_league_entries')
-      .select('*, members!parkrun_league_entries_user_id_members_fkey(full_name)')
+      .select('*')
       .eq('league_id', leagueId)
       .eq('status', 'approved')
       .gte('event_date', cutoffStr)
@@ -89,9 +90,20 @@ export class ParkrunLeagueService {
     // Sort by age grade DESC and assign rank
     deduped.sort((a: any, b: any) => b.age_grade_percent - a.age_grade_percent);
 
+    // Fetch member names for the deduplicated entries
+    const userIds = deduped.map((e: any) => e.user_id);
+    const nameMap = new Map<string, string>();
+    if (userIds.length > 0) {
+      const { data: members } = await supabase
+        .from('members')
+        .select('id, full_name')
+        .in('id', userIds);
+      (members ?? []).forEach((m: any) => nameMap.set(m.id, m.full_name));
+    }
+
     return deduped.map((entry: any, i: number) => ({
       ...entry,
-      member_name: entry.members?.full_name ?? 'Unknown',
+      member_name: nameMap.get(entry.user_id) ?? 'Unknown',
       rank: i + 1,
     }));
   }
@@ -231,15 +243,27 @@ export class ParkrunLeagueService {
   static async getPendingEntries(): Promise<ParkrunLeagueEntry[]> {
     const { data, error } = await supabase
       .from('parkrun_league_entries')
-      .select('*, members!parkrun_league_entries_user_id_members_fkey(full_name, email)')
+      .select('*')
       .eq('status', 'pending')
       .order('submitted_at', { ascending: true });
 
     if (error) { console.error('getPendingEntries:', error); return []; }
+
+    // Fetch member names/emails separately
+    const userIds = (data ?? []).map((e: any) => e.user_id);
+    const memberMap = new Map<string, { full_name: string; email: string }>();
+    if (userIds.length > 0) {
+      const { data: members } = await supabase
+        .from('members')
+        .select('id, full_name, email')
+        .in('id', userIds);
+      (members ?? []).forEach((m: any) => memberMap.set(m.id, m));
+    }
+
     return (data ?? []).map((e: any) => ({
       ...e,
-      member_name:  e.members?.full_name,
-      member_email: e.members?.email,
+      member_name:  memberMap.get(e.user_id)?.full_name ?? 'Unknown',
+      member_email: memberMap.get(e.user_id)?.email ?? null,
     }));
   }
 
@@ -261,7 +285,7 @@ export class ParkrunLeagueService {
         reviewed_by: admin.id,
       })
       .eq('id', entryId)
-      .select('*, members!parkrun_league_entries_user_id_members_fkey(full_name, email)')
+      .select('*')
       .single();
 
     if (error) throw new Error(error.message);
@@ -271,8 +295,14 @@ export class ParkrunLeagueService {
     }
 
     if (decision === 'rejected') {
-      const name   = (entry as any).members?.full_name ?? 'Member';
-      const email  = (entry as any).members?.email;
+      // Fetch member details separately
+      const { data: member } = await supabase
+        .from('members')
+        .select('full_name, email')
+        .eq('id', entry.user_id)
+        .single();
+      const name   = member?.full_name ?? 'Member';
+      const email  = member?.email;
       const reason = adminNotes
         ? `Reason: ${InputSanitizer.sanitizeText(adminNotes.trim())}`
         : 'No reason was provided. Please check your submission details.';
