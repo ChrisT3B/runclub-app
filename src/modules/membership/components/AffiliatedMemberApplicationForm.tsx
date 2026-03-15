@@ -1033,6 +1033,7 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
                   name="payment_sent_confirmed"
                   checked={formData.payment_sent_confirmed}
                   onChange={handleInputChange}
+                  required
                   style={{ marginTop: '4px' }}
                 />
                 <span style={{ fontSize: '14px' }}>
@@ -1053,6 +1054,7 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
                   name="payment_reference_confirmed"
                   checked={formData.payment_reference_confirmed}
                   onChange={handleInputChange}
+                  required
                   style={{ marginTop: '4px' }}
                 />
                 <span style={{ fontSize: '14px' }}>
@@ -1091,6 +1093,7 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
                   name="declaration_amateur"
                   checked={formData.declaration_amateur}
                   onChange={handleInputChange}
+                  required
                   style={{ marginTop: '4px' }}
                 />
                 <span style={{ fontSize: '14px' }}>
@@ -1111,6 +1114,7 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
                   name="declaration_own_risk"
                   checked={formData.declaration_own_risk}
                   onChange={handleInputChange}
+                  required
                   style={{ marginTop: '4px' }}
                 />
                 <span style={{ fontSize: '14px' }}>
@@ -1133,6 +1137,7 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
                   name="declaration_data_privacy"
                   checked={formData.declaration_data_privacy}
                   onChange={handleInputChange}
+                  required
                   style={{ marginTop: '4px' }}
                 />
                 <span style={{ fontSize: '14px' }}>
@@ -1175,6 +1180,7 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
                   name="declaration_policies"
                   checked={formData.declaration_policies}
                   onChange={handleInputChange}
+                  required
                   style={{ marginTop: '4px' }}
                 />
                 <span style={{ fontSize: '14px' }}>
