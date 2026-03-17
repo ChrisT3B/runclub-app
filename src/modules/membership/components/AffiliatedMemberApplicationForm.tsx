@@ -742,10 +742,23 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
 
             {/* EA URN for renewals or previous club members */}
             {(isRenewal || showPreviousClub) && (
-              <div className="form-group">
-                <label className="form-label" htmlFor="ea_urn_at_application">
+              <div
+                style={{
+                  background: '#fffbeb',
+                  border: '2px solid #f59e0b',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  marginBottom: '8px',
+                }}
+              >
+                <label className="form-label" htmlFor="ea_urn_at_application" style={{ fontWeight: '600', color: '#92400e', marginBottom: '4px' }}>
                   EA URN {isRenewal ? '(from previous membership)' : '(if known)'}
                 </label>
+                <p style={{ fontSize: '13px', color: '#92400e', margin: '0 0 8px 0' }}>
+                  {isRenewal
+                    ? 'Please check this is correct — it speeds up your renewal.'
+                    : 'If you have an existing EA number, please enter it here.'}
+                </p>
                 <input
                   type="text"
                   id="ea_urn_at_application"
@@ -753,7 +766,8 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
                   value={formData.ea_urn_at_application}
                   onChange={handleInputChange}
                   className="form-input"
-                  placeholder="Your England Athletics URN"
+                  placeholder="e.g. 1234567"
+                  style={{ border: '2px solid #f59e0b', fontWeight: '500', fontSize: '16px' }}
                 />
               </div>
             )}
