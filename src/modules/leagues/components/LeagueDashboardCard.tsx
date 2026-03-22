@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { ParkrunLeagueEntry, RankMovement } from '../types';
 import { ParkrunLeagueService } from '../services/ParkrunLeagueService';
 import { RankArrow } from './RankArrow';
+import { RaceLeagueService, RaceLeagueRace } from '../../race-league/services/RaceLeagueService';
+import { League } from '../types';
 
 interface LeagueDashboardCardProps {
   onNavigate: (page: string) => void;
@@ -17,6 +19,11 @@ export const LeagueDashboardCard: React.FC<LeagueDashboardCardProps> = ({ onNavi
     movement: RankMovement;
   } | null>(null);
   const [hasLeague, setHasLeague] = useState(false);
+
+  const [raceLeagueVisible, setRaceLeagueVisible] = useState<boolean | null>(null);
+  const [activeRaceLeague, setActiveRaceLeague]   = useState<League | null>(null);
+  const [upcomingRace, setUpcomingRace]           = useState<RaceLeagueRace | null>(null);
+  const [raceCount, setRaceCount]                 = useState<number>(0);
 
   useEffect(() => {
     const load = async () => {
@@ -43,12 +50,30 @@ export const LeagueDashboardCard: React.FC<LeagueDashboardCardProps> = ({ onNavi
 
       setLatestEntry(entry);
       setPosition(pos);
+
+      const isRaceVisible = await RaceLeagueService.isLeagueVisible();
+      setRaceLeagueVisible(isRaceVisible);
+      if (isRaceVisible) {
+        const raceLeague = await RaceLeagueService.getActiveLeague();
+        setActiveRaceLeague(raceLeague);
+        if (raceLeague) {
+          const races = await RaceLeagueService.getRaces(raceLeague.id);
+          setRaceCount(races.length);
+          const today = new Date().toISOString().split('T')[0];
+          const upcoming = races.find(r => !r.results_locked && r.race_date >= today);
+          setUpcomingRace(upcoming ?? null);
+        }
+      }
+
       setLoading(false);
     };
     load();
   }, []);
 
-  if (visible === false || (!loading && !hasLeague)) return null;
+  // Show card if either the Parkrun League or Race League is visible.
+  // Only hide if both are definitively invisible/absent.
+  if (visible === false && !raceLeagueVisible) return null;
+  if (!loading && !hasLeague && !activeRaceLeague) return null;
 
   if (loading) {
     return (
@@ -123,6 +148,26 @@ export const LeagueDashboardCard: React.FC<LeagueDashboardCardProps> = ({ onNavi
     );
   };
 
+  const renderRaceLeagueRow = () => {
+    if (!raceLeagueVisible || !activeRaceLeague) return null;
+    return (
+      <div
+        className="league-card-row"
+        style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--gray-200)' }}
+      >
+        <span className="league-card-name">Race League:</span>
+        <span className="league-card-position">
+          {raceCount} {raceCount === 1 ? 'race' : 'races'}
+          {upcomingRace ? ` · Next: ${upcomingRace.name}` : ''}
+        </span>
+        <div className="league-card-actions">
+          <button onClick={() => onNavigate('race-league')}>View races</button>
+          <button onClick={() => onNavigate('race-league-standings')}>View standings</button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="card" style={{ marginBottom: '24px' }}>
       <div className="card-header">
@@ -130,6 +175,7 @@ export const LeagueDashboardCard: React.FC<LeagueDashboardCardProps> = ({ onNavi
       </div>
       <div className="card-content">
         {renderContent()}
+        {renderRaceLeagueRow()}
       </div>
     </div>
   );

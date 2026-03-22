@@ -1,14 +1,15 @@
-export type LeagueType  = 'parkrun' | 'season_points';
+export type LeagueType  = 'parkrun' | 'season_points' | 'race_series';
 export type EntryStatus = 'pending' | 'approved' | 'rejected';
 export type RankMovement = 'up' | 'down' | 'none';
 
 export interface League {
-  id:          string;
-  name:        string;
-  type:        LeagueType;
-  is_active:   boolean;
-  season_year: number | null;
-  created_at:  string;
+  id:               string;
+  name:             string;
+  type:             LeagueType;
+  is_active:        boolean;
+  season_year:      number | null;
+  points_structure: Record<string, number> | null;
+  created_at:       string;
 }
 
 export interface ParkrunLeagueEntry {

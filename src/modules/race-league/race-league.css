@@ -1,0 +1,259 @@
+/* ── Race status badges ──────────────────────────────────────────────────── */
+
+.race-status {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.race-status--upcoming {
+  background: color-mix(in srgb, var(--info-color) 15%, transparent);
+  color: var(--info-color);
+}
+
+.race-status--open {
+  background: color-mix(in srgb, var(--success-color) 15%, transparent);
+  color: var(--success-color);
+}
+
+.race-status--closed {
+  background: color-mix(in srgb, var(--warning-color) 15%, transparent);
+  color: var(--warning-color);
+}
+
+.race-status--locked {
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+
+/* ── Race card ───────────────────────────────────────────────────────────── */
+
+.race-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.race-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.race-card__name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--gray-900);
+}
+
+.race-card__meta {
+  font-size: var(--font-sm);
+  color: var(--gray-500);
+  margin-bottom: 12px;
+}
+
+.race-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.race-card__actions a {
+  font-size: var(--font-sm);
+  color: var(--info-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.race-card__actions a:hover {
+  text-decoration: underline;
+}
+
+/* ── Results table ───────────────────────────────────────────────────────── */
+
+.race-results-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.race-results-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--gray-600);
+  border-bottom: 2px solid var(--gray-200);
+}
+
+.race-results-table td {
+  padding: 8px 12px;
+  font-size: var(--font-sm);
+  color: var(--gray-700);
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.race-results-table__gender-heading td {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--gray-900);
+  background: var(--gray-50);
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--gray-200);
+}
+
+.race-results-table__highlight td {
+  background: color-mix(in srgb, var(--info-color) 8%, transparent);
+  font-weight: 600;
+}
+
+/* ── Points editor (admin) ───────────────────────────────────────────────── */
+
+.points-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.points-editor__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.points-editor__position {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--gray-700);
+  min-width: 40px;
+  text-align: right;
+}
+
+.points-editor__input {
+  width: 70px;
+  padding: 4px 8px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-size: var(--font-sm);
+  text-align: center;
+}
+
+/* ── Submissions table (admin) ───────────────────────────────────────────── */
+
+.admin-submissions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-submissions-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--gray-600);
+  border-bottom: 2px solid var(--gray-200);
+}
+
+.admin-submissions-table td {
+  padding: 8px 12px;
+  font-size: var(--font-sm);
+  color: var(--gray-700);
+  border-bottom: 1px solid var(--gray-100);
+}
+
+/* ── Info panel ──────────────────────────────────────────────────────────── */
+
+.race-info-panel {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+}
+
+.race-info-panel__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+.race-info-panel__content {
+  padding: 0 16px 16px;
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+.race-info-panel__points-table {
+  width: auto;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.race-info-panel__points-table th,
+.race-info-panel__points-table td {
+  padding: 4px 16px;
+  font-size: var(--font-sm);
+  text-align: left;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.race-info-panel__points-table th {
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+/* ── Page layout ─────────────────────────────────────────────────────────── */
+
+.race-league-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.race-league-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--gray-500);
+  font-size: var(--font-sm);
+}
+
+.race-league-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--gray-200);
+  margin-bottom: 16px;
+}
+
+.race-league-tab {
+  padding: 8px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--gray-500);
+}
+
+.race-league-tab--active {
+  color: var(--info-color);
+  border-bottom-color: var(--info-color);
+  font-weight: 600;
+}

@@ -22,6 +22,13 @@ import { AffiliatedMemberApplicationForm } from './modules/membership/components
 import { LeaguePage } from './modules/leagues/pages/LeaguePage';
 import { SubmitEntryPage } from './modules/leagues/pages/SubmitEntryPage';
 import { AdminLeaguePage } from './modules/leagues/pages/AdminLeaguePage';
+import { RaceLeaguePage }           from './modules/race-league/pages/RaceLeaguePage';
+import { RaceLeagueRacePage }       from './modules/race-league/pages/RaceLeagueRacePage';
+import { RaceLeagueStandingsPage }  from './modules/race-league/pages/RaceLeagueStandingsPage';
+import { AdminRaceLeaguePage }      from './modules/race-league/pages/AdminRaceLeaguePage';
+import { AdminRaceLeagueRacePage }  from './modules/race-league/pages/AdminRaceLeagueRacePage';
+import { LeaguesHubPage }          from './modules/leagues/pages/LeaguesHubPage';
+import { LeagueAdminHubPage }      from './modules/leagues/pages/LeagueAdminHubPage';
 
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
@@ -31,10 +38,18 @@ export const AppContent: React.FC = () => {
   const [attendanceRunId, setAttendanceRunId] = useState<string | null>(null);
   const [attendanceRunTitle, setAttendanceRunTitle] = useState<string>('');
 
+  // State for race league navigation
+  const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
+
   // Simple navigation function
   const handleNavigation = (page: string) => {
     console.log('🔄 AppContent handleNavigation called with:', page);
     setCurrentPage(page);
+  };
+
+  const handleRaceNavigation = (page: string, raceId?: string) => {
+    if (raceId) setSelectedRaceId(raceId);
+    handleNavigation(page);
   };
 
   // Check if we're in a password reset flow
@@ -178,12 +193,26 @@ export const AppContent: React.FC = () => {
       case 'ea-membership':
         console.log('✅ Rendering AffiliatedMemberApplicationForm');
         return <AffiliatedMemberApplicationForm onBack={() => handleNavigation('dashboard')} />;
+      case 'leagues-hub':
+        return <LeaguesHubPage onNavigate={handleNavigation} />;
+      case 'league-admin-hub':
+        return <LeagueAdminHubPage onNavigate={handleNavigation} />;
       case 'leagues':
         return <LeaguePage onNavigate={handleNavigation} />;
       case 'leagues-submit':
         return <SubmitEntryPage onNavigate={handleNavigation} />;
       case 'admin-leagues':
         return <AdminLeaguePage onNavigate={handleNavigation} />;
+      case 'race-league':
+        return <RaceLeaguePage onNavigate={handleRaceNavigation} />;
+      case 'race-league-race':
+        return <RaceLeagueRacePage raceId={selectedRaceId ?? ''} onNavigate={handleNavigation} />;
+      case 'race-league-standings':
+        return <RaceLeagueStandingsPage onNavigate={handleNavigation} />;
+      case 'admin-race-league':
+        return <AdminRaceLeaguePage onNavigate={handleRaceNavigation} />;
+      case 'admin-race-league-race':
+        return <AdminRaceLeagueRacePage raceId={selectedRaceId ?? ''} onNavigate={handleNavigation} />;
       default:
         console.log('⚠️ Unknown page, defaulting to DashboardContent. Page was:', currentPage);
         return <DashboardContent onNavigate={handleNavigation} />;

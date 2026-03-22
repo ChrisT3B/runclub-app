@@ -16,6 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     { id: 'scheduled-runs', name: 'Scheduled Runs', icon: '🏃‍♂️' },
     { id: 'profile', name: 'My Profile', icon: '👤' },
     { id: 'ea-membership', name: 'Club Membership', icon: '🏅' },
+    { id: 'leagues-hub', name: 'Leagues', icon: '🏆' },
   ]
 
   // Add LIRF-specific navigation using permissions
@@ -36,8 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
   if (permissions.canManageMembers) {
     navigation.push(
       { id: 'members', name: 'Members', icon: '👥' },
-      { id: 'leagues', name: 'League', icon: '🏆' },
-      { id: 'admin-leagues', name: 'League Review', icon: '📋' },
+      { id: 'league-admin-hub', name: 'League Admin', icon: '🏆' },
       { id: 'test-lirf-reminder', name: 'Test LIRF Reminder', icon: '🧪' }
     )
   }
