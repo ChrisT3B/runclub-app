@@ -52,19 +52,18 @@ export const PWAInstallButton: React.FC = () => {
   return (
     <>
       {/* Install Button */}
-      <div style={{ marginTop: '16px' }}>
+      <div style={{ marginTop: '16px', textAlign: 'center' }}>
         <button
           onClick={handleInstallClick}
           disabled={installing}
           type="button"
           className="btn"
           style={{
-            width: '100%',
             padding: '14px 20px',
             fontSize: '16px',
             fontWeight: '600',
             gap: '8px',
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
             background: '#1e293b',
