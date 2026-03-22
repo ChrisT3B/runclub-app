@@ -57,7 +57,7 @@ export const PWAInstallButton: React.FC = () => {
           onClick={handleInstallClick}
           disabled={installing}
           type="button"
-          className="btn btn-primary"
+          className="btn"
           style={{
             width: '100%',
             padding: '14px 20px',
@@ -67,6 +67,10 @@ export const PWAInstallButton: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            background: '#1e293b',
+            color: 'white',
+            border: '2px solid #1e293b',
+            borderRadius: '8px',
           }}
         >
           <span style={{ fontSize: '20px' }}>📱</span>
