@@ -372,6 +372,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         </div>
       )}
 
+      {/* PWA Install Button */}
+      <PWAInstallButton />
+
       {/* Registration Form Card */}
       <div className="card" style={{ border: '2px solid var(--red-primary)' }}>
         <div className="card-content">
@@ -679,8 +682,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             </div>
           </form>
         </div>
-        {/* PWA Install Button */}
-        <PWAInstallButton />
       </div>
 
       {/* Footer */}
