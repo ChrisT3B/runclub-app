@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import type { RegistrationData } from '../types/index'
 import { InputSanitizer } from '../../../utils/inputSanitizer'
 import { InvitationService } from '../../../services/invitationService'
+import { PWAInstallButton } from '../../../shared/components/ui/PWAInstallButton'
 
 interface RegisterFormProps {
   onSuccess?: () => void
@@ -678,6 +679,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             </div>
           </form>
         </div>
+        {/* PWA Install Button */}
+        <PWAInstallButton />
       </div>
 
       {/* Footer */}

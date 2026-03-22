@@ -2,6 +2,8 @@
 import React from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useProfileQuery } from '../services/profileServices';
+import { usePWAInstall } from '../../../shared/hooks/usePWAInstall';
+import { PWAInstallButton } from '../../../shared/components/ui/PWAInstallButton';
 
 interface ProfileViewProps {
   onEdit: () => void;
@@ -9,6 +11,7 @@ interface ProfileViewProps {
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
   const { state } = useAuth();
+  const pwa = usePWAInstall();
   
   // Fetch profile data using React Query instead of AuthContext
   const { data: member, isLoading, error } = useProfileQuery(state.user?.id);
@@ -174,6 +177,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
                 Enable Email Notifications
               </button>
             </div>
+          </div>
+        )}
+
+        {/* PWA Install - always visible until installed */}
+        {!pwa.isInstalled && (
+          <div style={{ marginTop: '24px' }}>
+            <PWAInstallButton />
           </div>
         )}
       </div>

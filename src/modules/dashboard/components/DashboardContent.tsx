@@ -8,6 +8,7 @@ import { renderTextWithLinks } from '../../../utils/linkHelper';
 import { AffiliatedMemberService } from '../../membership/services/affiliatedMemberService';
 import { AffiliatedMemberApplication, EAApplicationSettings } from '../../../types/affiliatedMember';
 import { LeagueDashboardCard } from '../../leagues/components/LeagueDashboardCard';
+import { PWAInstallCard } from '../../../shared/components/ui/PWAInstallCard';
 
 interface DashboardContentProps {
   onNavigate?: (page: string) => void;
@@ -414,6 +415,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
         <p className="page-description">Welcome to your Run Alcester member portal</p>
       </div>
 
+      {/* PWA Install Card - only shows when app is not installed */}
+      <PWAInstallCard />
 
       {/* Notifications Section */}
       <div className="card" style={{ marginBottom: '24px' }}>
