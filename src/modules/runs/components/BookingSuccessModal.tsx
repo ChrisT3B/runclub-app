@@ -1,6 +1,7 @@
 // src/modules/runs/components/booking/BookingSuccessModal.tsx
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Calendar, Clock, MapPin, Users, Download, Smartphone } from 'lucide-react';
 import { formatDate, formatTime } from '../utils/runUtils';
 import { RunWithDetails } from '../../admin/services/scheduledRunsService';
@@ -116,8 +117,8 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div 
+  return createPortal(
+    <div
       className={`booking-success-modal ${isVisible ? 'booking-success-modal--visible' : ''}`}
       onClick={handleBackdropClick}
     >
@@ -238,6 +239,7 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

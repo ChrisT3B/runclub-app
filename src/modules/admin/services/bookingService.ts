@@ -111,14 +111,15 @@ export class BookingService {
       // 2. Get run data (cached)
       const runData = await this.getRunData(bookingData.run_id);
 
-      // 3. Check existing bookings and LIRF assignments in one query
-      const { data: existingData, error: checkError } = await supabase
+      // 3. Check if user already booked (RLS allows seeing own bookings)
+      const { data: userExisting, error: userCheckError } = await supabase
         .from('run_bookings')
-        .select('id, member_id')
+        .select('id')
         .eq('run_id', bookingData.run_id)
+        .eq('member_id', bookingData.member_id)
         .is('cancelled_at', null);
 
-      if (checkError) {
+      if (userCheckError) {
         throw new BookingError(
           'Failed to check existing bookings',
           'GENERAL',
@@ -126,14 +127,7 @@ export class BookingService {
         );
       }
 
-      const existingBookings = existingData || [];
-      
-      // Check if user already booked
-      const userAlreadyBooked = existingBookings.some(
-        booking => booking.member_id === bookingData.member_id
-      );
-
-      if (userAlreadyBooked) {
+      if (userExisting && userExisting.length > 0) {
         throw new BookingError(
           'You have already booked this run.',
           'ALREADY_BOOKED',
@@ -156,8 +150,23 @@ export class BookingService {
         );
       }
 
-      // Check capacity
-      if (existingBookings.length >= runData.max_participants) {
+      // Check capacity using RPC (bypasses RLS to get accurate count)
+      const { data: countData, error: countError } = await supabase
+        .rpc('get_run_booking_counts', { p_run_ids: [bookingData.run_id] }) as {
+          data: Array<{ run_id: string; booking_count: number }> | null;
+          error: any;
+        };
+
+      if (countError) {
+        throw new BookingError(
+          'Failed to check run capacity',
+          'GENERAL',
+          'Capacity Check Failed'
+        );
+      }
+
+      const currentCount = countData?.[0]?.booking_count ?? 0;
+      if (currentCount >= runData.max_participants) {
         throw new BookingError(
           `"${runData.run_title}" is already full with ${runData.max_participants} participants.`,
           'RUN_FULL',
