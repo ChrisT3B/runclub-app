@@ -1,5 +1,6 @@
 // src/shared/hooks/usePWAInstall.ts
 import { useState, useEffect, useCallback } from 'react';
+import { isRestrictedBrowser } from '../../utils/browserDetection';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -13,6 +14,7 @@ interface BeforeInstallPromptEvent extends Event {
 interface PWAInstallState {
   isInstalled: boolean;
   isIOS: boolean;
+  isRestrictedBrowser: boolean;
   canPrompt: boolean;
   installing: boolean;
   handleInstall: () => Promise<'accepted' | 'dismissed' | 'unavailable'>;
@@ -74,6 +76,7 @@ export function usePWAInstall(): PWAInstallState {
   return {
     isInstalled,
     isIOS,
+    isRestrictedBrowser: isRestrictedBrowser(),
     canPrompt: !!deferredPrompt,
     installing,
     handleInstall,

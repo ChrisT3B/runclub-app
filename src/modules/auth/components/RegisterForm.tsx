@@ -4,6 +4,7 @@ import type { RegistrationData } from '../types/index'
 import { InputSanitizer } from '../../../utils/inputSanitizer'
 import { InvitationService } from '../../../services/invitationService'
 import { PWAInstallButton } from '../../../shared/components/ui/PWAInstallButton'
+import { isRestrictedBrowser } from '../../../utils/browserDetection'
 
 interface RegisterFormProps {
   onSuccess?: () => void
@@ -164,6 +165,28 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             Registration Successful!
           </h1>
         </div>
+
+        {/* Restricted Browser Warning */}
+        {isRestrictedBrowser() && (
+          <div style={{
+            background: '#fff3cd',
+            border: '1px solid #ffc107',
+            borderRadius: 'var(--radius-lg)',
+            padding: 'var(--space-4)',
+            marginBottom: 'var(--space-4)',
+            textAlign: 'left'
+          }}>
+            <p style={{ fontWeight: 600, marginBottom: '8px', margin: '0 0 8px 0' }}>
+              ⚠️ Important — open the link in your browser
+            </p>
+            <p style={{ fontSize: 'var(--font-sm)', color: 'var(--gray-700)', margin: 0 }}>
+              You're currently using an in-app browser (Facebook, Instagram, or TikTok). When the verification email arrives,{' '}
+              <strong>open your email app separately</strong> (Gmail, Outlook, etc.) and
+              tap the link from there — do not tap it from within this app or your
+              account won't activate correctly.
+            </p>
+          </div>
+        )}
 
         {/* Success Message Card */}
         <div className="card" style={{ border: '2px solid #16a34a', marginBottom: '30px' }}>

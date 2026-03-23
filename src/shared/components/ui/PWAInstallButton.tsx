@@ -3,12 +3,20 @@ import React, { useState } from 'react';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 
 export const PWAInstallButton: React.FC = () => {
-  const { isInstalled, isIOS, canPrompt, installing, handleInstall } = usePWAInstall();
+  const { isInstalled, isIOS, isRestrictedBrowser, canPrompt, installing, handleInstall } = usePWAInstall();
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [modalType, setModalType] = useState<'success' | 'info' | 'warning'>('info');
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const handleInstallClick = async () => {
+    if (isRestrictedBrowser) {
+      setModalType('warning');
+      setModalMessage('The app can\'t be installed from inside Facebook, Instagram, or TikTok. Open app.runalcester.co.uk in Safari or Chrome first, then use the Install App option.');
+      setShowModal(true);
+      return;
+    }
+
     if (isInstalled) {
       setModalType('success');
       setModalMessage('App is already installed!');
@@ -135,11 +143,39 @@ export const PWAInstallButton: React.FC = () => {
               <p>{modalMessage}</p>
             </div>
 
-            {/* Action Button */}
-            <div className="booking-success-modal__actions">
+            {/* Action Buttons */}
+            <div className="booking-success-modal__actions" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}>
+              {isRestrictedBrowser && (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText('https://app.runalcester.co.uk');
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2000);
+                  }}
+                  className="btn"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    background: linkCopied ? '#059669' : 'white',
+                    color: linkCopied ? 'white' : 'var(--red-primary)',
+                    border: `2px solid ${linkCopied ? '#059669' : 'var(--red-primary)'}`,
+                    borderRadius: '8px',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {linkCopied ? '✓ Copied!' : '📋 Copy Link'}
+                </button>
+              )}
               <button
                 onClick={closeModal}
                 className="btn btn--primary"
+                style={{ width: '100%', padding: '12px' }}
               >
                 Got it
               </button>

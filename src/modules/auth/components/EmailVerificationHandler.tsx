@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ErrorModal } from '../../../shared/components/ui/ErrorModal';
+import { isRestrictedBrowser } from '../../../utils/browserDetection';
 
 interface ValidationResult {
   isValid: boolean;
@@ -21,6 +22,8 @@ export const EmailVerificationHandler: React.FC = () => {
   const [message, setMessage] = useState('');
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [validationDetails, setValidationDetails] = useState<string>('');
+  const [isRestricted, setIsRestricted] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Validate the verification URL and token
   const validateVerificationRequest = (): ValidationResult => {
@@ -100,6 +103,11 @@ export const EmailVerificationHandler: React.FC = () => {
     console.log('🔍 EmailVerificationHandler running for first time');
 
     const handleVerification = async () => {
+      if (isRestrictedBrowser()) {
+        setIsRestricted(true);
+        return;
+      }
+
       // Step 1: Validate the request
       const validation = validateVerificationRequest();
       
@@ -157,6 +165,52 @@ export const EmailVerificationHandler: React.FC = () => {
 
     handleVerification();
   }, []); // Empty dependency array - run only once
+
+  if (isRestricted) {
+    return (
+      <div className="auth-layout">
+        <div className="auth-card">
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+            <h2 style={{ color: 'var(--red-primary)', marginBottom: '16px' }}>
+              Open in Your Browser
+            </h2>
+            <p style={{ color: 'var(--gray-600)', marginBottom: '16px' }}>
+              You've opened this link inside an in-app browser (Facebook, Instagram, or TikTok).
+              For your account to activate correctly, you need to open this link in Safari or Chrome instead.
+            </p>
+            <p style={{ color: 'var(--gray-600)', marginBottom: '24px' }}>
+              Tap the <strong>three dots menu (⋯)</strong> in the top corner of
+              this screen and select <strong>"Open in browser"</strong>, then tap
+              the verification link in your email again.
+            </p>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 2000);
+              }}
+              className="btn btn-primary"
+              style={{
+                padding: '12px 24px',
+                fontSize: '16px',
+                fontWeight: '600',
+                marginBottom: '16px',
+              }}
+            >
+              {linkCopied ? '✓ Link Copied!' : '📋 Copy Verification Link'}
+            </button>
+            <p style={{ color: 'var(--gray-500)', fontSize: 'var(--font-sm)', marginBottom: '16px' }}>
+              Copy this link, open your browser, and paste it in the address bar.
+            </p>
+            <p style={{ color: 'var(--gray-500)', fontSize: 'var(--font-sm)' }}>
+              Need help? Contact us at info@runalcester.co.uk
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state during validation
   if (status === 'validating') {
