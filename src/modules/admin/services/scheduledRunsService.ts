@@ -157,17 +157,22 @@ export class ScheduledRunsService {
 
       const runIds = runs.map(run => run.id);
 
-      // 2. Get only active bookings with better query
-      const { data: allBookings, error: bookingsError } = await supabase
-        .from('run_bookings')
-        .select('id, run_id, member_id, booked_at')
-        .in('run_id', runIds)
-        .is('cancelled_at', null);
+      // 2. Get booking counts via RPC (bypasses RLS so all users see accurate counts)
+      const { data: bookingCounts, error: bookingCountsError } = await supabase
+        .rpc('get_run_booking_counts', { p_run_ids: runIds }) as {
+          data: Array<{ run_id: string; booking_count: number }> | null;
+          error: any;
+        };
 
-      if (bookingsError) {
-        console.error('Failed to fetch bookings:', bookingsError);
-        throw new Error(bookingsError.message);
+      if (bookingCountsError) {
+        console.error('Failed to fetch booking counts:', bookingCountsError);
+        throw new Error(bookingCountsError.message);
       }
+
+      const bookingCountMap: Record<string, number> = {};
+      (bookingCounts || []).forEach(row => {
+        bookingCountMap[row.run_id] = Number(row.booking_count);
+      });
 
       // 3. Get user's specific bookings if needed
       let userBookingsMap: Record<string, string> = {};
@@ -203,8 +208,7 @@ export class ScheduledRunsService {
 
       // 5. Process everything in memory - much faster
       const runsWithDetails: RunWithDetails[] = runs.map(run => {
-        const runBookings = (allBookings || []).filter(booking => booking.run_id === run.id);
-        const bookingCount = runBookings.length;
+        const bookingCount = bookingCountMap[run.id] || 0;
 
         // User booking info
         const userBookingId = userBookingsMap[run.id];
@@ -237,12 +241,7 @@ export class ScheduledRunsService {
           lirf_vacancies: run.lirfs_required - assignedLirfs.length,
           user_is_assigned_lirf: userIsAssignedLirf,
           assigned_lirfs: assignedLirfs,
-          active_bookings: runBookings.map(booking => ({
-            id: booking.id,
-            member_id: booking.member_id,
-            booked_at: booking.booked_at,
-            member_name: 'Member' // Simplified - get names only when needed
-          }))
+          active_bookings: []
         };
       });
 
