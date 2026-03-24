@@ -29,6 +29,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
   const getNotificationIcon = (type: string, priority: string) => {
     if (priority === 'urgent') return '🚨';
     if (type === 'run_specific') return '🏃‍♂️';
+    if (type === 'run_alert') return '📣';
     if (type === 'general') return '📢';
     return '📬';
   };
@@ -103,15 +104,18 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <span style={{
-                  background: notification.type === 'run_specific' ? '#dcfce7' : '#e0f2fe',
-                  color: notification.type === 'run_specific' ? '#166534' : '#0369a1',
+                  background: notification.type === 'run_specific' ? '#dcfce7' :
+                             notification.type === 'run_alert' ? '#fef3c7' : '#e0f2fe',
+                  color: notification.type === 'run_specific' ? '#166534' :
+                        notification.type === 'run_alert' ? '#92400e' : '#0369a1',
                   padding: '4px 8px',
                   borderRadius: '12px',
                   fontSize: '12px',
                   fontWeight: '500',
                   textTransform: 'capitalize'
                 }}>
-                  {notification.type === 'run_specific' ? 'Run Specific' : notification.type}
+                  {notification.type === 'run_specific' ? 'Run Specific' :
+                   notification.type === 'run_alert' ? 'Run Alert' : notification.type}
                 </span>
                 <span style={{
                   background: priorityStyle.background,

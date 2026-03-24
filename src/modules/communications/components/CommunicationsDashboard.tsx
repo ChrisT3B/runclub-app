@@ -76,6 +76,7 @@ export const CommunicationsDashboard: React.FC<CommunicationsDashboardProps> = (
   const getNotificationIcon = (type: string, priority: string) => {
     if (priority === 'urgent') return '🚨';
     if (type === 'run_specific') return '🏃‍♂️';
+    if (type === 'run_alert') return '📣';
     if (type === 'general') return '📢';
     return '📬';
   };
@@ -91,12 +92,14 @@ export const CommunicationsDashboard: React.FC<CommunicationsDashboardProps> = (
   const getTypeBadge = (type: string) => {
     const typeMap: { [key: string]: string } = {
       'run_specific': 'run-specific',
+      'run_alert': 'run-alert',
       'general': 'general',
       'urgent': 'urgent'
     };
-    
+
     const typeClass = typeMap[type] || 'general';
-    const typeText = type === 'run_specific' ? 'Run Specific' : 
+    const typeText = type === 'run_specific' ? 'Run Specific' :
+                    type === 'run_alert' ? 'Run Alert' :
                     type === 'general' ? 'General' : 'Urgent';
     
     return (

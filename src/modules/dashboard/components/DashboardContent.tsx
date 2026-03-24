@@ -380,6 +380,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
   const getNotificationIcon = (type: string, priority: string) => {
     if (priority === 'urgent') return '🚨';
     if (type === 'run_specific') return '🏃‍♂️';
+    if (type === 'run_alert') return '📣';
     if (type === 'general') return '📢';
     return '📬';
   };

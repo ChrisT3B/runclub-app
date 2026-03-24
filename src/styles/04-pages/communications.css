@@ -328,6 +328,11 @@
   color: #166534;
 }
 
+.type-badge--run-alert {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .type-badge--general {
   background: #e0f2fe;
   color: #0369a1;

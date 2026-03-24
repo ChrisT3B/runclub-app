@@ -40,7 +40,7 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
   });
 
   useEffect(() => {
-    if (formData.type === 'run_specific') {
+    if (formData.type === 'run_specific' || formData.type === 'run_alert') {
       loadAssignedRuns();
     }
     loadEmailStatus();
@@ -91,7 +91,7 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
     }));
 
     // Clear run_id when changing type
-    if (name === 'type' && value !== 'run_specific') {
+    if (name === 'type' && value !== 'run_specific' && value !== 'run_alert') {
       setFormData(prev => ({
         ...prev,
         run_id: ''
@@ -112,7 +112,7 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
       if (!formData.message.trim()) {
         throw new Error('Message is required');
       }
-      if (formData.type === 'run_specific' && !formData.run_id) {
+      if ((formData.type === 'run_specific' || formData.type === 'run_alert') && !formData.run_id) {
         throw new Error('Please select a run');
       }
 
@@ -121,7 +121,7 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
         ...formData,
         title: formData.title.trim(),
         message: formData.message.trim(),
-        run_id: formData.type === 'run_specific' ? formData.run_id : undefined,
+        run_id: (formData.type === 'run_specific' || formData.type === 'run_alert') ? formData.run_id : undefined,
         scheduled_for: formData.scheduled_for || undefined,
         expires_at: formData.expires_at || undefined,
         send_email: formData.send_email,
@@ -140,6 +140,8 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
     switch (formData.type) {
       case 'run_specific':
         return 'Send to members booked on a specific run you are assigned to lead';
+      case 'run_alert':
+        return 'Send to ALL active club members about a run you are assigned to lead';
       case 'general':
         return 'Send to all active club members (Admin only)';
       case 'urgent':
@@ -150,6 +152,9 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
   };
 
   const getRecipientCount = () => {
+    if (formData.type === 'run_alert') {
+      return memberCounts.active;
+    }
     if (formData.type === 'run_specific' && formData.run_id) {
       const selectedRun = assignedRuns.find(run => run.id === formData.run_id);
       return selectedRun?.bookings_count || 0;
@@ -194,6 +199,7 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
               required
             >
               <option value="run_specific">Run-Specific Message</option>
+              <option value="run_alert">Run Alert</option>
               {permissions.accessLevel === 'admin' && (
                 <>
                   <option value="general">General Announcement</option>
@@ -279,7 +285,7 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
           )}
 
           {/* Run Selection (for run-specific notifications) */}
-          {formData.type === 'run_specific' && (
+          {(formData.type === 'run_specific' || formData.type === 'run_alert') && (
             <div className="form-group">
               <label className="form-label" htmlFor="run_id">Select Run</label>
               {loadingRuns ? (
@@ -523,7 +529,7 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
                   gap: '8px', 
                   marginBottom: '8px' 
                 }}>
-                  <span>{formData.type === 'run_specific' ? '🏃‍♂️' : '📢'}</span>
+                  <span>{formData.type === 'run_specific' ? '🏃‍♂️' : formData.type === 'run_alert' ? '📣' : '📢'}</span>
                   <strong style={{ fontSize: '14px' }}>{formData.title}</strong>
                   {currentPriority !== 'normal' && (
                     <span style={{
@@ -585,7 +591,7 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading || (formData.type === 'run_specific' && assignedRuns.length === 0)}
+              disabled={loading || ((formData.type === 'run_specific' || formData.type === 'run_alert') && assignedRuns.length === 0)}
             >
               {loading ? 'Sending...' : `Send ${formData.scheduled_for ? 'Later' : 'Now'}`}
             </button>

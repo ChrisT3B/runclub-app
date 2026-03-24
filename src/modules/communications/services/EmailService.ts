@@ -6,7 +6,7 @@ import { GmailSMTP } from '../../../utils/GmailSMTP';
 export interface EmailNotificationData {
   title: string;
   message: string;
-  type: 'run_specific' | 'general' | 'urgent';
+  type: 'run_specific' | 'general' | 'urgent' | 'run_alert';
   priority: 'low' | 'normal' | 'high' | 'urgent';
   runDetails?: {
     run_title: string;
@@ -133,6 +133,7 @@ export class EmailService {
 
     const typeEmoji = {
       run_specific: '🏃‍♂️',
+      run_alert: '📣',
       general: '📢',
       urgent: '🚨'
     }[data.type];

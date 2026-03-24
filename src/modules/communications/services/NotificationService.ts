@@ -5,7 +5,7 @@ export interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'run_specific' | 'general' | 'urgent';
+  type: 'run_specific' | 'general' | 'urgent' | 'run_alert';
   priority: 'low' | 'normal' | 'high' | 'urgent';
   run_id?: string;
   sent_by: string;
@@ -42,7 +42,7 @@ export interface NotificationRecipient {
 export interface CreateNotificationData {
   title: string;
   message: string;
-  type: 'run_specific' | 'general' | 'urgent';
+  type: 'run_specific' | 'general' | 'urgent' | 'run_alert';
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   run_id?: string;
   recipient_ids?: string[]; // If not provided, will be determined by type and run_id
@@ -152,7 +152,7 @@ export class NotificationService {
 
       // Get run details if this is a run-specific notification
       let runDetails = undefined;
-      if (data.type === 'run_specific' && data.run_id) {
+      if ((data.type === 'run_specific' || data.type === 'run_alert') && data.run_id) {
         const { data: runData, error: runError } = await supabase
           .from('scheduled_runs')
           .select('run_title, run_date, run_time, meeting_point, approximate_distance')
@@ -251,6 +251,22 @@ export class NotificationService {
       console.log('🏃‍♂️ Found', bookings.length, 'active bookings for run:', runId);
       console.log('🏃‍♂️ Booking member IDs:', bookings.map(b => b.member_id));
       return bookings.map(booking => booking.member_id);
+    }
+
+    if (type === 'run_alert') {
+      // Send to ALL active members (notification is still linked to a specific run)
+      const { data: members, error } = await supabase
+        .from('members')
+        .select('id')
+        .eq('membership_status', 'active');
+
+      if (error) {
+        console.error('Failed to get members for run alert:', error);
+        return [];
+      }
+
+      console.log('📣 Found', members.length, 'active members for run alert');
+      return members.map(member => member.id);
     }
 
     console.log('⚠️ No recipients determined for type:', type);
