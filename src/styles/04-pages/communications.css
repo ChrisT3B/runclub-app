@@ -40,31 +40,36 @@
 }
 
 .communications-tab {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
+  padding: 10px 20px;
+  border: 2px solid var(--gray-300);
+  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .communications-tab--active {
   background: var(--red-primary);
   color: white;
+  border-color: var(--red-primary);
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
 }
 
 .communications-tab--inactive {
-  background: transparent;
+  background: white;
   color: var(--gray-700);
 }
 
 .communications-tab--inactive:hover {
-  background: var(--gray-100);
+  background: var(--gray-50, #f9fafb);
   color: var(--gray-900);
+  border-color: var(--gray-400);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .communications-badge {
@@ -398,8 +403,8 @@
   }
   
   .communications-tab {
-    padding: 6px 12px;
-    font-size: 12px;
+    padding: 8px 14px;
+    font-size: 13px;
   }
   
   .notification-card {
@@ -442,7 +447,7 @@
   
   .communications-tab {
     padding: 8px 12px;
-    font-size: 11px;
+    font-size: 12px;
   }
   
   .notification-badges {
