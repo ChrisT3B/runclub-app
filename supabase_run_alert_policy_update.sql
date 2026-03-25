@@ -1,13 +1,20 @@
 -- ============================================
--- Run Alert Feature: RLS Policy Update
+-- Run Alert Feature: Database Updates
 -- ============================================
--- Updates the notifications INSERT policy to allow LIRFs
--- to create 'run_alert' notifications (in addition to 'run_specific')
--- for runs they are assigned to lead.
+-- 1. Updates the CHECK constraint on notifications.type to allow 'run_alert'
+-- 2. Updates the notifications INSERT policy to allow LIRFs
+--    to create 'run_alert' notifications (in addition to 'run_specific')
+--    for runs they are assigned to lead.
 --
 -- run_alert sends to ALL active members but is still tied to a specific run.
 -- ============================================
 
+-- Step 1: Update CHECK constraint to allow 'run_alert' type
+ALTER TABLE notifications DROP CONSTRAINT notifications_type_check;
+ALTER TABLE notifications ADD CONSTRAINT notifications_type_check
+  CHECK (type = ANY (ARRAY['run_specific'::text, 'general'::text, 'urgent'::text, 'run_alert'::text]));
+
+-- Step 2: Update RLS INSERT policy
 ALTER POLICY "notifications_insert_policy"
 ON "public"."notifications"
 TO public
