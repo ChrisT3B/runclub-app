@@ -7,7 +7,6 @@ import {
   Facebook,
   MessageCircle,
   Copy,
-  Users,
   X,
   ShieldPlus,
   ShieldX,
@@ -411,13 +410,15 @@ export const RunCard: React.FC<RunCardProps> = ({
                   <span>Copy Link</span>
                 </button>
                 
-                <button
-                  onClick={() => handleShare('members')}
-                  className="share-option share-option--members"
-                >
-                  <Users size={20} />
-                  <span>Share with Members</span>
-                </button>
+                {canManageRuns && (
+                  <button
+                    onClick={() => handleShare('facebook-group')}
+                    className="share-option share-option--facebook"
+                  >
+                    <Facebook size={20} />
+                    <span>Facebook Group</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
