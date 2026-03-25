@@ -321,7 +321,7 @@ export const CreateNotificationForm: React.FC<CreateNotificationFormProps> = ({
                   </select>
                   {getRecipientCount() !== null && (
                     <div style={{ fontSize: '12px', color: 'var(--gray-500)', marginTop: '4px' }}>
-                      Will be sent to {getRecipientCount()} booked member{getRecipientCount() !== 1 ? 's' : ''}
+                      Will be sent to {getRecipientCount()} {formData.type === 'run_alert' ? 'active member' : 'booked member'}{getRecipientCount() !== 1 ? 's' : ''}
                     </div>
                   )}
                 </>
