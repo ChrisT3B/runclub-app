@@ -13,6 +13,7 @@ interface BookingWithMember {
   member_id: string;
   booking_date: string;
   cancelled_at?: string;
+  booking_type?: string;
   member_name: string;
   member_email: string;
   member_phone?: string;
@@ -595,8 +596,32 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
                       }}
                     >
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: '600', color: 'var(--gray-900)', marginBottom: '4px' }}>
+                        <div style={{ fontWeight: '600', color: 'var(--gray-900)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {booking.member_name}
+                          {booking.booking_type === 'c25k_participant' && (
+                            <span style={{
+                              background: '#dbeafe',
+                              color: '#1e40af',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: '600'
+                            }}>
+                              C25k
+                            </span>
+                          )}
+                          {booking.booking_type === 'buddy' && (
+                            <span style={{
+                              background: '#fef3c7',
+                              color: '#92400e',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: '600'
+                            }}>
+                              Buddy
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>
                           📧 {booking.member_email}

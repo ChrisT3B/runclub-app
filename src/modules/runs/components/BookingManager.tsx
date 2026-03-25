@@ -11,15 +11,18 @@ interface BookingManagerProps {
   // Core data
   run: RunWithDetails;
   userId?: string;
-  
+
   // UI Integration callbacks
   onBookingChange: (run: RunWithDetails) => void;
   onError: (error: BookingError) => void;
-  
+
   // Optional customization
   showSuccessModal?: boolean;
   autoRefreshData?: boolean;
   className?: string;
+
+  // C25k buddy system
+  isC25kParticipant?: boolean;
 }
 
 interface BookingManagerState {
@@ -47,7 +50,8 @@ export const BookingManager: React.FC<BookingManagerProps> = ({
   onBookingChange,
   onError,
   showSuccessModal = true,
-  className = ''
+  className = '',
+  isC25kParticipant = false
 }) => {
   const { logout } = useAuth();
 
@@ -120,13 +124,21 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
       lastAction: 'booking' 
     }));
 
+    // Determine booking type for optimistic update
+    const isBuddyBooking = run.is_c25k_run && !isC25kParticipant;
+
     // Optimistic UI update
     const optimisticRun: RunWithDetails = {
       ...run,
       is_booked: true,
-      booking_count: run.booking_count + 1,
-      is_full: (run.booking_count + 1) >= run.max_participants,
-      user_booking_id: 'optimistic-' + Date.now() // Temporary ID
+      booking_count: isBuddyBooking ? run.booking_count : run.booking_count + 1,
+      buddy_booking_count: isBuddyBooking ? run.buddy_booking_count + 1 : run.buddy_booking_count,
+      is_full: isBuddyBooking ? run.is_full : (run.booking_count + 1) >= run.max_participants,
+      is_buddy_slots_full: isBuddyBooking ? (run.buddy_booking_count + 1) >= 3 : run.is_buddy_slots_full,
+      user_booking_id: 'optimistic-' + Date.now(),
+      user_booking_type: isBuddyBooking ? 'buddy' : (run.is_c25k_run ? 'c25k_participant' : 'standard'),
+      user_can_book_as_c25k: false,
+      user_can_book_as_buddy: false,
     };
 
     handleOptimisticUpdate(optimisticRun);
@@ -135,7 +147,8 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
       // Perform actual booking
       const booking = await BookingService.createBooking({
         run_id: run.id,
-        member_id: userId
+        member_id: userId,
+        is_c25k_participant: isC25kParticipant
       });
 
       // Update with real booking data
@@ -198,13 +211,19 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
       lastAction: 'cancelling' 
     }));
 
+    // Determine if this was a buddy booking for correct count adjustment
+    const wasBuddyBooking = run.user_booking_type === 'buddy';
+
     // Optimistic UI update
     const optimisticRun: RunWithDetails = {
       ...run,
       is_booked: false,
-      booking_count: Math.max(0, run.booking_count - 1),
+      booking_count: wasBuddyBooking ? run.booking_count : Math.max(0, run.booking_count - 1),
+      buddy_booking_count: wasBuddyBooking ? Math.max(0, run.buddy_booking_count - 1) : run.buddy_booking_count,
       is_full: false,
-      user_booking_id: undefined
+      is_buddy_slots_full: wasBuddyBooking ? false : run.is_buddy_slots_full,
+      user_booking_id: undefined,
+      user_booking_type: undefined,
     };
 
     handleOptimisticUpdate(optimisticRun);
@@ -280,9 +299,12 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
 
     // Already booked state
     if (run.is_booked) {
+      const bookingLabel = run.user_booking_type === 'buddy' ? 'Drop Out (Buddy)' :
+                          run.user_booking_type === 'c25k_participant' ? 'Drop Out (C25k)' : 'Drop Out of Run';
+      const shortLabel = run.user_booking_type === 'buddy' ? 'Drop Out' : 'Drop Out';
       return {
-        text: 'Drop Out of Run',
-        shortText: 'Drop Out',
+        text: bookingLabel,
+        shortText: shortLabel,
         icon: <UserMinus size={16} />,
         disabled: false,
         className: 'action-btn--danger',
@@ -290,7 +312,42 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
       };
     }
 
-    // Run is full state
+    // C25k run - show buddy or C25k participant booking options
+    if (run.is_c25k_run) {
+      if (run.user_can_book_as_c25k) {
+        return {
+          text: 'Join as C25k Runner',
+          shortText: 'Join C25k',
+          icon: <UserPlus size={16} />,
+          disabled: false,
+          className: 'action-btn--primary',
+          variant: 'primary'
+        };
+      }
+      if (run.user_can_book_as_buddy) {
+        return {
+          text: `Join as Buddy (${3 - run.buddy_booking_count} left)`,
+          shortText: `Buddy (${3 - run.buddy_booking_count})`,
+          icon: <UserPlus size={16} />,
+          disabled: false,
+          className: 'action-btn--secondary',
+          variant: 'primary'
+        };
+      }
+      // No slots available
+      const fullText = run.is_full && run.is_buddy_slots_full ? 'All Slots Full' :
+                       run.is_full ? 'C25k Slots Full' : 'Buddy Slots Full';
+      return {
+        text: fullText,
+        shortText: 'Full',
+        icon: <UserX size={16} />,
+        disabled: true,
+        className: 'action-btn--disabled',
+        variant: 'disabled'
+      };
+    }
+
+    // Regular run - full state
     if (run.is_full) {
       return {
         text: 'Run is Full',
@@ -302,7 +359,7 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
       };
     }
 
-    // Available to book state
+    // Regular run - available to book
     return {
       text: 'Join This Run',
       shortText: 'Join Run',
@@ -311,7 +368,7 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
       className: 'action-btn--primary',
       variant: 'primary'
     };
-  }, [run.is_booked, run.is_full, state.isLoading, state.lastAction]);
+  }, [run.is_booked, run.is_full, run.is_c25k_run, run.user_can_book_as_c25k, run.user_can_book_as_buddy, run.buddy_booking_count, run.is_buddy_slots_full, run.user_booking_type, state.isLoading, state.lastAction]);
 
   // Handle button click
   const handleButtonClick = useCallback(() => {

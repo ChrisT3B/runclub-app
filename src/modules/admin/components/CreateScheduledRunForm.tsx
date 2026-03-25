@@ -364,7 +364,7 @@ const generateWeeklyRuns = (baseData: ScheduledRunData) => {
                   <span className="form-label" style={{ margin: 0 }}>This is a Couch to 5k Run</span>
                 </label>
                 <p style={{ fontSize: '12px', color: 'var(--gray-600)', marginTop: '4px', marginLeft: '24px' }}>
-                  C25k runs are only visible to C25k participants, LIRFs, and admins
+                  C25k runs are visible to all members. C25k participants can book unlimited slots; regular members can book as buddies (max 3 per run).
                 </p>
               </div>
             </div>

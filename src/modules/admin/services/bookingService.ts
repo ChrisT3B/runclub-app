@@ -1,6 +1,8 @@
 import { supabase } from '../../../services/supabase';
 import { validateCsrfToken, getCsrfToken } from '../../../utils/csrfProtection';
 
+export type BookingType = 'standard' | 'c25k_participant' | 'buddy';
+
 export interface RunBooking {
   id: string;
   run_id: string;
@@ -11,11 +13,13 @@ export interface RunBooking {
   attended?: boolean;
   attendance_marked_by?: string;
   attendance_marked_at?: string;
+  booking_type?: BookingType;
 }
 
 export interface CreateBookingData {
   run_id: string;
   member_id: string;
+  is_c25k_participant?: boolean;
 }
 
 export interface BookingWithRunDetails extends RunBooking {
@@ -57,7 +61,7 @@ export class BookingService {
 
     const { data, error } = await supabase
       .from('scheduled_runs')
-      .select('max_participants, run_title, assigned_lirf_1, assigned_lirf_2, assigned_lirf_3')
+      .select('max_participants, run_title, assigned_lirf_1, assigned_lirf_2, assigned_lirf_3, is_c25k_run')
       .eq('id', runId)
       .single();
 
@@ -150,6 +154,41 @@ export class BookingService {
         );
       }
 
+      // Determine booking type for C25k runs
+      let bookingType: BookingType = 'standard';
+
+      if (runData.is_c25k_run) {
+        if (bookingData.is_c25k_participant) {
+          bookingType = 'c25k_participant';
+        } else {
+          bookingType = 'buddy';
+
+          // Check buddy slot availability (max 3 buddies per C25k run)
+          const { data: buddyBookings, error: buddyError } = await supabase
+            .from('run_bookings')
+            .select('id')
+            .eq('run_id', bookingData.run_id)
+            .eq('booking_type', 'buddy')
+            .is('cancelled_at', null);
+
+          if (buddyError) {
+            throw new BookingError(
+              'Failed to check buddy slot availability',
+              'GENERAL',
+              'Buddy Check Failed'
+            );
+          }
+
+          if ((buddyBookings?.length || 0) >= 3) {
+            throw new BookingError(
+              `Buddy slots are full for "${runData.run_title}" (maximum 3 buddies per C25k run).`,
+              'RUN_FULL',
+              'Buddy Slots Full'
+            );
+          }
+        }
+      }
+
       // Check capacity using RPC (bypasses RLS to get accurate count)
       const { data: countData, error: countError } = await supabase
         .rpc('get_run_booking_counts', { p_run_ids: [bookingData.run_id] }) as {
@@ -166,21 +205,41 @@ export class BookingService {
       }
 
       const currentCount = countData?.[0]?.booking_count ?? 0;
-      if (currentCount >= runData.max_participants) {
-        throw new BookingError(
-          `"${runData.run_title}" is already full with ${runData.max_participants} participants.`,
-          'RUN_FULL',
-          'Run Full'
-        );
+
+      // For C25k runs, buddies don't count against main capacity
+      if (bookingType === 'buddy') {
+        // Buddy slots are additional - no main capacity check needed (already checked buddy limit above)
+      } else {
+        // Standard or C25k participant: check against max_participants
+        // For C25k runs, subtract buddy bookings from total count to get main capacity usage
+        let mainCount = currentCount;
+        if (runData.is_c25k_run) {
+          const { data: buddyCount } = await supabase
+            .from('run_bookings')
+            .select('id')
+            .eq('run_id', bookingData.run_id)
+            .eq('booking_type', 'buddy')
+            .is('cancelled_at', null);
+          mainCount = currentCount - (buddyCount?.length || 0);
+        }
+
+        if (mainCount >= runData.max_participants) {
+          throw new BookingError(
+            `"${runData.run_title}" is already full with ${runData.max_participants} participants.`,
+            'RUN_FULL',
+            'Run Full'
+          );
+        }
       }
 
-      // 4. Create booking
+      // 4. Create booking with type
       const { data, error } = await supabase
         .from('run_bookings')
         .insert({
           run_id: bookingData.run_id,
           member_id: bookingData.member_id,
-          booked_at: new Date().toISOString()
+          booked_at: new Date().toISOString(),
+          booking_type: bookingType
         })
         .select()
         .single();

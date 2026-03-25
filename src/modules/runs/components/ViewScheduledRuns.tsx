@@ -65,8 +65,23 @@ const [lirfSuccessModal, setLirfSuccessModal] = useState<{
   isOpen: false,
   run: null
 });
+  // C25k Preview Mode - admin-only toggle to simulate different member types
+  const [c25kPreviewMode, setC25kPreviewMode] = useState<'off' | 'c25k' | 'regular'>('off');
+
   // Use permissions instead of checking access_level directly
   const canManageRuns = permissions.canManageRuns; // true for LIRF and admin
+  const isAdmin = state.member?.access_level === 'admin';
+
+  // Show preview toggle only when demo runs exist
+  const hasDemoRuns = runs.some(r => r.run_title.startsWith('[DEMO]'));
+
+  // Auto-reset preview mode when demo data is cleaned up
+  const effectivePreviewMode = hasDemoRuns ? c25kPreviewMode : 'off';
+
+  // Determine effective C25k status (real or previewed)
+  const effectiveIsC25kParticipant = effectivePreviewMode === 'off'
+    ? (state.member?.is_c25k_participant || false)
+    : effectivePreviewMode === 'c25k';
 
   // Helper function to get responsive button text
   const getButtonText = useCallback((fullText: string, shortText: string, loading: boolean, loadingText: string) => {
@@ -107,11 +122,11 @@ const closeShareModal = () => {
   const loadScheduledRuns = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Use the ultra-optimized method with C25k visibility filtering
+
+      // Use effective C25k status (supports admin preview mode)
       const memberContext = state.member ? {
         accessLevel: state.member.access_level || 'member',
-        isC25kParticipant: state.member.is_c25k_participant || false
+        isC25kParticipant: effectiveIsC25kParticipant
       } : undefined;
 
       const runsWithDetails = await ScheduledRunsService.getScheduledRunsWithDetails(state.user?.id, memberContext);
@@ -123,7 +138,7 @@ const closeShareModal = () => {
     } finally {
       setLoading(false);
     }
-  }, [state.user?.id, state.member?.access_level, state.member?.is_c25k_participant]);
+  }, [state.user?.id, state.member?.access_level, effectiveIsC25kParticipant]);
 
   // Load runs when user changes
   useEffect(() => {
@@ -541,6 +556,55 @@ const handleLirfCloseSuccessModal = () => {
 
   return (
     <div className="view-scheduled-runs">
+      {/* C25k Preview Mode - Admin only, only when demo runs exist */}
+      {isAdmin && hasDemoRuns && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '12px 16px',
+          marginBottom: '16px',
+          background: c25kPreviewMode !== 'off' ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' : 'var(--gray-50)',
+          border: c25kPreviewMode !== 'off' ? '2px solid #fbbf24' : '1px solid var(--gray-200)',
+          borderRadius: '8px',
+          fontSize: '14px'
+        }}>
+          <span style={{ fontWeight: '600', color: c25kPreviewMode !== 'off' ? '#92400e' : 'var(--gray-700)' }}>
+            🎭 Preview as:
+          </span>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {[
+              { value: 'off' as const, label: 'Your Account' },
+              { value: 'c25k' as const, label: 'C25k Participant' },
+              { value: 'regular' as const, label: 'Regular Member' },
+            ].map(option => (
+              <button
+                key={option.value}
+                onClick={() => setC25kPreviewMode(option.value)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '13px',
+                  fontWeight: c25kPreviewMode === option.value ? '600' : '400',
+                  background: c25kPreviewMode === option.value ? '#1e40af' : 'white',
+                  color: c25kPreviewMode === option.value ? 'white' : 'var(--gray-700)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          {c25kPreviewMode !== 'off' && (
+            <span style={{ fontSize: '12px', color: '#92400e', fontStyle: 'italic', marginLeft: 'auto' }}>
+              Preview mode — booking buttons show what this user type would see
+            </span>
+          )}
+        </div>
+      )}
+
       {/* ✅ EXISTING: Use working RunFilters component */}
       <RunFilters
         currentFilter={filter}
@@ -587,6 +651,7 @@ const handleLirfCloseSuccessModal = () => {
                 onAssignmentSuccess={handleLirfAssignmentSuccess} // ADD this line
                 onAssignmentError={handleLirfAssignmentError} // ADD this line
                 onUnassignmentConfirm={handleLirfUnassignmentConfirm} // ADD this line
+              isC25kParticipant={effectiveIsC25kParticipant}
               useBookingManager={true}
               useLirfAssignmentManager={true} // ADD this line
                showLirfSuccessModal={lirfSuccessModal.isOpen && lirfSuccessModal.run?.id === run.id}

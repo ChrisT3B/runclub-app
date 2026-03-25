@@ -51,9 +51,14 @@ export interface CreateScheduledRunData {
 
 export interface RunWithDetails extends ScheduledRun {
   booking_count: number;
+  buddy_booking_count: number;
   is_booked: boolean;
   user_booking_id?: string;
+  user_booking_type?: 'standard' | 'c25k_participant' | 'buddy';
   is_full: boolean;
+  is_buddy_slots_full: boolean;
+  user_can_book_as_c25k: boolean;
+  user_can_book_as_buddy: boolean;
   lirf_vacancies: number;
   user_is_assigned_lirf: boolean;
   assigned_lirfs: Array<{
@@ -66,6 +71,7 @@ export interface RunWithDetails extends ScheduledRun {
     member_id: string;
     booked_at: string;
     member_name?: string;
+    booking_type?: string;
   }>;
 }
 
@@ -134,14 +140,12 @@ export class ScheduledRunsService {
         .order('run_time', { ascending: true })
         .limit(50); // Limit to prevent massive queries
 
-      // Apply C25k visibility filtering
-      // Admins and LIRFs see everything, C25k participants see everything
-      // Regular members only see non-C25k runs
-      if (memberContext) {
-        const isPrivileged = memberContext.accessLevel === 'admin' || memberContext.accessLevel === 'lirf';
-        if (!isPrivileged && !memberContext.isC25kParticipant) {
-          query = query.or('is_c25k_run.eq.false,is_c25k_run.is.null');
-        }
+      // C25k runs are visible to ALL members (so buddies can sign up)
+      // No visibility filtering needed - booking permissions differ instead
+
+      // Hide [DEMO] runs from non-admin users
+      if (memberContext && memberContext.accessLevel !== 'admin') {
+        query = query.not('run_title', 'like', '[DEMO]%');
       }
 
       const { data: runs, error: runsError } = await query;
@@ -174,20 +178,38 @@ export class ScheduledRunsService {
         bookingCountMap[row.run_id] = Number(row.booking_count);
       });
 
-      // 3. Get user's specific bookings if needed
-      let userBookingsMap: Record<string, string> = {};
+      // 3. Get user's specific bookings if needed (include booking_type)
+      let userBookingsMap: Record<string, { id: string; booking_type?: string }> = {};
       if (userId && runIds.length > 0) {
         const { data: userBookings, error: userError } = await supabase
           .from('run_bookings')
-          .select('id, run_id')
+          .select('id, run_id, booking_type')
           .eq('member_id', userId)
           .in('run_id', runIds)
           .is('cancelled_at', null);
 
         if (!userError && userBookings) {
           userBookingsMap = Object.fromEntries(
-            userBookings.map(booking => [booking.run_id, booking.id])
+            userBookings.map(booking => [booking.run_id, { id: booking.id, booking_type: booking.booking_type }])
           );
+        }
+      }
+
+      // 3b. Get buddy booking counts for C25k runs
+      const c25kRunIds = runs.filter(r => r.is_c25k_run).map(r => r.id);
+      let buddyCountMap: Record<string, number> = {};
+      if (c25kRunIds.length > 0) {
+        const { data: buddyBookings, error: buddyError } = await supabase
+          .from('run_bookings')
+          .select('run_id')
+          .in('run_id', c25kRunIds)
+          .eq('booking_type', 'buddy')
+          .is('cancelled_at', null);
+
+        if (!buddyError && buddyBookings) {
+          buddyBookings.forEach(b => {
+            buddyCountMap[b.run_id] = (buddyCountMap[b.run_id] || 0) + 1;
+          });
         }
       }
 
@@ -209,10 +231,13 @@ export class ScheduledRunsService {
       // 5. Process everything in memory - much faster
       const runsWithDetails: RunWithDetails[] = runs.map(run => {
         const bookingCount = bookingCountMap[run.id] || 0;
+        const buddyBookingCount = buddyCountMap[run.id] || 0;
+        // For C25k runs, main booking count excludes buddy bookings
+        const mainBookingCount = run.is_c25k_run ? bookingCount - buddyBookingCount : bookingCount;
 
         // User booking info
-        const userBookingId = userBookingsMap[run.id];
-        const isBooked = !!userBookingId;
+        const userBooking = userBookingsMap[run.id];
+        const isBooked = !!userBooking;
 
         // LIRF assignments
         const assignedLirfs: Array<{id: string, name: string, position: number}> = [];
@@ -232,12 +257,35 @@ export class ScheduledRunsService {
           }
         });
 
+        // C25k buddy system: determine booking permissions
+        const isFull = run.is_c25k_run
+          ? mainBookingCount >= run.max_participants
+          : bookingCount >= run.max_participants;
+        const isBuddySlotsFull = buddyBookingCount >= 3;
+
+        let userCanBookAsC25k = false;
+        let userCanBookAsBuddy = false;
+
+        if (run.is_c25k_run && !isBooked) {
+          if (memberContext?.isC25kParticipant) {
+            userCanBookAsC25k = mainBookingCount < run.max_participants;
+          }
+          if (!memberContext?.isC25kParticipant && !userIsAssignedLirf) {
+            userCanBookAsBuddy = buddyBookingCount < 3;
+          }
+        }
+
         return {
           ...run,
-          booking_count: bookingCount,
+          booking_count: run.is_c25k_run ? mainBookingCount : bookingCount,
+          buddy_booking_count: buddyBookingCount,
           is_booked: isBooked,
-          user_booking_id: userBookingId,
-          is_full: bookingCount >= run.max_participants,
+          user_booking_id: userBooking?.id,
+          user_booking_type: userBooking?.booking_type as RunWithDetails['user_booking_type'],
+          is_full: isFull,
+          is_buddy_slots_full: isBuddySlotsFull,
+          user_can_book_as_c25k: userCanBookAsC25k,
+          user_can_book_as_buddy: userCanBookAsBuddy,
           lirf_vacancies: run.lirfs_required - assignedLirfs.length,
           user_is_assigned_lirf: userIsAssignedLirf,
           assigned_lirfs: assignedLirfs,

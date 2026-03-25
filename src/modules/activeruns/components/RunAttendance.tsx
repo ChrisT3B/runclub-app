@@ -24,6 +24,7 @@ interface BookingWithMember {
   attended?: boolean;
   attendance_marked_by?: string;
   attendance_marked_at?: string;
+  booking_type?: string;
   member?: Member;
   is_manual_addition?: boolean; // For manually added runners
 }
@@ -575,6 +576,30 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
                         gap: '8px'
                       }}>
                         {booking.member?.full_name || 'Unknown Member'}
+                        {booking.booking_type === 'c25k_participant' && (
+                          <span style={{
+                            background: '#dbeafe',
+                            color: '#1e40af',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '600'
+                          }}>
+                            C25k
+                          </span>
+                        )}
+                        {booking.booking_type === 'buddy' && (
+                          <span style={{
+                            background: '#fef3c7',
+                            color: '#92400e',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '600'
+                          }}>
+                            Buddy
+                          </span>
+                        )}
                         {booking.is_manual_addition && (
                           <span style={{
                             background: '#fef3c7',

@@ -43,6 +43,7 @@ interface RunCardProps {
   showLirfSuccessModal?: boolean;
   onCloseLirfSuccessModal?: () => void;
   onShowLirfSuccessModal?: (run: any) => void;
+  isC25kParticipant?: boolean;
 }
 
 export const RunCard: React.FC<RunCardProps> = ({
@@ -68,6 +69,7 @@ export const RunCard: React.FC<RunCardProps> = ({
   showLirfSuccessModal = false,
   onCloseLirfSuccessModal,
   onShowLirfSuccessModal,
+  isC25kParticipant = false,
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -118,6 +120,7 @@ export const RunCard: React.FC<RunCardProps> = ({
           onError={onBookingError}
           showSuccessModal={true}
           className="run-card__booking-manager"
+          isC25kParticipant={isC25kParticipant}
         />
       );
     } else {
@@ -214,7 +217,12 @@ export const RunCard: React.FC<RunCardProps> = ({
           <div>
             <h3 className="card-title">{run.run_title}</h3>
             <div className="run-card__badges">
-              {run.is_booked && <span className="badge badge--booked">Booked</span>}
+              {run.is_booked && (
+                <span className="badge badge--booked">
+                  {run.user_booking_type === 'buddy' ? 'Booked (Buddy)' :
+                   run.user_booking_type === 'c25k_participant' ? 'Booked (C25k)' : 'Booked'}
+                </span>
+              )}
               {run.is_full && <span className="badge badge--full">Full</span>}
               {run.user_is_assigned_lirf && <span className="badge badge--assigned">LIRF</span>}
               {isUrgent && <span className="badge badge--urgent">Urgent</span>}
@@ -272,6 +280,11 @@ export const RunCard: React.FC<RunCardProps> = ({
             <div className="run-info-item__primary">
               👥 {run.booking_count}/{run.max_participants} booked
             </div>
+            {run.is_c25k_run && (
+              <div className="run-info-item__secondary" style={{ color: 'var(--gray-600)' }}>
+                🤝 Buddy slots: {run.buddy_booking_count}/3 {run.is_buddy_slots_full ? '(Full)' : ''}
+              </div>
+            )}
             {canManageRuns && (
               <div className="run-info-item__secondary">
                 <ShieldCheck size={16} />
