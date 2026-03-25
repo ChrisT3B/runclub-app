@@ -213,17 +213,21 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
 
     // Determine if this was a buddy booking for correct count adjustment
     const wasBuddyBooking = run.user_booking_type === 'buddy';
+    const newBuddyCount = wasBuddyBooking ? Math.max(0, run.buddy_booking_count - 1) : run.buddy_booking_count;
+    const newMainCount = wasBuddyBooking ? run.booking_count : Math.max(0, run.booking_count - 1);
 
-    // Optimistic UI update
+    // Optimistic UI update - restore booking permissions after cancel
     const optimisticRun: RunWithDetails = {
       ...run,
       is_booked: false,
-      booking_count: wasBuddyBooking ? run.booking_count : Math.max(0, run.booking_count - 1),
-      buddy_booking_count: wasBuddyBooking ? Math.max(0, run.buddy_booking_count - 1) : run.buddy_booking_count,
-      is_full: false,
-      is_buddy_slots_full: wasBuddyBooking ? false : run.is_buddy_slots_full,
+      booking_count: newMainCount,
+      buddy_booking_count: newBuddyCount,
+      is_full: newMainCount >= run.max_participants,
+      is_buddy_slots_full: newBuddyCount >= 3,
       user_booking_id: undefined,
       user_booking_type: undefined,
+      user_can_book_as_c25k: !!(run.is_c25k_run && isC25kParticipant && newMainCount < run.max_participants),
+      user_can_book_as_buddy: !!(run.is_c25k_run && !isC25kParticipant && newBuddyCount < 3),
     };
 
     handleOptimisticUpdate(optimisticRun);
