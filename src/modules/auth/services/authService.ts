@@ -598,77 +598,82 @@ export const verifyEmail = async (token: string): Promise<EmailVerificationResul
     if (data.user) {
       console.log('👤 Email verified for user:', data.user.id);
       console.log('📋 Moving from pending_members to members table');
-      console.log('🔍 About to check for pending member...');
-      console.log('🔍 User ID from verification:', data.user.id);
-      // Get pending member data
-      const { data: pendingMember, error: fetchError } = await supabase
-        .from('pending_members')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-      console.log('🔍 Pending member query result:', { pendingMember, fetchError });
-      if (fetchError) {
-        console.error('❌ Error fetching pending member:', fetchError);
-        // Continue with verification even if we can't find pending member
-        // They might have registered before the holding table was implemented
-      } else if (pendingMember) {
-        console.log('📋 Found pending member, creating active member record');
-        
-        // Create real member record with active status
-        const memberData: Partial<Member> = {
-          id: pendingMember.id,
-          email: pendingMember.email,
-          full_name: pendingMember.full_name,
-          phone: pendingMember.phone || '',
-          access_level: 'member',
-          membership_status: 'active', // Now they're verified and active
-          emergency_contact_name: pendingMember.emergency_contact_name || '',
-          emergency_contact_phone: pendingMember.emergency_contact_phone || '',
-          health_conditions: pendingMember.health_conditions || 'None disclosed',
-          email_notifications_enabled: true, // Default to enabled
-          is_c25k_participant: pendingMember.is_c25k_participant || false,
-        };
 
-        const { error: memberError } = await supabase
-          .from('members')
-          .insert([memberData]);
+      try {
+        // Get pending member data
+        const { data: pendingMember, error: fetchError } = await supabase
+          .from('pending_members')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
 
-        if (memberError) {
-          console.error('❌ Error creating member record:', memberError);
-          // Don't fail verification if member creation fails
+        console.log('🔍 Pending member query result:', { pendingMember, fetchError });
+
+        if (fetchError) {
+          console.error('❌ Error fetching pending member:', fetchError);
+          // Continue — may be a legacy registration or already promoted
+        } else if (pendingMember) {
+          console.log('📋 Found pending member, creating active member record');
+
+          const memberData: Partial<Member> = {
+            id: pendingMember.id,
+            email: pendingMember.email,
+            full_name: pendingMember.full_name,
+            phone: pendingMember.phone || '',
+            access_level: 'member',
+            membership_status: 'active',
+            emergency_contact_name: pendingMember.emergency_contact_name || '',
+            emergency_contact_phone: pendingMember.emergency_contact_phone || '',
+            health_conditions: pendingMember.health_conditions || 'None disclosed',
+            email_notifications_enabled: true,
+            is_c25k_participant: pendingMember.is_c25k_participant || false,
+          };
+
+          const { error: memberError } = await supabase
+            .from('members')
+            .insert([memberData]);
+
+          if (memberError) {
+            console.error('❌ Error creating member record:', memberError);
+            // Don't fail verification if member creation fails
+          } else {
+            console.log('✅ Member record created successfully');
+
+            // Delete pending record BEFORE signOut so session is still valid
+            const { error: deleteError } = await supabase
+              .from('pending_members')
+              .delete()
+              .eq('id', data.user.id);
+
+            if (deleteError) {
+              console.error('❌ Error deleting pending member:', deleteError);
+              // Cron job will clean this up — not blocking
+            } else {
+              console.log('🗑️ Pending member record cleaned up');
+            }
+          }
         } else {
-          console.log('✅ Member record created successfully');
-          
-          // Delete the pending member record
-          const { error: deleteError } = await supabase
-            .from('pending_members')
-            .delete()
+          console.log('ℹ️ No pending member found - might be legacy registration');
+
+          const { error: updateError } = await supabase
+            .from('members')
+            .update({ membership_status: 'active' })
             .eq('id', data.user.id);
 
-          if (deleteError) {
-            console.error('❌ Error deleting pending member:', deleteError);
-            // Not critical - the pending record will expire naturally
+          if (updateError) {
+            console.error('❌ Error updating member status:', updateError);
           } else {
-            console.log('🗑️ Pending member record cleaned up');
+            console.log('✅ Legacy member status updated to active');
           }
         }
-      } else {
-        console.log('ℹ️ No pending member found - might be legacy registration');
-        // Handle legacy registrations that went directly to members table
-        const { error: updateError } = await supabase
-          .from('members')
-          .update({ membership_status: 'active' })
-          .eq('id', data.user.id);
-
-        if (updateError) {
-          console.error('❌ Error updating member status:', updateError);
-        } else {
-          console.log('✅ Legacy member status updated to active');
-        }
+      } catch (promotionError) {
+        // Log but don't block — email is verified, user can still log in
+        console.error('❌ Unexpected error during member promotion:', promotionError);
+      } finally {
+        // Always sign out after all DB operations complete
+        console.log('🔐 Email verified successfully, signing out user to require manual login');
+        await supabase.auth.signOut();
       }
-
-      console.log('🔐 Email verified successfully, signing out user to require manual login');
-      await supabase.auth.signOut();
     }
 
     return {
