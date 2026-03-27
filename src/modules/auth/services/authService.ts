@@ -166,6 +166,9 @@ class SessionSecurityService {
 
   static async logSecurityEvent(eventType: string, details: any): Promise<void> {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
       await supabase
         .from('security_events')
         .insert({
