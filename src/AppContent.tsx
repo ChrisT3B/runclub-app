@@ -41,10 +41,10 @@ export const AppContent: React.FC = () => {
   // State for race league navigation
   const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
 
-  // Simple navigation function
+  // Navigation with browser history tracking for proper back behaviour
   const handleNavigation = (page: string) => {
-    console.log('🔄 AppContent handleNavigation called with:', page);
     setCurrentPage(page);
+    window.history.pushState({ page }, '', `${window.location.pathname}`);
   };
 
   const handleRaceNavigation = (page: string, raceId?: string) => {
@@ -78,25 +78,22 @@ export const AppContent: React.FC = () => {
     return hasAnyRecovery;
   };
 
-  // Initialize browser history to prevent PWA closing
+  // Browser history: seed dashboard entry and handle back navigation
   useEffect(() => {
-    // Skip history management if we're in password reset flow
-    if (isPasswordResetFlow()) {
-      console.log('🔄 Skipping history management - in password reset flow');
-      return;
-    }
+    if (isPasswordResetFlow()) return;
 
-    // Add initial history entry if needed
-    if (window.history.length === 1) {
-      window.history.pushState({ page: 'dashboard' }, '', window.location.href);
-    }
+    // Seed the stack so the first back goes to dashboard, not out of the PWA
+    window.history.replaceState({ page: 'dashboard' }, '', window.location.pathname);
 
-    // Handle browser back button
-    const handlePopState = () => {
-      // Prevent PWA from closing by staying on dashboard
-      setCurrentPage('dashboard');
-      // Add another history entry to prevent closing
-      window.history.pushState({ page: 'dashboard' }, '', window.location.href);
+    const handlePopState = (event: PopStateEvent) => {
+      const page = event.state?.page;
+      if (page) {
+        setCurrentPage(page);
+      } else {
+        // Bottom of the stack — stay on dashboard and re-guard against PWA close
+        setCurrentPage('dashboard');
+        window.history.pushState({ page: 'dashboard' }, '', window.location.pathname);
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
