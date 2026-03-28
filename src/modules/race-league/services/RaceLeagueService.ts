@@ -114,16 +114,6 @@ export class RaceLeagueService {
   public static async isLeagueVisible(): Promise<boolean> {
     const user = (await supabase.auth.getUser()).data.user;
     if (!user) return false;
-
-    // PRE-LAUNCH: remove this block on release ─────────────────────────────
-    const { data } = await supabase
-      .from('members')
-      .select('access_level')
-      .eq('id', user.id)
-      .single();
-    if (data?.access_level !== 'admin') return false;
-    // END PRE-LAUNCH ────────────────────────────────────────────────────────
-
     return true;
   }
 
