@@ -378,3 +378,60 @@
   font-size: 13px;
   font-weight: 500;
 }
+
+/* ── Mobile Expandable Rows ──────────────────────────────────────────── */
+.league-table-wrapper {
+  overflow-x: auto;
+}
+
+.league-table__chevron {
+  display: none;
+}
+
+.league-table__detail-row {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .league-table__col-event,
+  .league-table__col-date {
+    display: none;
+  }
+
+  .league-table__chevron {
+    display: inline-flex;
+    align-items: center;
+    margin-left: var(--space-2);
+    color: var(--gray-500);
+    vertical-align: middle;
+  }
+
+  .league-table tr[data-expanded="true"] {
+    background: var(--gray-100);
+  }
+
+  .league-table tbody tr {
+    cursor: pointer;
+  }
+
+  .league-table__detail-row {
+    display: table-row;
+  }
+
+  .league-table__detail {
+    display: flex;
+    gap: var(--space-6);
+    padding: var(--space-3) var(--space-4);
+    background: var(--gray-50);
+    font-size: var(--font-sm);
+  }
+
+  .league-table__detail-label {
+    color: var(--gray-500);
+  }
+
+  .league-table__detail-value {
+    color: var(--gray-900);
+    font-weight: var(--font-medium);
+  }
+}
