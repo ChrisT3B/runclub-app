@@ -31,24 +31,9 @@ function buildRejectionEmailHtml(
 
 export class ParkrunLeagueService {
 
-  /**
-   * PRE-LAUNCH GATE: leagues visible to admins only.
-   * TO RELEASE TO ALL USERS: delete the access_level check block below,
-   * leaving only `return true`. No other files need changing.
-   */
   public static async isLeagueVisible(): Promise<boolean> {
     const user = (await supabase.auth.getUser()).data.user;
     if (!user) return false;
-
-    // PRE-LAUNCH: remove this block on release ─────────────────────────────
-    const { data } = await supabase
-      .from('members')
-      .select('access_level')
-      .eq('id', user.id)
-      .single();
-    if (data?.access_level !== 'admin') return false;
-    // END PRE-LAUNCH ────────────────────────────────────────────────────────
-
     return true;
   }
 
