@@ -12,6 +12,16 @@ if (import.meta.env.PROD) {
   console.debug = () => {};
 }
 
+// Auto-reload on stale chunk errors (e.g. after a new deploy while an old SW is active)
+window.addEventListener('error', (e) => {
+  if (
+    e.message?.includes('Failed to fetch dynamically imported module') ||
+    e.message?.includes('Loading chunk')
+  ) {
+    window.location.reload();
+  }
+});
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
