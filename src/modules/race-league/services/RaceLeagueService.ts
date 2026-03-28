@@ -175,14 +175,12 @@ export class RaceLeagueService {
       .order('finish_time', { ascending: true });
     if (error) { console.error('getRaceEntries:', error); return []; }
 
-    // Resolve member names
+    // Resolve member names via shared RPC to bypass members table RLS
     const userIds = (data ?? []).map((e: RaceLeagueEntry) => e.user_id);
     const memberMap = new Map<string, string>();
     if (userIds.length > 0) {
       const { data: members } = await supabase
-        .from('members')
-        .select('id, full_name')
-        .in('id', userIds);
+        .rpc('get_member_names', { user_ids: userIds });
       (members ?? []).forEach((m: { id: string; full_name: string }) => memberMap.set(m.id, m.full_name));
     }
 
@@ -269,14 +267,12 @@ export class RaceLeagueService {
       .order('total_points', { ascending: false });
     if (error) { console.error('getStandings:', error); return []; }
 
-    // Resolve member names
+    // Resolve member names via shared RPC to bypass members table RLS
     const userIds = (data ?? []).map((s: RaceLeagueStanding) => s.user_id);
     const memberMap = new Map<string, string>();
     if (userIds.length > 0) {
       const { data: members } = await supabase
-        .from('members')
-        .select('id, full_name')
-        .in('id', userIds);
+        .rpc('get_member_names', { user_ids: userIds });
       (members ?? []).forEach((m: { id: string; full_name: string }) => memberMap.set(m.id, m.full_name));
     }
 

@@ -75,14 +75,12 @@ export class ParkrunLeagueService {
     // Sort by age grade DESC and assign rank
     deduped.sort((a: any, b: any) => b.age_grade_percent - a.age_grade_percent);
 
-    // Fetch member names for the deduplicated entries
+    // Fetch member names via shared RPC to bypass members table RLS
     const userIds = deduped.map((e: any) => e.user_id);
     const nameMap = new Map<string, string>();
     if (userIds.length > 0) {
       const { data: members } = await supabase
-        .from('members')
-        .select('id, full_name')
-        .in('id', userIds);
+        .rpc('get_member_names', { user_ids: userIds });
       (members ?? []).forEach((m: any) => nameMap.set(m.id, m.full_name));
     }
 
