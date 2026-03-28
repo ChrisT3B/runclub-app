@@ -28,10 +28,15 @@ export const RaceLeagueInfoPanel: React.FC<RaceLeagueInfoPanelProps> = ({ points
         <div className="race-info-panel__content" id="race-league-info-content">
           <h4>Run Alcester Race League</h4>
           <p>
-            The Race League tracks your results across a series of externally-organised races throughout the season.
-            After completing a race, submit your finish time via the app. Scoring is split by gender — your finishing
-            position among league entrants in your gender group determines how many points you earn. Points accumulate
-            across all races in the season.
+              Depending on your club finishing position you will be awarded league points for each race. For the Organised races, chip times will be used in preference to gun times, if available. For the handicap race, we will confirm the parameters closer to the time.
+              Points are awarded equally for each of the races in the calendar and all races count. So, if you enter all the races, you have a much better chance of winning the overall race league. The points awarded for each club position in the races are shown below in the comments. 
+              So, for example if you are the 2nd Run Alcester female to finish a particular race you will score 12 league points or if you are the 7th male you will score 5 league points.
+              Please make sure that when you enter the race you add Run Alcester as your club. 
+              Also please use our new fantastic Run Alcester app to enter the league and submit your results. This will help us enormously going forward.
+              By doing the league in this way, we can write a race league report after the races and share the successes of those taking part and update the league after every race.
+              We are trying to keep the league as simple as possible and the aim is to use local races that are accessible and reasonably priced and we can use the league it to celebrate the considerable racing talent we have in our club.
+              We will post reminders for entry, but advise early entry wherever possible.
+              Good Luck!
           </p>
 
           {sortedPoints.length > 0 ? (
