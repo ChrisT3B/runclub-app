@@ -136,7 +136,7 @@ export class EmailService {
 
       try {
         await GmailSMTP.sendEmail({
-          to: 'bookings.runalcester@gmail.com',
+          to: 'runalcester@gmail.com',
           subject,
           html,
           text,
