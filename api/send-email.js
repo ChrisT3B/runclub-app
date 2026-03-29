@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { to, from, subject, html, text } = req.body;
+    const { to, from, subject, html, text, bcc } = req.body;
 
     // Validate input
     if (!to || !subject || !html) {
@@ -49,6 +49,7 @@ export default async function handler(req, res) {
     const info = await transporter.sendMail({
       from: 'Run Alcester Bookings <bookings.runalcester@gmail.com>',
       to: to,
+      bcc: bcc || undefined,
       subject: subject,
       html: html,
       text: text

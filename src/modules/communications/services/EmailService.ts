@@ -44,6 +44,11 @@ export class EmailService {
       errors: [] as string[]
     };
 
+    // Broadcast types use a single BCC email — no per-recipient loop needed
+    if (data.type === 'general' || data.type === 'urgent' || data.type === 'run_alert') {
+      return this.sendBulkEmailBCC(data);
+    }
+
     // Check daily sending limit
     const dailyCount = await this.getDailySentCount();
     const remainingLimit = this.DAILY_LIMIT - dailyCount;
@@ -82,6 +87,185 @@ export class EmailService {
 
     console.log('📧 Email send complete:', results);
     return results;
+  }
+
+  /**
+   * Send BCC email(s) to all recipients for broadcast notification types.
+   * Used for general, urgent, and run_alert types to avoid browser session dependency.
+   * Recipients are chunked at 450 per send to stay within Gmail BCC limits.
+   */
+  static async sendBulkEmailBCC(data: EmailNotificationData): Promise<{
+    sent: number;
+    skipped: number;
+    failed: number;
+    errors: string[];
+  }> {
+    const results = { sent: 0, skipped: 0, failed: 0, errors: [] as string[] };
+
+    if (data.recipients.length === 0) {
+      return results;
+    }
+
+    // Daily limit guard — abort if limit already reached
+    const dailyCount = await this.getDailySentCount();
+    const remainingLimit = this.DAILY_LIMIT - dailyCount;
+
+    if (remainingLimit <= 0) {
+      results.errors.push('Daily email limit reached. Broadcast email not sent.');
+      results.skipped = data.recipients.length;
+      console.warn('📧 Daily limit reached, skipping BCC broadcast');
+      return results;
+    }
+
+    const subject = this.generateSubject(data);
+    const html = this.generateBulkEmailHTML(data);
+    const text = this.generateBulkEmailText(data);
+
+    // Chunk recipients at 450 to stay well within Gmail's 500 BCC limit
+    const CHUNK_SIZE = 450;
+    const chunks: Array<typeof data.recipients> = [];
+    for (let i = 0; i < data.recipients.length; i += CHUNK_SIZE) {
+      chunks.push(data.recipients.slice(i, i + CHUNK_SIZE));
+    }
+
+    console.log(`📧 Sending BCC broadcast in ${chunks.length} chunk(s) to ${data.recipients.length} recipients`);
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const bccAddresses = chunk.map(r => r.email);
+
+      try {
+        await GmailSMTP.sendEmail({
+          to: 'bookings.runalcester@gmail.com',
+          subject,
+          html,
+          text,
+          bcc: bccAddresses
+        });
+
+        // Log once per chunk against the first recipient in that chunk
+        await this.logEmailSent(chunk[0].id, subject);
+
+        results.sent += chunk.length;
+        console.log(`📧 BCC chunk ${i + 1}/${chunks.length} sent to ${chunk.length} recipients`);
+      } catch (error) {
+        results.failed += chunk.length;
+        results.errors.push(`BCC chunk ${i + 1} failed: ${error}`);
+        console.error(`📧 BCC chunk ${i + 1} failed:`, error);
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Generate HTML email content for bulk/BCC sends (no personalisation)
+   */
+  private static generateBulkEmailHTML(data: EmailNotificationData): string {
+    const priorityEmoji = {
+      low: '📝',
+      normal: '📢',
+      high: '⚠️',
+      urgent: '🚨'
+    }[data.priority];
+
+    const typeEmoji = {
+      run_specific: '🏃‍♂️',
+      run_alert: '📣',
+      general: '📢',
+      urgent: '🚨'
+    }[data.type];
+
+    const unsubscribeUrl = `${this.APP_URL}?unsubscribe=true`;
+    const appUrl = this.APP_URL;
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run Alcester Notification</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 0; }
+        .header { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 30px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 28px; font-weight: bold; }
+        .header p { margin: 10px 0 0 0; opacity: 0.9; font-size: 16px; }
+        .content { padding: 30px 20px; }
+        .notification-title { font-size: 24px; font-weight: bold; color: #1f2937; margin: 0 0 20px 0; }
+        .message-body { font-size: 15px; color: #374151; white-space: pre-wrap; word-break: break-word; margin-bottom: 24px; }
+        .run-details { background: #f3f4f6; border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+        .run-details h3 { margin: 0 0 12px 0; font-size: 16px; color: #1f2937; }
+        .run-detail-item { font-size: 14px; color: #374151; margin-bottom: 6px; }
+        .cta-button { display: inline-block; background: #dc2626; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; }
+        .footer { background: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; }
+        .unsubscribe a { color: #6b7280; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏃‍♂️ Run Alcester</h1>
+            <p>Club Notification</p>
+        </div>
+        <div class="content">
+            <p>Dear Runners,</p>
+            <p class="notification-title">${typeEmoji} ${data.title} ${priorityEmoji}</p>
+            <div class="message-body">${data.message.replace(/\n/g, '<br>')}</div>
+            ${data.runDetails ? `
+            <div class="run-details">
+                <h3>🏃‍♂️ Run Details</h3>
+                <div class="run-detail-item"><strong>📅 Date:</strong> ${new Date(data.runDetails.run_date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                <div class="run-detail-item"><strong>🕐 Time:</strong> ${data.runDetails.run_time}</div>
+                <div class="run-detail-item"><strong>📍 Meeting Point:</strong> ${data.runDetails.meeting_point}</div>
+                ${data.runDetails.approximate_distance ? `<div class="run-detail-item"><strong>🏃‍♂️ Distance:</strong> ${data.runDetails.approximate_distance}</div>` : ''}
+            </div>
+            ` : ''}
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${appUrl}" class="cta-button">View in Run Alcester App →</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>This notification was sent by Run Alcester.<br>
+            You're receiving this because you're a club member with email notifications enabled.</p>
+            <div class="unsubscribe">
+                <a href="${unsubscribeUrl}">Unsubscribe from email notifications</a> |
+                <a href="${appUrl}">Update preferences</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+  }
+
+  /**
+   * Generate plain text email content for bulk/BCC sends (no personalisation)
+   */
+  private static generateBulkEmailText(data: EmailNotificationData): string {
+    let text = `Run Alcester Notification\n\n`;
+    text += `Dear Runners,\n\n`;
+    text += `${data.title}\n`;
+    text += `Priority: ${data.priority.toUpperCase()}\n\n`;
+    text += `${data.message}\n\n`;
+
+    if (data.runDetails) {
+      text += `RUN DETAILS:\n`;
+      text += `Date: ${new Date(data.runDetails.run_date + 'T12:00:00').toLocaleDateString('en-GB')}\n`;
+      text += `Time: ${data.runDetails.run_time}\n`;
+      text += `Meeting Point: ${data.runDetails.meeting_point}\n`;
+      if (data.runDetails.approximate_distance) {
+        text += `Distance: ${data.runDetails.approximate_distance}\n`;
+      }
+      text += `\n`;
+    }
+
+    text += `View in app: ${this.APP_URL}\n\n`;
+    text += `---\n`;
+    text += `You're receiving this because you're a Run Alcester member with email notifications enabled.\n`;
+    text += `To unsubscribe: ${this.APP_URL}?unsubscribe=true`;
+
+    return text;
   }
 
   /**

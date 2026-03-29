@@ -6,6 +6,7 @@ interface EmailData {
   subject: string;
   html: string;
   text: string;
+  bcc?: string[];
 }
 
 export class GmailSMTP {
@@ -32,7 +33,8 @@ export class GmailSMTP {
           from: `${this.FROM_NAME} <${this.GMAIL_USER}>`,
           subject: emailData.subject,
           html: emailData.html,
-          text: emailData.text
+          text: emailData.text,
+          bcc: emailData.bcc || undefined
         })
       });
 
