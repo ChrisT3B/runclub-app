@@ -740,37 +740,35 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
               </div>
             </div>
 
-            {/* EA URN for renewals or previous club members */}
-            {(isRenewal || showPreviousClub) && (
-              <div
-                style={{
-                  background: '#fffbeb',
-                  border: '2px solid #f59e0b',
-                  borderRadius: '8px',
-                  padding: '16px',
-                  marginBottom: '8px',
-                }}
-              >
-                <label className="form-label" htmlFor="ea_urn_at_application" style={{ fontWeight: '600', color: '#92400e', marginBottom: '4px' }}>
-                  EA URN {isRenewal ? '(from previous membership)' : '(if known)'}
-                </label>
-                <p style={{ fontSize: '13px', color: '#92400e', margin: '0 0 8px 0' }}>
-                  {isRenewal
-                    ? 'Please check this is correct — it speeds up your renewal.'
-                    : 'If you have an existing EA number, please enter it here.'}
-                </p>
-                <input
-                  type="text"
-                  id="ea_urn_at_application"
-                  name="ea_urn_at_application"
-                  value={formData.ea_urn_at_application}
-                  onChange={handleInputChange}
-                  className="form-input"
-                  placeholder="e.g. 1234567"
-                  style={{ border: '2px solid #f59e0b', fontWeight: '500', fontSize: '16px' }}
-                />
-              </div>
-            )}
+            {/* EA URN - always visible, optional */}
+            <div
+              style={{
+                background: '#fffbeb',
+                border: '2px solid #f59e0b',
+                borderRadius: '8px',
+                padding: '16px',
+                marginBottom: '8px',
+              }}
+            >
+              <label className="form-label" htmlFor="ea_urn_at_application" style={{ fontWeight: '600', color: '#92400e', marginBottom: '4px' }}>
+                EA URN {isRenewal ? '(from previous membership)' : '(if you have one)'}
+              </label>
+              <p style={{ fontSize: '13px', color: '#92400e', margin: '0 0 8px 0' }}>
+                {isRenewal
+                  ? 'Please check this is correct — it speeds up your renewal.'
+                  : 'If you have an existing EA registration number, please enter it here.'}
+              </p>
+              <input
+                type="text"
+                id="ea_urn_at_application"
+                name="ea_urn_at_application"
+                value={formData.ea_urn_at_application}
+                onChange={handleInputChange}
+                className="form-input"
+                placeholder="e.g. 1234567"
+                style={{ border: '2px solid #f59e0b', fontWeight: '500', fontSize: '16px' }}
+              />
+            </div>
 
             {/* Previous club question */}
             {!isRenewal && (
