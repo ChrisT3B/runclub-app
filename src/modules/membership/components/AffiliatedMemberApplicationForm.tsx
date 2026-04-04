@@ -110,7 +110,7 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
         sex_at_birth: (member.sex_at_birth as SexAtBirth) || '',
         address_postcode: member.address_postcode || '',
         nationality: member.nationality || '',
-        ea_urn_at_application: renewal ? (member.ea_urn || '') : '',
+        ea_urn_at_application: member.ea_urn || '',
         emergency_contact_name: member.emergency_contact_name || '',
         emergency_contact_relationship: member.emergency_contact_relationship || '',
         emergency_contact_number: member.emergency_contact_phone || '',
@@ -751,12 +751,10 @@ export const AffiliatedMemberApplicationForm: React.FC<AffiliatedMemberApplicati
               }}
             >
               <label className="form-label" htmlFor="ea_urn_at_application" style={{ fontWeight: '600', color: '#92400e', marginBottom: '4px' }}>
-                EA URN {isRenewal ? '(from previous membership)' : '(if you have one)'}
+                EA URN (optional)
               </label>
               <p style={{ fontSize: '13px', color: '#92400e', margin: '0 0 8px 0' }}>
-                {isRenewal
-                  ? 'Please check this is correct — it speeds up your renewal.'
-                  : 'If you have an existing EA registration number, please enter it here.'}
+                If you are renewing, it should be pre-filled. If you are transferring from another club, please help by providing your URN. If this is your first affiliation application leave blank.
               </p>
               <input
                 type="text"
