@@ -435,3 +435,11 @@
     font-weight: var(--font-medium);
   }
 }
+
+/* ── Submissions Closed Notice ───────────────────────────────────────── */
+.league-submissions-closed {
+  font-size: var(--font-sm);
+  color: var(--gray-500);
+  font-style: italic;
+  margin: 0;
+}

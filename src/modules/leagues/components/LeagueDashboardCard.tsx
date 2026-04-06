@@ -5,6 +5,9 @@ import { RankArrow } from './RankArrow';
 import { RaceLeagueService, RaceLeagueRace } from '../../race-league/services/RaceLeagueService';
 import { League } from '../types';
 
+const SUBMISSIONS_OPEN_DATE = new Date('2026-05-01');
+const submissionsOpen = new Date() >= SUBMISSIONS_OPEN_DATE;
+
 interface LeagueDashboardCardProps {
   onNavigate: (page: string) => void;
 }
@@ -96,7 +99,11 @@ export const LeagueDashboardCard: React.FC<LeagueDashboardCardProps> = ({ onNavi
           <span className="league-card-name">Parkrun League:</span>
           <span className="league-card-position">Not entered</span>
           <div className="league-card-actions">
-            <button onClick={() => onNavigate('leagues-submit')}>Join the Parkrun League &rarr;</button>
+            {submissionsOpen ? (
+              <button onClick={() => onNavigate('leagues-submit')}>Join the Parkrun League &rarr;</button>
+            ) : (
+              <span className="league-submissions-closed">Entries open 1st May</span>
+            )}
           </div>
         </div>
       );
@@ -109,7 +116,11 @@ export const LeagueDashboardCard: React.FC<LeagueDashboardCardProps> = ({ onNavi
           <span className="league-card-name">Parkrun League:</span>
           <span style={{ color: 'var(--danger-color)' }}>Entry not approved</span>
           <div className="league-card-actions">
-            <button onClick={() => onNavigate('leagues-submit')}>Resubmit &rarr;</button>
+            {submissionsOpen ? (
+              <button onClick={() => onNavigate('leagues-submit')}>Resubmit &rarr;</button>
+            ) : (
+              <span className="league-submissions-closed">Entries open 1st May</span>
+            )}
           </div>
         </div>
       );
@@ -141,7 +152,11 @@ export const LeagueDashboardCard: React.FC<LeagueDashboardCardProps> = ({ onNavi
           Position {position?.current_rank ?? '—'}, {(position?.age_grade_percent ?? latestEntry.age_grade_percent).toFixed(2)}%
         </span>
         <div className="league-card-actions">
-          <button onClick={() => onNavigate('leagues-submit')}>Submit a new result</button>
+          {submissionsOpen ? (
+            <button onClick={() => onNavigate('leagues-submit')}>Submit a new result</button>
+          ) : (
+            <span className="league-submissions-closed">Entries open 1st May</span>
+          )}
           <button onClick={() => onNavigate('leagues')}>View league table</button>
         </div>
       </div>

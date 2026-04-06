@@ -6,6 +6,9 @@ import { MyLeagueStatus } from '../components/MyLeagueStatus';
 import { LeagueInfoPanel } from '../components/LeagueInfoPanel';
 import '../leagues.css';
 
+const SUBMISSIONS_OPEN_DATE = new Date('2026-05-01');
+const submissionsOpen = new Date() >= SUBMISSIONS_OPEN_DATE;
+
 interface LeaguePageProps {
   onNavigate: (page: string) => void;
 }
@@ -59,9 +62,15 @@ export const LeaguePage: React.FC<LeaguePageProps> = ({ onNavigate }) => {
     <div>
       <div className="league-page-header">
         <h2>{league.name}</h2>
-        <button className="btn btn-primary" onClick={() => onNavigate('leagues-submit')}>
-          Submit a New Entry
-        </button>
+        {submissionsOpen ? (
+          <button className="btn btn-primary" onClick={() => onNavigate('leagues-submit')}>
+            Submit a New Entry
+          </button>
+        ) : (
+          <p className="league-submissions-closed">
+            Entries open 1st May 2026
+          </p>
+        )}
       </div>
 
       <LeagueInfoPanel />
