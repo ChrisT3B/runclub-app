@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { ParkrunLeagueService } from '../services/ParkrunLeagueService';
 import { RaceLeagueService } from '../../race-league/services/RaceLeagueService';
+import '../leagues.css';
+
+const SUBMISSIONS_OPEN_DATE = new Date('2026-05-01');
+const submissionsOpen = new Date() >= SUBMISSIONS_OPEN_DATE;
 
 interface LeaguesHubPageProps {
   onNavigate: (page: string) => void;
@@ -59,7 +63,11 @@ export const LeaguesHubPage: React.FC<LeaguesHubPageProps> = ({ onNavigate }) =>
             </p>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button className="btn btn-primary" onClick={() => onNavigate('leagues')}>View League Table</button>
-              <button className="btn btn-secondary" onClick={() => onNavigate('leagues-submit')}>Submit a Result</button>
+              {submissionsOpen ? (
+                <button className="btn btn-secondary" onClick={() => onNavigate('leagues-submit')}>Submit a Result</button>
+              ) : (
+                <span className="league-submissions-closed">Entries open 1st May 2026</span>
+              )}
             </div>
           </div>
         </div>
