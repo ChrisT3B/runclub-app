@@ -41,6 +41,28 @@ interface PendingInvitation {
   invited_by_member?: { full_name: string };
 }
 
+interface RunAttendanceSummary {
+  runId: string;
+  runTitle: string;
+  runDate: string;
+  runnerCount: number;
+}
+
+interface WeeklyRunnersData {
+  weekStart: string;       // ISO date string — Monday of the selected week
+  runs: RunAttendanceSummary[];
+  totalRunners: number;
+  averagePerRun: number;
+}
+
+interface WeeklyTrendPoint {
+  weekStart: string;       // ISO date string — Monday of each week
+  weekLabel: string;       // e.g. "17 Mar"
+  totalRunners: number;
+  runCount: number;
+  averagePerRun: number;
+}
+
 interface AdminReportsProps {
   onNavigate?: (page: string) => void;
 }
@@ -65,6 +87,22 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [resending, setResending] = useState<string | null>(null);
 
+  // Weekly Runners Report state
+  const [weeklyRunnersLoading, setWeeklyRunnersLoading] = useState(false);
+  const [selectedWeekStart, setSelectedWeekStart] = useState<string>(() => {
+    const today = new Date();
+    const day = today.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + diff);
+    const yyyy = monday.getFullYear();
+    const mm = String(monday.getMonth() + 1).padStart(2, '0');
+    const dd = String(monday.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  });
+  const [weeklyRunnersData, setWeeklyRunnersData] = useState<WeeklyRunnersData | null>(null);
+  const [weeklyTrend, setWeeklyTrend] = useState<WeeklyTrendPoint[]>([]);
+
   useEffect(() => {
     if (permissions.accessLevel === 'admin' || permissions.accessLevel === 'lirf') {
       fetchAllData();
@@ -79,6 +117,8 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
         fetchUserMetrics(),
         fetchLirfLookAhead(),
         fetchPendingInvitations(),
+        fetchWeeklyRunnersReport(),
+        fetchWeeklyTrend(),
       ]);
     } catch (error) {
       console.error('Error fetching admin reports data:', error);
@@ -324,6 +364,151 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
     }
   };
 
+  const fetchWeeklyRunnersReport = async (weekStart?: string) => {
+    setWeeklyRunnersLoading(true);
+    try {
+      const startDate = weekStart || selectedWeekStart;
+      const endDate = new Date(startDate + 'T12:00:00');
+      endDate.setDate(endDate.getDate() + 6);
+      const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+
+      const { data: weekRuns, error: weekError } = await supabase
+        .from('scheduled_runs')
+        .select('id, run_title, run_date')
+        .gte('run_date', startDate)
+        .lte('run_date', endDateStr)
+        .eq('run_status', 'completed')
+        .not('run_title', 'like', '[DEMO]%')
+        .order('run_date', { ascending: true });
+
+      if (weekError) throw weekError;
+
+      const weekRunIds = (weekRuns || []).map(r => r.id);
+      let runSummaries: RunAttendanceSummary[] = [];
+
+      if (weekRunIds.length > 0) {
+        const { data: attendanceRows, error: attError } = await supabase
+          .from('run_attendance')
+          .select('run_id')
+          .in('run_id', weekRunIds)
+          .eq('marked_present', true);
+
+        if (attError) throw attError;
+
+        const countMap: Record<string, number> = {};
+        (attendanceRows || []).forEach(row => {
+          countMap[row.run_id] = (countMap[row.run_id] || 0) + 1;
+        });
+
+        runSummaries = (weekRuns || []).map(run => ({
+          runId: run.id,
+          runTitle: run.run_title,
+          runDate: run.run_date,
+          runnerCount: countMap[run.id] || 0,
+        }));
+      }
+
+      const totalRunners = runSummaries.reduce((sum, r) => sum + r.runnerCount, 0);
+      const averagePerRun = runSummaries.length > 0
+        ? Math.round((totalRunners / runSummaries.length) * 10) / 10
+        : 0;
+
+      setWeeklyRunnersData({
+        weekStart: startDate,
+        runs: runSummaries,
+        totalRunners,
+        averagePerRun,
+      });
+
+    } catch (error) {
+      console.error('Error fetching weekly runners report:', error);
+    } finally {
+      setWeeklyRunnersLoading(false);
+    }
+  };
+
+  const fetchWeeklyTrend = async () => {
+    try {
+      const trendEnd = new Date();
+      const trendStart = new Date();
+      trendStart.setDate(trendStart.getDate() - 26 * 7);
+      // Real data starts from 30 Mar 2026 — ignore test data before this date
+      const dataStartDate = '2026-03-30';
+      const trendStartRaw = `${trendStart.getFullYear()}-${String(trendStart.getMonth() + 1).padStart(2, '0')}-${String(trendStart.getDate()).padStart(2, '0')}`;
+      const trendStartStr = trendStartRaw > dataStartDate ? trendStartRaw : dataStartDate;
+      const trendEndStr = `${trendEnd.getFullYear()}-${String(trendEnd.getMonth() + 1).padStart(2, '0')}-${String(trendEnd.getDate()).padStart(2, '0')}`;
+
+      const { data: trendRuns, error: trendRunsError } = await supabase
+        .from('scheduled_runs')
+        .select('id, run_date')
+        .gte('run_date', trendStartStr)
+        .lte('run_date', trendEndStr)
+        .eq('run_status', 'completed')
+        .not('run_title', 'like', '[DEMO]%');
+
+      if (trendRunsError) throw trendRunsError;
+
+      const trendRunIds = (trendRuns || []).map(r => r.id);
+
+      if (trendRunIds.length === 0) {
+        setWeeklyTrend([]);
+        return;
+      }
+
+      const { data: trendAttendance, error: trendAttError } = await supabase
+        .from('run_attendance')
+        .select('run_id')
+        .in('run_id', trendRunIds)
+        .eq('marked_present', true);
+
+      if (trendAttError) throw trendAttError;
+
+      const runDateMap: Record<string, string> = {};
+      (trendRuns || []).forEach(r => { runDateMap[r.id] = r.run_date; });
+
+      const trendCountMap: Record<string, number> = {};
+      (trendAttendance || []).forEach(row => {
+        trendCountMap[row.run_id] = (trendCountMap[row.run_id] || 0) + 1;
+      });
+
+      const weekMap: Record<string, { total: number; runCount: number }> = {};
+
+      trendRunIds.forEach(runId => {
+        const runDate = new Date(runDateMap[runId] + 'T12:00:00');
+        const day = runDate.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        const monday = new Date(runDate);
+        monday.setDate(runDate.getDate() + diff);
+        const weekKey = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
+
+        if (!weekMap[weekKey]) weekMap[weekKey] = { total: 0, runCount: 0 };
+        weekMap[weekKey].total += trendCountMap[runId] || 0;
+        weekMap[weekKey].runCount += 1;
+      });
+
+      const trendPoints: WeeklyTrendPoint[] = Object.entries(weekMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([weekKey, data]) => {
+          const date = new Date(weekKey + 'T12:00:00');
+          const label = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+          return {
+            weekStart: weekKey,
+            weekLabel: label,
+            totalRunners: data.total,
+            runCount: data.runCount,
+            averagePerRun: data.runCount > 0
+              ? Math.round((data.total / data.runCount) * 10) / 10
+              : 0,
+          };
+        });
+
+      setWeeklyTrend(trendPoints);
+
+    } catch (error) {
+      console.error('Error fetching weekly trend:', error);
+    }
+  };
+
   const resendInvitation = async (invitationId: string, email: string) => {
     setResending(invitationId);
     try {
@@ -378,6 +563,27 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-GB', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    const current = new Date(selectedWeekStart + 'T12:00:00');
+    current.setDate(current.getDate() + (direction === 'next' ? 7 : -7));
+    const yyyy = current.getFullYear();
+    const mm = String(current.getMonth() + 1).padStart(2, '0');
+    const dd = String(current.getDate()).padStart(2, '0');
+    const newWeekStart = `${yyyy}-${mm}-${dd}`;
+    setSelectedWeekStart(newWeekStart);
+    fetchWeeklyRunnersReport(newWeekStart);
+    // Note: fetchWeeklyTrend is NOT called here — trend data does not change on navigation
+  };
+
+  const formatWeekRange = (weekStart: string) => {
+    const start = new Date(weekStart);
+    const end = new Date(weekStart);
+    end.setDate(end.getDate() + 6);
+    const startStr = start.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const endStr = end.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return `${startStr} – ${endStr}`;
   };
 
   return (
@@ -616,6 +822,199 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
             </table>
           </div>
         </div>
+      </section>
+
+      {/* Section 5: Weekly Runners Report */}
+      <section style={{ marginBottom: '32px' }}>
+        <h2 className="card-title">Weekly Runners Report</h2>
+
+        {/* Week navigator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <button
+            className="btn btn--secondary"
+            onClick={() => navigateWeek('prev')}
+            disabled={weeklyRunnersLoading}
+          >
+            ← Prev Week
+          </button>
+          <span style={{ fontWeight: '600', fontSize: '15px', color: 'var(--gray-700)' }}>
+            {formatWeekRange(selectedWeekStart)}
+          </span>
+          <button
+            className="btn btn--secondary"
+            onClick={() => navigateWeek('next')}
+            disabled={weeklyRunnersLoading}
+          >
+            Next Week →
+          </button>
+        </div>
+
+        {weeklyRunnersLoading ? (
+          <div className="card">
+            <div className="card-content" style={{ textAlign: 'center', padding: '24px', color: 'var(--gray-500)' }}>
+              Loading runners data...
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Summary stat cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+              <div className="card">
+                <div className="card-content" style={{ textAlign: 'center', padding: '20px' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--red-primary)' }}>
+                    {weeklyRunnersData?.totalRunners ?? '—'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--gray-500)', marginTop: '4px' }}>Total Runners</div>
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-content" style={{ textAlign: 'center', padding: '20px' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--red-primary)' }}>
+                    {weeklyRunnersData?.averagePerRun ?? '—'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--gray-500)', marginTop: '4px' }}>Avg per Run</div>
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-content" style={{ textAlign: 'center', padding: '20px' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--red-primary)' }}>
+                    {weeklyRunnersData?.runs.length ?? '—'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--gray-500)', marginTop: '4px' }}>Runs This Week</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Per-run breakdown table */}
+            <div className="card" style={{ marginBottom: '24px' }}>
+              <div className="table-container">
+                <table className="member-table">
+                  <thead className="member-table__header">
+                    <tr>
+                      <th className="member-table__header-cell">Date</th>
+                      <th className="member-table__header-cell">Run</th>
+                      <th className="member-table__header-cell" style={{ textAlign: 'right' }}>Runners</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {!weeklyRunnersData || weeklyRunnersData.runs.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="member-table__cell" style={{ textAlign: 'center', color: 'var(--gray-500)' }}>
+                          No completed runs with attendance recorded for this week
+                        </td>
+                      </tr>
+                    ) : (
+                      weeklyRunnersData.runs.map(run => (
+                        <tr key={run.runId} className="member-table__row">
+                          <td className="member-table__cell member-table__cell--small-gray">
+                            {formatDate(run.runDate)}
+                          </td>
+                          <td className="member-table__cell">{run.runTitle}</td>
+                          <td className="member-table__cell" style={{ textAlign: 'right', fontWeight: '600', color: 'var(--red-primary)' }}>
+                            {run.runnerCount}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 6-month trend */}
+            <h3 className="card-title" style={{ marginBottom: '12px' }}>6-Month Trend</h3>
+            {weeklyTrend.length === 0 ? (
+              <div className="card">
+                <div className="card-content" style={{ textAlign: 'center', padding: '24px', color: 'var(--gray-500)' }}>
+                  No historical data available yet
+                </div>
+              </div>
+            ) : (
+              <div className="card">
+                <div className="card-content">
+                  {/* CSS bar chart — no external library */}
+                  <div style={{ overflowX: 'auto' }}>
+                    <div style={{ minWidth: `${weeklyTrend.length * 44}px`, paddingBottom: '8px' }}>
+                      {(() => {
+                        const maxTotal = Math.max(...weeklyTrend.map(w => w.totalRunners), 1);
+                        return (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '140px', marginBottom: '8px' }}>
+                              {weeklyTrend.map(week => (
+                                <div
+                                  key={week.weekStart}
+                                  style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', height: '100%', justifyContent: 'flex-end' }}
+                                  title={`${week.weekLabel}: ${week.totalRunners} runners across ${week.runCount} run${week.runCount !== 1 ? 's' : ''}`}
+                                >
+                                  <span style={{ fontSize: '10px', color: 'var(--gray-600)', fontWeight: '600' }}>
+                                    {week.totalRunners > 0 ? week.totalRunners : ''}
+                                  </span>
+                                  <div
+                                    style={{
+                                      width: '100%',
+                                      background: week.weekStart === selectedWeekStart
+                                        ? 'var(--red-primary)'
+                                        : 'var(--gray-300)',
+                                      borderRadius: '3px 3px 0 0',
+                                      height: `${Math.max((week.totalRunners / maxTotal) * 100, week.totalRunners > 0 ? 4 : 0)}%`,
+                                      transition: 'background 0.2s',
+                                      minHeight: week.totalRunners > 0 ? '4px' : '0',
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                            {/* X-axis labels — every 4 weeks to avoid crowding */}
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              {weeklyTrend.map((week, i) => (
+                                <div key={week.weekStart} style={{ flex: 1, textAlign: 'center', fontSize: '10px', color: 'var(--gray-500)', overflow: 'hidden' }}>
+                                  {i % 4 === 0 ? week.weekLabel : ''}
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Trend table — most recent first */}
+                  <div className="table-container" style={{ marginTop: '16px' }}>
+                    <table className="member-table">
+                      <thead className="member-table__header">
+                        <tr>
+                          <th className="member-table__header-cell">Week of</th>
+                          <th className="member-table__header-cell" style={{ textAlign: 'right' }}>Runs</th>
+                          <th className="member-table__header-cell" style={{ textAlign: 'right' }}>Total Runners</th>
+                          <th className="member-table__header-cell" style={{ textAlign: 'right' }}>Avg per Run</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...weeklyTrend].reverse().map(week => (
+                          <tr
+                            key={week.weekStart}
+                            className="member-table__row"
+                            style={week.weekStart === selectedWeekStart ? { background: '#fef2f2' } : {}}
+                          >
+                            <td className="member-table__cell member-table__cell--small-gray">
+                              {week.weekLabel}
+                              {week.weekStart === selectedWeekStart && (
+                                <span style={{ marginLeft: '6px', fontSize: '11px', color: 'var(--red-primary)', fontWeight: '600' }}>← selected</span>
+                              )}
+                            </td>
+                            <td className="member-table__cell" style={{ textAlign: 'right' }}>{week.runCount}</td>
+                            <td className="member-table__cell" style={{ textAlign: 'right', fontWeight: '600' }}>{week.totalRunners}</td>
+                            <td className="member-table__cell" style={{ textAlign: 'right', color: 'var(--gray-600)' }}>{week.averagePerRun}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </section>
 
       <div style={{ textAlign: 'center', marginTop: '32px' }}>
