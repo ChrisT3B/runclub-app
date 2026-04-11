@@ -20,6 +20,11 @@ export interface Member {
   dbs_expiry_date?: string;
   email_notifications_enabled?: boolean;
   is_c25k_participant?: boolean;
+  title?: string;
+  date_of_birth?: string;
+  sex_at_birth?: 'male' | 'female';
+  address_postcode?: string;
+  emergency_contact_relationship?: string;
   date_joined?: string;
   created_at: string;
   updated_at: string;

@@ -17,6 +17,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     { id: 'profile', name: 'My Profile', icon: '👤' },
     { id: 'ea-membership', name: 'Club Membership', icon: '🏅' },
     { id: 'leagues-hub', name: 'Leagues', icon: '🏆' },
+    { id: 'c25k-register', name: 'C25k Programme', icon: '🏃' },
   ]
 
   // Add LIRF-specific navigation using permissions
@@ -37,7 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
   if (permissions.canManageMembers) {
     navigation.push(
       { id: 'members', name: 'Members', icon: '👥' },
-      { id: 'c25k-invitations', name: 'C25k Invitations', icon: '🏃' },
+      { id: 'c25k-admin', name: 'C25k Admin', icon: '🏃' },
       { id: 'league-admin-hub', name: 'League Admin', icon: '🏆' },
       { id: 'test-lirf-reminder', name: 'Test LIRF Reminder', icon: '🧪' }
     )
@@ -99,16 +100,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
             </button>
           )}
 
-          {/* C25k Invitations - Admin only */}
-          {permissions.canManageMembers && (
-            <button
-              onClick={() => onNavigate?.('c25k-invitations')}
-              className={`nav-item ${currentPage === 'c25k-invitations' ? 'active' : ''}`}
-            >
-              <span style={{ marginRight: '12px', fontSize: '16px' }}>🏃</span>
-              C25k Invitations
-            </button>
-          )}
         </nav>
 
         {/* Club Information Section */}

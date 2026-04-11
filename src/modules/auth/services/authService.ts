@@ -623,6 +623,15 @@ export const verifyEmail = async (token: string): Promise<EmailVerificationResul
             email: pendingMember.email,
             full_name: pendingMember.full_name,
             phone: pendingMember.phone || '',
+
+            // Extended fields (may be null for non-C25k members)
+            title: pendingMember.title,
+            date_of_birth: pendingMember.date_of_birth,
+            sex_at_birth: pendingMember.sex_at_birth,
+            address_postcode: pendingMember.address_postcode,
+            ea_urn: pendingMember.ea_urn,
+            emergency_contact_relationship: pendingMember.emergency_contact_relationship,
+
             access_level: 'member',
             membership_status: 'active',
             emergency_contact_name: pendingMember.emergency_contact_name || '',
