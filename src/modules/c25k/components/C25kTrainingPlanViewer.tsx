@@ -94,19 +94,21 @@ export const C25kTrainingPlanViewer: React.FC = () => {
 
   const weekLabel = (num: number) => num < 0 ? `Prep ${num + 3}` : `${num}`;
 
-  const renderSession = (day: string, location: string, workout: string | null, sc: string | null) => (
+  const renderSession = (day: string, location: string, workout: string | null, sc: string | null, phase: string) => (
     <div className="card">
       <div className="session-card-header">
         <h3 className="session-day-title">{day}</h3>
         <p className="session-location">{location}</p>
       </div>
       <div className="card-content">
-        {workout ? (
+        {(workout || sc) ? (
           <>
-            <div className="session-content-section">
-              <h4 className="session-section-label">Run:</h4>
-              <p className="session-section-text">{workout}</p>
-            </div>
+            {workout && (
+              <div className="session-content-section">
+                <h4 className="session-section-label">{phase === 'preparation' ? 'Activity:' : 'Run:'}</h4>
+                <p className="session-section-text">{workout}</p>
+              </div>
+            )}
             {sc && (
               <div className="session-content-section">
                 <h4 className="session-section-label">S&C:</h4>
@@ -233,9 +235,9 @@ export const C25kTrainingPlanViewer: React.FC = () => {
 
           {/* Training Sessions Grid */}
           <div className="training-sessions-grid">
-            {renderSession(currentWeek.run1_day, currentWeek.run1_location, currentWeek.run1_workout, currentWeek.run1_sc)}
-            {renderSession(currentWeek.run2_day, currentWeek.run2_location, currentWeek.run2_workout, currentWeek.run2_sc)}
-            {renderSession(currentWeek.run3_day, currentWeek.run3_location, currentWeek.run3_workout, currentWeek.run3_sc)}
+            {renderSession(currentWeek.run1_day, currentWeek.run1_location, currentWeek.run1_workout, currentWeek.run1_sc, currentWeek.phase)}
+            {renderSession(currentWeek.run2_day, currentWeek.run2_location, currentWeek.run2_workout, currentWeek.run2_sc, currentWeek.phase)}
+            {renderSession(currentWeek.run3_day, currentWeek.run3_location, currentWeek.run3_workout, currentWeek.run3_sc, currentWeek.phase)}
           </div>
 
           {/* Quick Jump to Current Week */}

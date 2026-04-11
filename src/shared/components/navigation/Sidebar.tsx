@@ -19,9 +19,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     { id: 'leagues-hub', name: 'Leagues', icon: '🏆' },
   ]
 
-  // C25k Training Plan - visible only to confirmed C25k participants
-  if (state.member?.is_c25k_participant) {
-    navigation.push({ id: 'c25k-training-plan', name: 'Training Plan', icon: '📋' })
+  // C25k Training Plan - visible to C25k participants, LIRFs, and admins
+  if (state.member?.is_c25k_participant || permissions.canManageRuns) {
+    navigation.push({ id: 'c25k-training-plan', name: 'C25K Training Plan', icon: '📋' })
   }
 
   // Add LIRF-specific navigation using permissions

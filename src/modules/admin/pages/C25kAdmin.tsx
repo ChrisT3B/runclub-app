@@ -66,6 +66,7 @@ export const C25kAdmin: React.FC<{ onNavigate?: (page: string) => void }> = ({ o
 
   // --- Applications Tab State ---
   const [registrations, setRegistrations] = useState<C25kRegistrationWithDetails[]>([]);
+  const [totalApplications, setTotalApplications] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all');
   const [filterOpen, setFilterOpen] = useState(false);
@@ -143,6 +144,7 @@ export const C25kAdmin: React.FC<{ onNavigate?: (page: string) => void }> = ({ o
       );
 
       setRegistrations(registrationsWithHealth);
+      if (statusFilter === 'all') setTotalApplications(registrationsWithHealth.length);
     } catch (err) {
       console.error('Error loading registrations:', err);
       setError('Failed to load registrations');
@@ -157,7 +159,13 @@ export const C25kAdmin: React.FC<{ onNavigate?: (page: string) => void }> = ({ o
     }
   }, [activeTab, loadRegistrations]);
 
+  // Load application count on mount (lightweight — no joins)
   useEffect(() => {
+    supabase
+      .from('c25k_registrations')
+      .select('*', { count: 'exact', head: true })
+      .eq('programme_year', 2026)
+      .then(({ count }) => { if (count !== null) setTotalApplications(count); });
     C25kDemoService.hasDemoData().then(setHasDemoData);
   }, []);
 
@@ -305,7 +313,7 @@ export const C25kAdmin: React.FC<{ onNavigate?: (page: string) => void }> = ({ o
             className={`filter-tab ${activeTab === tab ? 'filter-tab--active' : ''}`}
             style={{ borderRadius: 0, border: 'none', borderBottom: activeTab === tab ? '3px solid var(--red-primary)' : '3px solid transparent' }}
           >
-            {tab === 'invitations' ? '📧 Invitations' : `📋 Applications (${registrations.length})`}
+            {tab === 'invitations' ? '📧 Invitations' : `📋 Applications (${totalApplications})`}
           </button>
         ))}
       </div>
