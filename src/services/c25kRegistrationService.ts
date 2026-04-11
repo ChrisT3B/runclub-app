@@ -96,7 +96,7 @@ export class C25kRegistrationService {
 
   /**
    * Register an existing member for C25k (already has an account)
-   * Creates health screening and registration records, updates member fields
+   * Uses SECURITY DEFINER RPC to bypass RLS for unauthenticated users
    */
   static async registerExistingMember(
     memberId: string,
@@ -105,32 +105,35 @@ export class C25kRegistrationService {
     try {
       const sanitized = this.sanitizeFormData(formData);
 
-      // Update member record with C25k fields
-      const { error: memberError } = await supabase
-        .from('members')
-        .update({
-          title: sanitized.title,
-          date_of_birth: formData.date_of_birth,
-          sex_at_birth: formData.sex_at_birth,
-          address_postcode: sanitized.address_postcode,
-          ea_urn: sanitized.ea_urn || undefined,
-          emergency_contact_name: sanitized.emergency_contact_name,
-          emergency_contact_relationship: sanitized.emergency_contact_relationship,
-          emergency_contact_phone: sanitized.emergency_contact_phone,
-          is_c25k_participant: true
-        })
-        .eq('id', memberId);
+      const { data, error } = await supabase.rpc('register_existing_c25k_member', {
+        p_member_id: memberId,
+        p_title: sanitized.title,
+        p_date_of_birth: formData.date_of_birth,
+        p_sex_at_birth: formData.sex_at_birth,
+        p_address_postcode: sanitized.address_postcode,
+        p_ea_urn: sanitized.ea_urn || '',
+        p_emergency_contact_name: sanitized.emergency_contact_name,
+        p_emergency_contact_relationship: sanitized.emergency_contact_relationship,
+        p_emergency_contact_phone: sanitized.emergency_contact_phone,
+        p_heart_condition: formData.health_screening.heart_condition,
+        p_chest_pain: formData.health_screening.chest_pain,
+        p_dizziness: formData.health_screening.dizziness_loss_consciousness,
+        p_chronic_condition: formData.health_screening.chronic_medical_condition,
+        p_prescribed_meds: formData.health_screening.prescribed_medications,
+        p_bone_joint: formData.health_screening.bone_joint_soft_tissue,
+        p_medically_supervised: formData.health_screening.medically_supervised_only,
+        p_additional_info: sanitized.additional_info || '',
+        p_accepted_terms: formData.accepted_terms
+      }) as { data: { success: boolean; error?: string } | null; error: any };
 
-      if (memberError) {
-        console.error('Failed to update member:', memberError);
-        throw new Error('Failed to update member profile');
+      if (error) {
+        console.error('RPC error:', error);
+        throw new Error(error.message || 'Registration failed');
       }
 
-      // Create health screening record
-      await this.createHealthScreening(memberId, formData);
-
-      // Create C25k registration record
-      await this.createRegistration(memberId, formData);
+      if (data && !data.success) {
+        throw new Error(data.error || 'Registration failed');
+      }
 
       return { success: true };
     } catch (error: any) {

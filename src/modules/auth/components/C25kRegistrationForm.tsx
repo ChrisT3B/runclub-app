@@ -98,9 +98,15 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
   const [detectedMemberId, setDetectedMemberId] = useState<string | undefined>(existingMemberData?.member_id);
   const [detectedExisting, setDetectedExisting] = useState(isExistingMember || false);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const [lastCheckedEmail, setLastCheckedEmail] = useState('');
 
   const handleEmailBlur = async () => {
     if (isExistingMember || !formData.email || !formData.email.includes('@')) return;
+
+    // Rate limit: don't re-check the same email
+    const emailLower = formData.email.toLowerCase().trim();
+    if (emailLower === lastCheckedEmail) return;
+    setLastCheckedEmail(emailLower);
 
     setCheckingEmail(true);
     try {
