@@ -8,7 +8,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
-  const { permissions } = useAuth()
+  const { permissions, state } = useAuth()
   const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false)
 
   const navigation: { id: string; name: string; icon: string; badge?: number }[] = [
@@ -17,8 +17,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     { id: 'profile', name: 'My Profile', icon: '👤' },
     { id: 'ea-membership', name: 'Club Membership', icon: '🏅' },
     { id: 'leagues-hub', name: 'Leagues', icon: '🏆' },
-    { id: 'c25k-register', name: 'C25k Programme', icon: '🏃' },
   ]
+
+  // C25k Training Plan - visible only to confirmed C25k participants
+  if (state.member?.is_c25k_participant) {
+    navigation.push({ id: 'c25k-training-plan', name: 'Training Plan', icon: '📋' })
+  }
 
   // Add LIRF-specific navigation using permissions
   if (permissions.canManageRuns) {

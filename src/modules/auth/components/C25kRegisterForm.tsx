@@ -1,26 +1,111 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
 import { C25kRegistrationForm } from './C25kRegistrationForm'
 import { C25kRegistrationService } from '../../../services/c25kRegistrationService'
 import { C25kRegistrationFormData } from '../../../types/c25k'
 
 /**
- * Public C25k registration page (mounted at /c25k)
- * Wraps the C25kRegistrationForm with auth signup logic
+ * C25k registration page (mounted at /c25k)
+ * Detects if user is already logged in:
+ *   - Logged in: pre-fills data, skips password, uses registerExistingMember
+ *   - Not logged in: full form with password, uses registerNewC25kParticipant
  */
 export const C25kRegisterForm: React.FC = () => {
+  const { state } = useAuth()
   const [showSuccess, setShowSuccess] = useState(false)
   const [registeredEmail, setRegisteredEmail] = useState('')
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false)
+  const [checking, setChecking] = useState(true)
+
+  const isLoggedIn = state.isAuthenticated && !!state.member
+  const member = state.member
+
+  // Check if existing member is already registered
+  useEffect(() => {
+    const check = async () => {
+      if (isLoggedIn && member?.id) {
+        const registered = await C25kRegistrationService.isAlreadyRegistered(member.id)
+        setAlreadyRegistered(registered)
+      }
+      setChecking(false)
+    }
+    // Wait for auth to initialise before checking
+    if (state.isInitialized) {
+      check()
+    }
+  }, [isLoggedIn, member?.id, state.isInitialized])
 
   const handleSubmit = async (formData: C25kRegistrationFormData) => {
-    const result = await C25kRegistrationService.registerNewC25kParticipant(formData)
-    if (result.success) {
-      setRegisteredEmail(formData.email)
-      setShowSuccess(true)
+    if (isLoggedIn && member?.id) {
+      // Existing member — update profile + create health screening & registration
+      const result = await C25kRegistrationService.registerExistingMember(member.id, formData)
+      if (result.success) {
+        setRegisteredEmail(formData.email)
+        setShowSuccess(true)
+      } else {
+        throw new Error(result.error || 'Registration failed')
+      }
     } else {
-      throw new Error(result.error || 'Registration failed')
+      // New member — create auth account + pending member + health screening & registration
+      const result = await C25kRegistrationService.registerNewC25kParticipant(formData)
+      if (result.success) {
+        setRegisteredEmail(formData.email)
+        setShowSuccess(true)
+      } else {
+        throw new Error(result.error || 'Registration failed')
+      }
     }
   }
 
+  // Still loading auth state
+  if (!state.isInitialized || checking) {
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--gray-600)' }}>
+        Loading...
+      </div>
+    )
+  }
+
+  // Already registered
+  if (alreadyRegistered) {
+    return (
+      <div style={{
+        maxWidth: '500px',
+        margin: '0 auto',
+        padding: '40px 20px',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          background: 'var(--info-color, #3b82f6)',
+          color: 'white',
+          width: '80px',
+          height: '80px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 auto 20px',
+          fontSize: '32px'
+        }}>
+          ✓
+        </div>
+        <h2 style={{ color: 'var(--info-color, #1e40af)', marginBottom: '16px' }}>Already Registered</h2>
+        <p style={{ color: 'var(--gray-600)', marginBottom: '24px', lineHeight: '1.6' }}>
+          You're already registered for the C25k 2026 programme!
+          Your registration is being processed by the admin team.
+        </p>
+        <a href="/" className="action-btn action-btn--primary" style={{ textDecoration: 'none', display: 'inline-block' }}>
+          Back to App
+        </a>
+      </div>
+    )
+  }
+
+  // Success state
   if (showSuccess) {
     return (
       <div style={{
@@ -36,7 +121,7 @@ export const C25kRegisterForm: React.FC = () => {
         <div style={{ marginBottom: '40px' }}>
           <div style={{
             background: '#dcfce7',
-            color: '#16a34a',
+            color: 'var(--success-color)',
             width: '100px',
             height: '100px',
             borderRadius: '50%',
@@ -45,7 +130,7 @@ export const C25kRegisterForm: React.FC = () => {
             justifyContent: 'center',
             margin: '0 auto 20px',
             fontSize: '40px',
-            border: '3px solid #16a34a'
+            border: '3px solid var(--success-color)'
           }}>
             ✓
           </div>
@@ -59,90 +144,88 @@ export const C25kRegisterForm: React.FC = () => {
           </h1>
         </div>
 
-        <div className="card" style={{ border: '2px solid #16a34a', marginBottom: '30px' }}>
+        <div className="card" style={{ border: '2px solid var(--success-color)', marginBottom: '30px' }}>
           <div className="card-content">
-            <h2 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#16a34a',
-              marginBottom: '16px'
-            }}>
-              Please Check Your Email
-            </h2>
-            <p style={{
-              color: 'var(--gray-700)',
-              lineHeight: '1.6',
-              marginBottom: '16px'
-            }}>
-              Thank you for signing up for Couch to 5K with Run Alcester! We've sent a verification email to:
-            </p>
-            <div style={{
-              background: 'var(--gray-50)',
-              padding: '12px',
-              borderRadius: '6px',
-              border: '1px solid var(--gray-200)',
-              fontWeight: '600',
-              color: '#1e40af',
-              marginBottom: '16px'
-            }}>
-              {registeredEmail}
-            </div>
-            <p style={{
-              color: 'var(--gray-600)',
-              fontSize: '14px',
-              lineHeight: '1.5'
-            }}>
-              Please click the verification link in your email to activate your account.
-              Once verified, you'll be able to sign in and see your C25K runs!
-            </p>
-
-            <div style={{
-              background: '#fef3c7',
-              padding: '12px',
-              borderRadius: '6px',
-              marginTop: '20px',
-              fontSize: '14px',
-              color: '#92400e'
-            }}>
-              <strong>Next steps:</strong> Your registration is now pending payment confirmation.
-              If you selected bank transfer, please ensure you've sent the £30 to the account details shown on the form.
-              An admin will confirm your payment and you'll be all set!
-            </div>
-
-            <div style={{
-              background: '#dbeafe',
-              padding: '12px',
-              borderRadius: '6px',
-              marginTop: '12px',
-              fontSize: '14px',
-              color: '#1e40af'
-            }}>
-              Check your spam folder if you don't see the email within a few minutes.
-            </div>
+            {isLoggedIn ? (
+              <>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--success-color)', marginBottom: '16px' }}>
+                  C25k Registration Complete
+                </h2>
+                <p style={{ color: 'var(--gray-700)', lineHeight: '1.6', marginBottom: '16px' }}>
+                  Thank you for registering for Couch to 5K 2026 with Run Alcester!
+                </p>
+                <div className="member-list-alert member-list-alert--info" style={{ textAlign: 'left' }}>
+                  <strong>What happens next?</strong><br />
+                  An admin will review your registration and confirm your payment.
+                  You'll be able to see and book onto C25k runs once confirmed.
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--success-color)', marginBottom: '16px' }}>
+                  Please Check Your Email
+                </h2>
+                <p style={{ color: 'var(--gray-700)', lineHeight: '1.6', marginBottom: '16px' }}>
+                  Thank you for signing up for Couch to 5K with Run Alcester! We've sent a verification email to:
+                </p>
+                <div style={{
+                  background: 'var(--gray-50)',
+                  padding: '12px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--gray-200)',
+                  fontWeight: '600',
+                  color: '#1e40af',
+                  marginBottom: '16px'
+                }}>
+                  {registeredEmail}
+                </div>
+                <p style={{ color: 'var(--gray-600)', fontSize: 'var(--font-sm)', lineHeight: '1.5' }}>
+                  Please click the verification link in your email to activate your account.
+                  Once verified, you'll be able to sign in and see your C25K runs!
+                </p>
+                <div className="urgent-alert" style={{ marginTop: '20px', textAlign: 'left' }}>
+                  <div className="urgent-alert__content">
+                    <div className="urgent-alert__title">Next steps</div>
+                    <div className="urgent-alert__message">
+                      Your registration is now pending payment confirmation.
+                      If you selected bank transfer, please ensure you've sent the £30 to the account details shown on the form.
+                    </div>
+                  </div>
+                </div>
+                <div className="member-list-alert member-list-alert--info" style={{ marginTop: '12px', textAlign: 'left' }}>
+                  Check your spam folder if you don't see the email within a few minutes.
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a
-            href="/"
-            className="btn btn-primary"
-            style={{ padding: '12px 24px', textDecoration: 'none' }}
-          >
-            Go to Sign In
+          <a href="/" className="action-btn action-btn--primary" style={{ textDecoration: 'none' }}>
+            {isLoggedIn ? 'Back to App' : 'Go to Sign In'}
           </a>
         </div>
 
-        <div style={{
-          textAlign: 'center',
-          marginTop: '40px',
-          color: 'var(--gray-500)',
-          fontSize: '12px'
-        }}>
+        <div style={{ textAlign: 'center', marginTop: '40px', color: 'var(--gray-500)', fontSize: 'var(--font-xs)' }}>
           <p>Need help? Contact us at runalcester@gmail.com</p>
         </div>
       </div>
     )
   }
 
-  return <C25kRegistrationForm onSubmit={handleSubmit} />
+  // Registration form — adapts based on logged-in state
+  return (
+    <C25kRegistrationForm
+      onSubmit={handleSubmit}
+      isExistingMember={isLoggedIn}
+      existingMemberData={isLoggedIn && member ? {
+        full_name: member.full_name,
+        email: member.email,
+        phone: member.phone,
+        emergency_contact_name: member.emergency_contact_name,
+        emergency_contact_phone: member.emergency_contact_phone,
+        ea_urn: member.ea_urn
+      } : undefined}
+    />
+  )
 }

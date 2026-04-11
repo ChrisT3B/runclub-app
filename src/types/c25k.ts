@@ -106,6 +106,47 @@ export interface C25kRegistrationFormData {
   confirm_password: string;
 }
 
+// Training plan types
+
+export type C25kTrainingPhase = 'preparation' | 'base' | 'build' | 'maintain';
+
+export interface C25kTrainingWeek {
+  id: string;
+  programme_year: number;
+  week_number: number; // -2 to 12
+  phase: C25kTrainingPhase;
+
+  run1_day: string;
+  run1_location: string;
+  run1_workout: string | null;
+  run1_sc: string | null;
+
+  run2_day: string;
+  run2_location: string;
+  run2_workout: string | null;
+  run2_sc: string | null;
+
+  run3_day: string;
+  run3_location: string;
+  run3_workout: string | null;
+  run3_sc: string | null;
+
+  weekly_minutes: number | null;
+  notes: string | null;
+
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface C25kProgrammeDates {
+  start_date: string;
+  end_date: string;
+  graduation_date: string;
+  current_week: number;
+  is_programme_active: boolean;
+  weeks_remaining: number;
+}
+
 export interface C25kProgrammeInfo {
   year: number;
   cohort_name: string;

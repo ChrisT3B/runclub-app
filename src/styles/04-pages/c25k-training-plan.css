@@ -1,0 +1,164 @@
+/* C25k Training Plan - Additional Styles */
+
+/* Programme header info bar */
+.c25k-programme-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+/* Week navigation header */
+.week-nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.week-nav-center {
+  text-align: center;
+  flex: 1;
+}
+
+/* Phase indicator bar (dynamic color via inline style) */
+.phase-indicator-bar {
+  height: 4px;
+  border-radius: 2px;
+  margin-bottom: var(--space-6);
+}
+
+/* Training sessions grid */
+.training-sessions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+/* Session card headers */
+.session-card-header {
+  background: var(--gray-50);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.session-day-title {
+  margin: 0;
+  font-size: var(--font-base);
+  font-weight: var(--font-semibold);
+  color: var(--gray-900);
+}
+
+.session-location {
+  margin: 2px 0 0 0;
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+}
+
+/* Session content */
+.session-content-section {
+  margin-bottom: var(--space-3);
+}
+
+.session-content-section:last-child {
+  margin-bottom: 0;
+}
+
+.session-section-label {
+  margin: 0 0 4px 0;
+  font-size: var(--font-sm);
+  color: var(--gray-700);
+  font-weight: var(--font-medium);
+}
+
+.session-section-text {
+  margin: 0;
+  font-size: var(--font-sm);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--gray-900);
+}
+
+.session-rest-day {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--gray-500);
+  font-style: italic;
+}
+
+/* Week pills navigation */
+.week-pills {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.week-pill {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--gray-300);
+  background: white;
+  font-size: var(--font-xs);
+  font-weight: var(--font-semibold);
+  color: var(--gray-600);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.week-pill:hover {
+  border-color: var(--red-primary);
+  color: var(--red-primary);
+}
+
+.week-pill--active {
+  background: var(--red-primary);
+  border-color: var(--red-primary);
+  color: white;
+}
+
+.week-pill--current {
+  border-color: var(--success-color);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+
+.week-pill--current.week-pill--active {
+  background: var(--success-color);
+  border-color: var(--success-color);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .c25k-programme-info {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .week-nav-header {
+    padding: var(--space-3);
+  }
+
+  .training-sessions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .week-pill {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .session-card-header {
+    padding: var(--space-2) var(--space-3);
+  }
+}

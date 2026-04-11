@@ -19,7 +19,7 @@ import { HelpVideos } from './modules/help/pages/HelpVideos';
 import { BulkInvitations } from './modules/admin/pages/BulkInvitations';
 import { C25kInvitations } from './modules/admin/pages/C25kInvitations';
 import { C25kAdmin } from './modules/admin/pages/C25kAdmin';
-import { C25kExistingMemberRegistration } from './modules/auth/components/C25kExistingMemberRegistration';
+import { C25kTrainingPlan } from './modules/c25k/pages/C25kTrainingPlan';
 import { AffiliatedMemberApplicationForm } from './modules/membership/components/AffiliatedMemberApplicationForm';
 import { LeaguePage } from './modules/leagues/pages/LeaguePage';
 import { SubmitEntryPage } from './modules/leagues/pages/SubmitEntryPage';
@@ -192,9 +192,9 @@ export const AppContent: React.FC = () => {
       case 'c25k-admin':
         console.log('✅ Rendering C25kAdmin');
         return <C25kAdmin onNavigate={handleNavigation} />;
-      case 'c25k-register':
-        console.log('✅ Rendering C25kExistingMemberRegistration');
-        return <C25kExistingMemberRegistration onNavigate={handleNavigation} />;
+      case 'c25k-training-plan':
+        console.log('✅ Rendering C25kTrainingPlan');
+        return <C25kTrainingPlan />;
       case 'ea-membership':
         console.log('✅ Rendering AffiliatedMemberApplicationForm');
         return <AffiliatedMemberApplicationForm onBack={() => handleNavigation('dashboard')} />;
