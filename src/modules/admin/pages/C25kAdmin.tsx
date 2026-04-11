@@ -79,7 +79,7 @@ export const C25kAdmin: React.FC<{ onNavigate?: (page: string) => void }> = ({ o
     memberName: string;
   } | null>(null);
   const [pendingConfirmation, setPendingConfirmation] = useState<{
-    type: 'payment' | 'physio_start' | 'physio_complete';
+    type: 'payment' | 'foc' | 'physio_start' | 'physio_complete';
     registrationId: string;
     memberName: string;
     allHealthNo?: boolean;
@@ -213,8 +213,41 @@ export const C25kAdmin: React.FC<{ onNavigate?: (page: string) => void }> = ({ o
     const { type, registrationId, memberName, allHealthNo, paymentDate } = pendingConfirmation;
     setPendingConfirmation(null);
     if (type === 'payment') await handleConfirmPayment(registrationId, memberName, allHealthNo, paymentDate!);
+    else if (type === 'foc') await handleMarkFOC(registrationId, memberName, allHealthNo);
     else if (type === 'physio_start') await handlePhysioStatusChange(registrationId, 'physio_in_progress', memberName);
     else if (type === 'physio_complete') await handlePhysioStatusChange(registrationId, 'confirmed', memberName);
+  };
+
+  const handleMarkFOC = async (registrationId: string, memberName: string, allHealthNo: boolean | undefined) => {
+    if (!adminId) return;
+    try {
+      setConfirmingPaymentIds(prev => new Set(prev).add(registrationId));
+      setError('');
+      const newStatus = allHealthNo ? 'confirmed' : 'awaiting_health_review';
+      const { error: updateError } = await supabase
+        .from('c25k_registrations')
+        .update({
+          payment_confirmed: true,
+          payment_type: 'existing_member_free',
+          payment_amount: 0,
+          payment_confirmed_at: new Date().toISOString(),
+          payment_confirmed_by: adminId,
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+      if (updateError) throw updateError;
+      setSuccess(
+        allHealthNo
+          ? `${memberName} marked as FOC - Confirmed for programme!`
+          : `${memberName} marked as FOC - Awaiting physio health review`
+      );
+      await loadRegistrations();
+    } catch (err: any) {
+      setError(err.message || 'Failed to mark as FOC');
+    } finally {
+      setConfirmingPaymentIds(prev => { const n = new Set(prev); n.delete(registrationId); return n; });
+    }
   };
 
   const handlePhysioStatusChange = async (registrationId: string, newStatus: 'physio_in_progress' | 'confirmed', memberName: string) => {
@@ -424,9 +457,9 @@ export const C25kAdmin: React.FC<{ onNavigate?: (page: string) => void }> = ({ o
                         <div style={{ flex: 1 }} />
 
                         {/* Action */}
-                        {reg.status === 'pending_payment' && !reg.payment_confirmed && reg.payment_type !== 'existing_member_free' && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                            <span style={{ fontSize: 'var(--font-sm)', color: 'var(--gray-500)' }}>Payment date:</span>
+                        {reg.status === 'pending_payment' && !reg.payment_confirmed && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 'var(--font-sm)', color: 'var(--gray-500)' }}>Paid:</span>
                             <input
                               type="date"
                               className="form-input"
@@ -441,6 +474,14 @@ export const C25kAdmin: React.FC<{ onNavigate?: (page: string) => void }> = ({ o
                               disabled={confirmingPaymentIds.has(reg.id!)}
                               style={{ width: 'auto', padding: 'var(--space-1) var(--space-2)', fontSize: 'var(--font-sm)' }}
                             />
+                            <button
+                              className="action-btn action-btn--secondary"
+                              style={{ padding: 'var(--space-1) var(--space-2)', fontSize: 'var(--font-sm)' }}
+                              onClick={() => setPendingConfirmation({ type: 'foc', registrationId: reg.id!, memberName: member?.full_name || 'Member', allHealthNo })}
+                              disabled={confirmingPaymentIds.has(reg.id!)}
+                            >
+                              FOC
+                            </button>
                           </div>
                         )}
 
@@ -591,18 +632,22 @@ export const C25kAdmin: React.FC<{ onNavigate?: (page: string) => void }> = ({ o
         isOpen={!!pendingConfirmation}
         title={
           pendingConfirmation?.type === 'payment' ? 'Confirm Payment' :
+          pendingConfirmation?.type === 'foc' ? 'Mark as Free of Charge' :
           pendingConfirmation?.type === 'physio_start' ? 'Start Physio Check' :
           'Complete Physio Check'
         }
         message={
           pendingConfirmation?.type === 'payment'
             ? `Confirm £30 payment received from ${pendingConfirmation.memberName} on ${pendingConfirmation.paymentDate ? new Date(pendingConfirmation.paymentDate).toLocaleDateString('en-GB') : ''}?`
+            : pendingConfirmation?.type === 'foc'
+            ? `Mark ${pendingConfirmation?.memberName} as free of charge (existing/returning member)?`
             : pendingConfirmation?.type === 'physio_start'
             ? `Start physiotherapist review for ${pendingConfirmation?.memberName}?`
             : `Mark physio check as complete for ${pendingConfirmation?.memberName}? This will confirm them for the programme.`
         }
         confirmText={
           pendingConfirmation?.type === 'payment' ? 'Confirm Payment' :
+          pendingConfirmation?.type === 'foc' ? 'Mark as FOC' :
           pendingConfirmation?.type === 'physio_start' ? 'Start Check' :
           'Complete & Confirm'
         }

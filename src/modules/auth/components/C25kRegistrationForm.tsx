@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
 import { C25kRegistrationFormData } from '../../../types/c25k';
+import { C25kRegistrationService } from '../../../services/c25kRegistrationService';
+
+interface ExistingMemberData {
+  full_name: string;
+  email: string;
+  phone: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  ea_urn?: string;
+  member_id?: string;
+}
 
 interface C25kRegistrationFormProps {
   invitationEmail?: string;
-  onSubmit: (data: C25kRegistrationFormData) => Promise<void>;
+  onSubmit: (data: C25kRegistrationFormData, detectedMemberId?: string) => Promise<void>;
   onCancel?: () => void;
   isExistingMember?: boolean;
-  existingMemberData?: {
-    full_name: string;
-    email: string;
-    phone: string;
-    emergency_contact_name: string;
-    emergency_contact_phone: string;
-    ea_urn?: string;
-  };
+  existingMemberData?: ExistingMemberData;
 }
 
 const HEALTH_QUESTIONS = [
@@ -62,8 +66,8 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
     address_postcode: '',
     email: invitationEmail || existingMemberData?.email || '',
     phone: existingMemberData?.phone || '',
-    is_existing_member: isExistingMember,
-    ea_urn: existingMemberData?.ea_urn || '',
+    is_existing_member: false,
+    ea_urn: '',
     health_screening: {
       heart_condition: false,
       chest_pain: false,
@@ -78,7 +82,7 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
     emergency_contact_relationship: '',
     emergency_contact_phone: existingMemberData?.emergency_contact_phone || '',
     additional_info: '',
-    payment_type: isExistingMember ? 'existing_member_free' : 'bank_transfer',
+    payment_type: 'bank_transfer',
     accepted_terms: false,
     password: '',
     confirm_password: ''
@@ -89,6 +93,39 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Existing member detection via email
+  const [detectedMemberId, setDetectedMemberId] = useState<string | undefined>(existingMemberData?.member_id);
+  const [detectedExisting, setDetectedExisting] = useState(isExistingMember || false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+
+  const handleEmailBlur = async () => {
+    if (isExistingMember || !formData.email || !formData.email.includes('@')) return;
+
+    setCheckingEmail(true);
+    try {
+      const result = await C25kRegistrationService.checkExistingMember(formData.email);
+      if (result.exists && result.member_id) {
+        setDetectedExisting(true);
+        setDetectedMemberId(result.member_id);
+        // Pre-fill fields from existing member data
+        setFormData(prev => ({
+          ...prev,
+          full_name: result.full_name || prev.full_name,
+          phone: result.phone || prev.phone,
+          emergency_contact_name: result.emergency_contact_name || prev.emergency_contact_name,
+          emergency_contact_phone: result.emergency_contact_phone || prev.emergency_contact_phone
+        }));
+      } else {
+        setDetectedExisting(false);
+        setDetectedMemberId(undefined);
+      }
+    } catch {
+      // Silently fail — just treat as new member
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -146,8 +183,8 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
       }
     }
 
-    // Password validation (only for new members)
-    if (!isExistingMember) {
+    // Password validation (only for new members, not detected existing)
+    if (!isExistingMember && !detectedExisting) {
       if (!formData.password) {
         newErrors.password = 'Password is required';
       } else if (formData.password.length < 8) {
@@ -160,10 +197,6 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
 
     if (!formData.accepted_terms) {
       newErrors.accepted_terms = 'You must accept the terms and conditions';
-    }
-
-    if (formData.is_existing_member && !formData.ea_urn) {
-      newErrors.ea_urn = 'Please provide your URN if you are an existing member';
     }
 
     setErrors(newErrors);
@@ -184,7 +217,7 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
 
     setIsSubmitting(true);
     try {
-      await onSubmit(formData);
+      await onSubmit(formData, detectedMemberId);
     } catch (error: any) {
       console.error('Registration error:', error);
       setErrors({ submit: error.message || 'Registration failed. Please try again.' });
@@ -258,7 +291,7 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
           fontSize: '14px',
           color: '#92400e'
         }}>
-          <strong>Existing/returning members:</strong> FREE if you renew membership by 17th April 2026
+          <strong>Existing/returning members:</strong> Your fee may be waived — the admin will confirm after reviewing your registration
         </div>
       </div>
 
@@ -374,6 +407,7 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
               name="email"
               value={formData.email}
               onChange={handleInputChange}
+              onBlur={handleEmailBlur}
               required
               disabled={!!invitationEmail || (isExistingMember && !!existingMemberData?.email)}
               style={{
@@ -381,6 +415,16 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
                 background: (invitationEmail || (isExistingMember && existingMemberData?.email)) ? 'var(--gray-50)' : 'white'
               }}
             />
+            {checkingEmail && (
+              <p style={{ fontSize: '12px', color: 'var(--gray-500)', marginTop: '4px' }}>
+                Checking email...
+              </p>
+            )}
+            {detectedExisting && !isExistingMember && (
+              <p style={{ fontSize: '12px', color: 'var(--success-color, #10b981)', marginTop: '4px', fontWeight: '500' }}>
+                ✓ We found your account — your details have been pre-filled
+              </p>
+            )}
             {invitationEmail && (
               <p style={{ fontSize: '12px', color: 'var(--gray-500)', marginTop: '4px' }}>
                 Pre-filled from your invitation
@@ -404,49 +448,6 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
             {errors.phone && <p style={errorStyle}>{errors.phone}</p>}
           </div>
 
-          {/* Existing Member (only show for new registrations) */}
-          {!isExistingMember && (
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  name="is_existing_member"
-                  checked={formData.is_existing_member}
-                  onChange={(e) => {
-                    handleInputChange(e);
-                    if (!e.target.checked) {
-                      setFormData(prev => ({ ...prev, payment_type: 'bank_transfer', ea_urn: '' }));
-                    } else {
-                      setFormData(prev => ({ ...prev, payment_type: 'existing_member_free' }));
-                    }
-                  }}
-                  style={{ marginRight: '8px' }}
-                />
-                <span style={{ fontWeight: '600' }}>
-                  I am an existing/returning Run Alcester member
-                </span>
-              </label>
-            </div>
-          )}
-
-          {/* URN (conditional) */}
-          {(formData.is_existing_member || isExistingMember) && (
-            <div style={{ marginBottom: '20px', paddingLeft: isExistingMember ? '0' : '24px' }}>
-              <label style={labelStyle}>
-                England Athletics URN {formData.is_existing_member ? '*' : '(if known)'}
-              </label>
-              <input
-                type="text"
-                name="ea_urn"
-                value={formData.ea_urn}
-                onChange={handleInputChange}
-                required={formData.is_existing_member && !isExistingMember}
-                placeholder="Your URN from England Athletics portal"
-                style={inputStyle}
-              />
-              {errors.ea_urn && <p style={errorStyle}>{errors.ea_urn}</p>}
-            </div>
-          )}
         </section>
 
         {/* Health Screening Section */}
@@ -608,8 +609,8 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
           </div>
         </section>
 
-        {/* Password Section (only for new members) */}
-        {!isExistingMember && (
+        {/* Password Section (only for new members, hidden for detected existing) */}
+        {!isExistingMember && !detectedExisting && (
           <section style={{ marginBottom: '32px' }}>
             <h2 style={{ marginBottom: '16px', fontSize: '20px', color: 'var(--gray-800)' }}>
               Account Password
@@ -659,58 +660,7 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
             Payment Information
           </h2>
 
-          <div style={{ marginBottom: '20px' }}>
-            <p style={{ fontWeight: '600', marginBottom: '12px', color: '#1e40af' }}>
-              Payment Type *
-            </p>
-            <label style={{
-              display: 'block',
-              marginBottom: '12px',
-              padding: '12px',
-              background: 'white',
-              border: `2px solid ${formData.payment_type === 'bank_transfer' ? '#3b82f6' : 'var(--gray-200)'}`,
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}>
-              <input
-                type="radio"
-                name="payment_type"
-                value="bank_transfer"
-                checked={formData.payment_type === 'bank_transfer'}
-                onChange={handleInputChange}
-                style={{ marginRight: '8px' }}
-              />
-              <strong>Bank Transfer - £30</strong>
-            </label>
-            <label style={{
-              display: 'block',
-              padding: '12px',
-              background: 'white',
-              border: `2px solid ${formData.payment_type === 'existing_member_free' ? '#3b82f6' : 'var(--gray-200)'}`,
-              borderRadius: '6px',
-              cursor: (formData.is_existing_member || isExistingMember) ? 'pointer' : 'not-allowed',
-              opacity: (formData.is_existing_member || isExistingMember) ? 1 : 0.5
-            }}>
-              <input
-                type="radio"
-                name="payment_type"
-                value="existing_member_free"
-                checked={formData.payment_type === 'existing_member_free'}
-                onChange={handleInputChange}
-                disabled={!formData.is_existing_member && !isExistingMember}
-                style={{ marginRight: '8px' }}
-              />
-              <strong>Existing/Returning Member - FREE</strong>
-              {!formData.is_existing_member && !isExistingMember && (
-                <span style={{ fontSize: '12px', color: 'var(--gray-500)', marginLeft: '8px' }}>
-                  (Check "existing member" above to enable)
-                </span>
-              )}
-            </label>
-          </div>
-
-          {formData.payment_type === 'bank_transfer' && (
-            <div style={{
+          <div style={{
               padding: '16px',
               background: 'white',
               border: '1px solid #bfdbfe',
@@ -746,8 +696,17 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
               <p style={{ margin: '12px 0 0 0', fontSize: '13px', color: '#3b82f6' }}>
                 Please complete payment <strong>before</strong> submitting this form to secure your place.
               </p>
+              <div style={{
+                marginTop: '12px',
+                padding: '10px',
+                background: '#fef3c7',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '13px',
+                color: '#92400e'
+              }}>
+                <strong>Existing/returning members:</strong> Do not pay yet — the club will confirm if your fee is waived. You will be contacted if payment is required.
+              </div>
             </div>
-          )}
         </section>
 
         {/* Terms and Conditions */}

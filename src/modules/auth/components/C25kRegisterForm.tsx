@@ -35,21 +35,35 @@ export const C25kRegisterForm: React.FC = () => {
     }
   }, [isLoggedIn, member?.id, state.isInitialized])
 
-  const handleSubmit = async (formData: C25kRegistrationFormData) => {
+  const [isDetectedExisting, setIsDetectedExisting] = useState(false)
+
+  const handleSubmit = async (formData: C25kRegistrationFormData, detectedMemberId?: string) => {
     if (isLoggedIn && member?.id) {
-      // Existing member — update profile + create health screening & registration
+      // Logged-in existing member
       const result = await C25kRegistrationService.registerExistingMember(member.id, formData)
       if (result.success) {
         setRegisteredEmail(formData.email)
+        setIsDetectedExisting(true)
+        setShowSuccess(true)
+      } else {
+        throw new Error(result.error || 'Registration failed')
+      }
+    } else if (detectedMemberId) {
+      // Detected existing member via email lookup (not logged in)
+      const result = await C25kRegistrationService.registerExistingMember(detectedMemberId, formData)
+      if (result.success) {
+        setRegisteredEmail(formData.email)
+        setIsDetectedExisting(true)
         setShowSuccess(true)
       } else {
         throw new Error(result.error || 'Registration failed')
       }
     } else {
-      // New member — create auth account + pending member + health screening & registration
+      // New member — create auth account
       const result = await C25kRegistrationService.registerNewC25kParticipant(formData)
       if (result.success) {
         setRegisteredEmail(formData.email)
+        setIsDetectedExisting(false)
         setShowSuccess(true)
       } else {
         throw new Error(result.error || 'Registration failed')
@@ -146,7 +160,7 @@ export const C25kRegisterForm: React.FC = () => {
 
         <div className="card" style={{ border: '2px solid var(--success-color)', marginBottom: '30px' }}>
           <div className="card-content">
-            {isLoggedIn ? (
+            {(isLoggedIn || isDetectedExisting) ? (
               <>
                 <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--success-color)', marginBottom: '16px' }}>
                   C25k Registration Complete
@@ -157,7 +171,7 @@ export const C25kRegisterForm: React.FC = () => {
                 <div className="member-list-alert member-list-alert--info" style={{ textAlign: 'left' }}>
                   <strong>What happens next?</strong><br />
                   An admin will review your registration and confirm your payment.
-                  You'll be able to see and book onto C25k runs once confirmed.
+                  Log in to the app to see further information about C25K.
                 </div>
               </>
             ) : (
@@ -188,7 +202,7 @@ export const C25kRegisterForm: React.FC = () => {
                     <div className="urgent-alert__title">Next steps</div>
                     <div className="urgent-alert__message">
                       Your registration is now pending payment confirmation.
-                      If you selected bank transfer, please ensure you've sent the £30 to the account details shown on the form.
+                      Please ensure you've sent the £30 to the account details shown on the form.
                     </div>
                   </div>
                 </div>
@@ -202,7 +216,7 @@ export const C25kRegisterForm: React.FC = () => {
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <a href="/" className="action-btn action-btn--primary" style={{ textDecoration: 'none' }}>
-            {isLoggedIn ? 'Back to App' : 'Go to Sign In'}
+            {(isLoggedIn || isDetectedExisting) ? 'Sign In' : 'Go to Sign In'}
           </a>
         </div>
 

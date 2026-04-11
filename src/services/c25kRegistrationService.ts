@@ -30,7 +30,17 @@ export class C25kRegistrationService {
       });
 
       if (authError || !authData.user) {
+        // Detect existing account — Supabase returns various messages for duplicate emails
+        const msg = authError?.message?.toLowerCase() || '';
+        if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('user already exists')) {
+          throw new Error('This email address already has an account. Please sign in at app.runalcester.co.uk first, then visit the C25k registration link again to complete your registration.');
+        }
         throw new Error(authError?.message || 'Failed to create account');
+      }
+
+      // Supabase may return a user with identities=[] for existing emails (depending on config)
+      if (authData.user.identities && authData.user.identities.length === 0) {
+        throw new Error('This email address already has an account. Please sign in at app.runalcester.co.uk first, then visit the C25k registration link again to complete your registration.');
       }
 
       const userId = authData.user.id;
@@ -127,6 +137,39 @@ export class C25kRegistrationService {
       console.error('C25k registration error:', error);
       return { success: false, error: error.message || 'Registration failed' };
     }
+  }
+
+  /**
+   * Look up an email to check if it belongs to an existing member
+   * Uses SECURITY DEFINER RPC to bypass RLS
+   */
+  static async checkExistingMember(email: string): Promise<{
+    exists: boolean;
+    member_id?: string;
+    full_name?: string;
+    phone?: string;
+    emergency_contact_name?: string;
+    emergency_contact_phone?: string;
+    ea_urn?: string;
+  }> {
+    const { data, error } = await supabase.rpc('check_c25k_email', {
+      lookup_email: email
+    }) as { data: Array<{ member_id: string; full_name: string; phone: string; emergency_contact_name: string; emergency_contact_phone: string; ea_urn: string }> | null; error: any };
+
+    if (error || !data || data.length === 0) {
+      return { exists: false };
+    }
+
+    const member = data[0];
+    return {
+      exists: true,
+      member_id: member.member_id,
+      full_name: member.full_name,
+      phone: member.phone,
+      emergency_contact_name: member.emergency_contact_name,
+      emergency_contact_phone: member.emergency_contact_phone,
+      ea_urn: member.ea_urn
+    };
   }
 
   /**
