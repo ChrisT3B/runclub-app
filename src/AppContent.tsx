@@ -13,7 +13,6 @@ import { CreateRunPage } from './modules/admin/components/CreateRunPage';
 import { LeadYourRun } from './modules/activeruns/components/LeadYourRun';
 import { RunAttendance } from './modules/activeruns/components/RunAttendance';
 import { CommunicationsDashboard } from './modules/communications/components/CommunicationsDashboard';
-import { LirfReminderTestPage } from './modules/admin/pages/LirfReminderTestPage';
 import { AdminReports } from './modules/admin/pages/AdminReports';
 import { HelpVideos } from './modules/help/pages/HelpVideos';
 import { BulkInvitations } from './modules/admin/pages/BulkInvitations';
@@ -174,9 +173,6 @@ export const AppContent: React.FC = () => {
       case 'communications':
         console.log('✅ Rendering CommunicationsDashboard');
         return <CommunicationsDashboard />;
-      case 'test-lirf-reminder':
-        console.log('✅ Rendering LirfReminderTestPage');
-        return <LirfReminderTestPage />;
       case 'admin-reports':
         console.log('✅ Rendering AdminReports');
         return <AdminReports onNavigate={handleNavigation} />;

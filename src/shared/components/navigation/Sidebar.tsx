@@ -43,8 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     navigation.push(
       { id: 'members', name: 'Members', icon: '👥' },
       { id: 'c25k-admin', name: 'C25k Admin', icon: '🏃' },
-      { id: 'league-admin-hub', name: 'League Admin', icon: '🏆' },
-      { id: 'test-lirf-reminder', name: 'Test LIRF Reminder', icon: '🧪' }
+      { id: 'league-admin-hub', name: 'League Admin', icon: '🏆' }
     )
   }
 
