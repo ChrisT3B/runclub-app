@@ -1,9 +1,5 @@
 import { supabase } from './supabase';
-import {
-  C25kRegistrationFormData,
-  C25kHealthScreening,
-  C25kRegistration
-} from '../types/c25k';
+import { C25kRegistrationFormData } from '../types/c25k';
 import { InputSanitizer } from '../utils/inputSanitizer';
 
 export class C25kRegistrationService {
@@ -70,11 +66,46 @@ export class C25kRegistrationService {
         throw new Error('Failed to create member profile');
       }
 
-      // Create health screening record
-      await this.createHealthScreening(userId, formData);
+      // Store C25K data temporarily in pending_members
+      // Records will be created during email verification when user is in members table
+      const c25kFormData = {
+        health_screening: {
+          heart_condition: formData.health_screening.heart_condition,
+          chest_pain: formData.health_screening.chest_pain,
+          dizziness_loss_consciousness: formData.health_screening.dizziness_loss_consciousness,
+          chronic_medical_condition: formData.health_screening.chronic_medical_condition,
+          prescribed_medications: formData.health_screening.prescribed_medications,
+          bone_joint_soft_tissue: formData.health_screening.bone_joint_soft_tissue,
+          medically_supervised_only: formData.health_screening.medically_supervised_only,
+          additional_info: formData.health_screening.additional_info || null
+        },
+        registration: {
+          programme_year: 2026,
+          cohort_name: 'Spring 2026',
+          payment_type: formData.payment_type,
+          payment_amount: formData.payment_type === 'bank_transfer' ? 30.00 : 0.00,
+          payment_confirmed: false,
+          status: 'pending_payment',
+          accepted_terms: formData.accepted_terms,
+          accepted_at: new Date().toISOString(),
+          induction_date: '2026-04-23'
+        },
+        submitted_at: new Date().toISOString()
+      };
 
-      // Create C25k registration record
-      await this.createRegistration(userId, formData);
+      console.log('🏃 C25K: Storing form data in pending_members for user:', userId);
+
+      const { error: updateError } = await supabase
+        .from('pending_members')
+        .update({ c25k_form_data: c25kFormData })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error('🏃 C25K: Failed to store form data:', updateError);
+        throw new Error('Failed to save C25K registration data. Please try again.');
+      }
+
+      console.log('🏃 C25K: Form data stored successfully. Records will be created upon email verification.');
 
       // Mark invitation as registered if provided
       if (invitationToken) {
@@ -220,59 +251,6 @@ export class C25kRegistrationService {
   }
 
   // --- Private helpers ---
-
-  private static async createHealthScreening(
-    memberId: string,
-    formData: C25kRegistrationFormData
-  ): Promise<void> {
-    const healthData: Partial<C25kHealthScreening> = {
-      member_id: memberId,
-      heart_condition: formData.health_screening.heart_condition,
-      chest_pain: formData.health_screening.chest_pain,
-      dizziness_loss_consciousness: formData.health_screening.dizziness_loss_consciousness,
-      chronic_medical_condition: formData.health_screening.chronic_medical_condition,
-      prescribed_medications: formData.health_screening.prescribed_medications,
-      bone_joint_soft_tissue: formData.health_screening.bone_joint_soft_tissue,
-      medically_supervised_only: formData.health_screening.medically_supervised_only,
-      additional_info: formData.health_screening.additional_info || undefined
-    };
-
-    const { error } = await supabase
-      .from('c25k_health_screening')
-      .insert([healthData]);
-
-    if (error) {
-      console.error('Failed to create health screening:', error);
-      // Don't fail registration if health screening insert fails
-    }
-  }
-
-  private static async createRegistration(
-    memberId: string,
-    formData: C25kRegistrationFormData
-  ): Promise<void> {
-    const registrationData: Partial<C25kRegistration> = {
-      member_id: memberId,
-      programme_year: 2026,
-      cohort_name: 'Spring 2026',
-      payment_type: formData.payment_type,
-      payment_amount: formData.payment_type === 'bank_transfer' ? 30.00 : 0.00,
-      payment_confirmed: false,
-      status: 'pending_payment',
-      accepted_terms: formData.accepted_terms,
-      accepted_at: new Date().toISOString(),
-      induction_date: '2026-04-23'
-    };
-
-    const { error } = await supabase
-      .from('c25k_registrations')
-      .insert([registrationData]);
-
-    if (error) {
-      console.error('Failed to create C25k registration:', error);
-      // Don't fail if registration tracking fails
-    }
-  }
 
   private static sanitizeFormData(formData: C25kRegistrationFormData) {
     return {

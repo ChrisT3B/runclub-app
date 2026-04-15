@@ -650,6 +650,53 @@ export const verifyEmail = async (token: string): Promise<EmailVerificationResul
           } else {
             console.log('✅ Member record created successfully');
 
+            // Check if this was a C25K registration and create the related records
+            if (pendingMember.c25k_form_data) {
+              console.log('🏃 C25K: Detected C25K registration for member:', pendingMember.id);
+
+              try {
+                const c25kData = pendingMember.c25k_form_data as {
+                  health_screening: any;
+                  registration: any;
+                  submitted_at: string;
+                };
+
+                // Create health screening record
+                const { error: healthError } = await supabase
+                  .from('c25k_health_screening')
+                  .insert({
+                    member_id: pendingMember.id,
+                    ...c25kData.health_screening
+                  });
+
+                if (healthError) {
+                  console.error('🏃 C25K: Failed to create health screening record:', healthError);
+                } else {
+                  console.log('🏃 C25K: Health screening record created successfully');
+                }
+
+                // Create registration record
+                const { error: regError } = await supabase
+                  .from('c25k_registrations')
+                  .insert({
+                    member_id: pendingMember.id,
+                    ...c25kData.registration
+                  });
+
+                if (regError) {
+                  console.error('🏃 C25K: Failed to create registration record:', regError);
+                } else {
+                  console.log('🏃 C25K: Registration record created successfully');
+                }
+
+                console.log('🏃 C25K: All records created. User will appear on C25K Admin Applications tab.');
+
+              } catch (c25kError) {
+                console.error('🏃 C25K: Error processing C25K data:', c25kError);
+                // Don't throw - member creation succeeded, which is the primary goal
+              }
+            }
+
             // Delete pending record BEFORE signOut so session is still valid
             const { error: deleteError } = await supabase
               .from('pending_members')
