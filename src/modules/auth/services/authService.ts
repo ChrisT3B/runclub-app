@@ -655,11 +655,10 @@ export const verifyEmail = async (token: string): Promise<EmailVerificationResul
               console.log('🏃 C25K: Detected C25K registration for member:', pendingMember.id);
 
               try {
-                const c25kData = pendingMember.c25k_form_data as {
-                  health_screening: any;
-                  registration: any;
-                  submitted_at: string;
-                };
+                // Parse c25k_form_data — may come back as string or object depending on Supabase client
+                const rawData = pendingMember.c25k_form_data;
+                const c25kData: { health_screening: any; registration: any; submitted_at: string } =
+                  typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
 
                 // Use SECURITY DEFINER RPC to bypass RLS (user may not be authenticated during verification)
                 const { data: rpcResult, error: rpcError } = await supabase
