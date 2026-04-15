@@ -41,33 +41,7 @@ export class C25kRegistrationService {
 
       const userId = authData.user.id;
 
-      // Create pending member record with C25k fields
-      const { error: pendingError } = await supabase
-        .from('pending_members')
-        .insert([{
-          id: userId,
-          email: sanitized.email,
-          full_name: sanitized.full_name,
-          phone: sanitized.phone,
-          title: sanitized.title,
-          date_of_birth: formData.date_of_birth,
-          sex_at_birth: formData.sex_at_birth,
-          address_postcode: sanitized.address_postcode,
-          ea_urn: sanitized.ea_urn || null,
-          emergency_contact_name: sanitized.emergency_contact_name,
-          emergency_contact_relationship: sanitized.emergency_contact_relationship,
-          emergency_contact_phone: sanitized.emergency_contact_phone,
-          health_conditions: sanitized.additional_info || 'See C25k health screening',
-          is_c25k_participant: true
-        }]);
-
-      if (pendingError) {
-        console.error('Failed to create pending member:', pendingError);
-        throw new Error('Failed to create member profile');
-      }
-
-      // Store C25K data temporarily in pending_members
-      // Records will be created during email verification when user is in members table
+      // Prepare C25K form data for verification flow
       const c25kFormData = {
         health_screening: {
           heart_condition: formData.health_screening.heart_condition,
@@ -93,19 +67,33 @@ export class C25kRegistrationService {
         submitted_at: new Date().toISOString()
       };
 
-      console.log('🏃 C25K: Storing form data in pending_members for user:', userId);
-
-      const { error: updateError } = await supabase
+      // Create pending member record with C25k fields AND form data in a single INSERT
+      const { error: pendingError } = await supabase
         .from('pending_members')
-        .update({ c25k_form_data: c25kFormData })
-        .eq('id', userId);
+        .insert([{
+          id: userId,
+          email: sanitized.email,
+          full_name: sanitized.full_name,
+          phone: sanitized.phone,
+          title: sanitized.title,
+          date_of_birth: formData.date_of_birth,
+          sex_at_birth: formData.sex_at_birth,
+          address_postcode: sanitized.address_postcode,
+          ea_urn: sanitized.ea_urn || null,
+          emergency_contact_name: sanitized.emergency_contact_name,
+          emergency_contact_relationship: sanitized.emergency_contact_relationship,
+          emergency_contact_phone: sanitized.emergency_contact_phone,
+          health_conditions: sanitized.additional_info || 'See C25k health screening',
+          is_c25k_participant: true,
+          c25k_form_data: c25kFormData
+        }]);
 
-      if (updateError) {
-        console.error('🏃 C25K: Failed to store form data:', updateError);
-        throw new Error('Failed to save C25K registration data. Please try again.');
+      if (pendingError) {
+        console.error('Failed to create pending member:', pendingError);
+        throw new Error('Failed to create member profile');
       }
 
-      console.log('🏃 C25K: Form data stored successfully. Records will be created upon email verification.');
+      console.log('🏃 C25K: Pending member created with form data for user:', userId);
 
       // Mark invitation as registered if provided
       if (invitationToken) {
