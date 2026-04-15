@@ -661,35 +661,24 @@ export const verifyEmail = async (token: string): Promise<EmailVerificationResul
                   submitted_at: string;
                 };
 
-                // Create health screening record
-                const { error: healthError } = await supabase
-                  .from('c25k_health_screening')
-                  .insert({
-                    member_id: pendingMember.id,
-                    ...c25kData.health_screening
+                // Use SECURITY DEFINER RPC to bypass RLS (user may not be authenticated during verification)
+                const { data: rpcResult, error: rpcError } = await supabase
+                  .rpc('create_c25k_records_on_verification', {
+                    p_member_id: pendingMember.id,
+                    p_health_screening: c25kData.health_screening,
+                    p_registration: c25kData.registration
                   });
 
-                if (healthError) {
-                  console.error('🏃 C25K: Failed to create health screening record:', healthError);
+                if (rpcError) {
+                  console.error('🏃 C25K: RPC call failed:', rpcError);
+                } else if (rpcResult && !rpcResult.success) {
+                  console.error('🏃 C25K: RPC returned error:', rpcResult.error);
                 } else {
-                  console.log('🏃 C25K: Health screening record created successfully');
+                  console.log('🏃 C25K: Records created successfully via RPC');
+                  console.log('🏃 C25K: Health screening ID:', rpcResult.health_screening_id);
+                  console.log('🏃 C25K: Registration ID:', rpcResult.registration_id);
+                  console.log('🏃 C25K: User will appear on C25K Admin Applications tab');
                 }
-
-                // Create registration record
-                const { error: regError } = await supabase
-                  .from('c25k_registrations')
-                  .insert({
-                    member_id: pendingMember.id,
-                    ...c25kData.registration
-                  });
-
-                if (regError) {
-                  console.error('🏃 C25K: Failed to create registration record:', regError);
-                } else {
-                  console.log('🏃 C25K: Registration record created successfully');
-                }
-
-                console.log('🏃 C25K: All records created. User will appear on C25K Admin Applications tab.');
 
               } catch (c25kError) {
                 console.error('🏃 C25K: Error processing C25K data:', c25kError);
