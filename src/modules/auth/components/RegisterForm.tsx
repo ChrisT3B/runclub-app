@@ -21,6 +21,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   onLogin
 }) => {
   const { state, register } = useAuth()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [registeredEmail, setRegisteredEmail] = useState('')
   const [invitationData, setInvitationData] = useState<InvitationData | null>(null)
@@ -78,6 +79,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isSubmitting) return
+    setIsSubmitting(true)
     const cleanFormData = InputSanitizer.sanitizeFormData(formData);
     try {
       await register(cleanFormData)
@@ -115,6 +118,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         setShowSuccessMessage(true)
       }
       // For other errors, form will stay visible and show the error
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -667,23 +672,23 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
             <button
               type="submit"
-              disabled={state.loading}
+              disabled={isSubmitting}
               className="btn btn-primary"
               style={{ 
                 width: '100%',
                 padding: '14px',
                 fontSize: '16px',
                 fontWeight: '600',
-                background: state.loading ? 'var(--gray-400)' : 'var(--red-primary)',
-                borderColor: state.loading ? 'var(--gray-400)' : 'var(--red-primary)',
-                cursor: state.loading ? 'not-allowed' : 'pointer',
+                background: isSubmitting ? 'var(--gray-400)' : 'var(--red-primary)',
+                borderColor: isSubmitting ? 'var(--gray-400)' : 'var(--red-primary)',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px'
               }}
             >
-              {state.loading && (
+              {isSubmitting && (
                 <div style={{
                   width: '16px',
                   height: '16px',
@@ -693,7 +698,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   animation: 'spin 1s linear infinite'
                 }}></div>
               )}
-              {state.loading ? 'Creating Account...' : '🏃‍♂️ Join Run Alcester'}
+              {isSubmitting ? 'Creating Account...' : '🏃‍♂️ Join Run Alcester'}
             </button>
 
             <div style={{ 

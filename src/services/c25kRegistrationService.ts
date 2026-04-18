@@ -26,17 +26,26 @@ export class C25kRegistrationService {
       });
 
       if (authError || !authData.user) {
-        // Detect existing account — Supabase returns various messages for duplicate emails
         const msg = authError?.message?.toLowerCase() || '';
         if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('user already exists')) {
-          throw new Error('This email address already has an account. Please sign in at app.runalcester.co.uk first, then visit the C25k registration link again to complete your registration.');
+          // Check if this is an orphaned auth user (no pending or member record)
+          const existing = await this.checkExistingMember(formData.email);
+          if (existing.exists) {
+            throw new Error('This email address already has an account. Please sign in at app.runalcester.co.uk first, then visit the C25k registration link again to complete your registration.');
+          }
+          // Orphaned auth user — tell them to check email or contact support
+          throw new Error('An account with this email was partially created. Please check your email for a verification link. If you have not received one, contact runalcester@gmail.com for help.');
         }
         throw new Error(authError?.message || 'Failed to create account');
       }
 
       // Supabase may return a user with identities=[] for existing emails (depending on config)
       if (authData.user.identities && authData.user.identities.length === 0) {
-        throw new Error('This email address already has an account. Please sign in at app.runalcester.co.uk first, then visit the C25k registration link again to complete your registration.');
+        const existing = await this.checkExistingMember(formData.email);
+        if (existing.exists) {
+          throw new Error('This email address already has an account. Please sign in at app.runalcester.co.uk first, then visit the C25k registration link again to complete your registration.');
+        }
+        throw new Error('An account with this email was partially created. Please check your email for a verification link. If you have not received one, contact runalcester@gmail.com for help.');
       }
 
       const userId = authData.user.id;
@@ -92,11 +101,38 @@ export class C25kRegistrationService {
         }]);
 
       if (pendingError) {
-        console.error('Failed to create pending member:', pendingError);
-        throw new Error('Failed to create member profile');
-      }
+        console.error('Failed to create pending member (attempt 1):', pendingError);
 
-      console.log('🏃 C25K: Pending member created with form data for user:', userId);
+        // Retry once after a longer delay — FK constraint may need more time
+        await new Promise(r => setTimeout(r, 1000));
+        const { error: retryError } = await supabase
+          .from('pending_members')
+          .insert([{
+            id: userId,
+            email: sanitized.email,
+            full_name: sanitized.full_name,
+            phone: sanitized.phone,
+            title: sanitized.title,
+            date_of_birth: formData.date_of_birth,
+            sex_at_birth: formData.sex_at_birth,
+            address_postcode: sanitized.address_postcode,
+            ea_urn: sanitized.ea_urn || null,
+            emergency_contact_name: sanitized.emergency_contact_name,
+            emergency_contact_relationship: sanitized.emergency_contact_relationship,
+            emergency_contact_phone: sanitized.emergency_contact_phone,
+            health_conditions: sanitized.additional_info || 'See C25k health screening',
+            is_c25k_participant: true,
+            c25k_form_data: c25kFormData
+          }]);
+
+        if (retryError) {
+          console.error('Failed to create pending member (attempt 2):', retryError);
+          throw new Error('Failed to create member profile. Please try again or contact runalcester@gmail.com');
+        }
+        console.log('🏃 C25K: Pending member created on retry for user:', userId);
+      } else {
+        console.log('🏃 C25K: Pending member created with form data for user:', userId);
+      }
 
       // Mark invitation as registered if provided
       if (invitationToken) {

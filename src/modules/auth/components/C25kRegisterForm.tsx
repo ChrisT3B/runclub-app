@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { C25kRegistrationForm } from './C25kRegistrationForm'
 import { C25kRegistrationService } from '../../../services/c25kRegistrationService'
 import { C25kRegistrationFormData } from '../../../types/c25k'
+import { isRestrictedBrowser } from '../../../utils/browserDetection'
 
 /**
  * C25k registration page (mounted at /c25k)
@@ -229,6 +230,29 @@ export const C25kRegisterForm: React.FC = () => {
 
   // Registration form — adapts based on logged-in state
   return (
+    <>
+      {isRestrictedBrowser() && (
+        <div style={{
+          maxWidth: '640px',
+          margin: '0 auto',
+          padding: '16px 20px 0'
+        }}>
+          <div style={{
+            padding: '16px',
+            background: '#fef3c7',
+            border: '2px solid var(--warning-color, #f59e0b)',
+            borderRadius: '8px',
+            fontSize: '14px',
+            color: '#92400e',
+            lineHeight: '1.6'
+          }}>
+            <strong>You're using an in-app browser</strong> (Facebook, Instagram, etc.)
+            which may cause issues with registration. For the best experience,
+            tap the <strong>menu (⋯)</strong> and select <strong>"Open in browser"</strong> to
+            use Safari or Chrome instead.
+          </div>
+        </div>
+      )}
     <C25kRegistrationForm
       onSubmit={handleSubmit}
       isExistingMember={isLoggedIn}
@@ -241,5 +265,6 @@ export const C25kRegisterForm: React.FC = () => {
         ea_urn: member.ea_urn
       } : undefined}
     />
+    </>
   )
 }
