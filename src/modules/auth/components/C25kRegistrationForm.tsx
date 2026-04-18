@@ -338,11 +338,7 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
               value={formData.full_name}
               onChange={handleInputChange}
               required
-              disabled={isExistingMember && !!existingMemberData?.full_name}
-              style={{
-                ...inputStyle,
-                background: (isExistingMember && existingMemberData?.full_name) ? 'var(--gray-50)' : 'white'
-              }}
+              style={inputStyle}
             />
             {errors.full_name && <p style={errorStyle}>{errors.full_name}</p>}
           </div>
@@ -415,11 +411,7 @@ export const C25kRegistrationForm: React.FC<C25kRegistrationFormProps> = ({
               onChange={handleInputChange}
               onBlur={handleEmailBlur}
               required
-              disabled={!!invitationEmail || (isExistingMember && !!existingMemberData?.email)}
-              style={{
-                ...inputStyle,
-                background: (invitationEmail || (isExistingMember && existingMemberData?.email)) ? 'var(--gray-50)' : 'white'
-              }}
+              style={inputStyle}
             />
             {checkingEmail && (
               <p style={{ fontSize: '12px', color: 'var(--gray-500)', marginTop: '4px' }}>
