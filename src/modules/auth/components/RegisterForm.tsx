@@ -323,6 +323,19 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         }}>
           Start your running journey with us today
         </p>
+        <a
+          href="/c25k"
+          style={{
+            display: 'inline-block',
+            marginTop: '12px',
+            color: '#1e40af',
+            fontSize: '14px',
+            fontWeight: '600',
+            textDecoration: 'underline'
+          }}
+        >
+          Registering for Couch to 5K? Click here →
+        </a>
       </div>
 
       {/* Invitation Validating Banner */}
