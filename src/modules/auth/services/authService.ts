@@ -424,6 +424,9 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
 
       console.log('📋 Pending member data to insert:', pendingMemberData);
 
+      // Brief delay to ensure auth.users commit is visible to the FK constraint
+      await new Promise(r => setTimeout(r, 500));
+
       const { error: pendingMemberError } = await supabase
         .from('pending_members')
         .insert([pendingMemberData]);

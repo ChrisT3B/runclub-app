@@ -67,6 +67,9 @@ export class C25kRegistrationService {
         submitted_at: new Date().toISOString()
       };
 
+      // Brief delay to ensure auth.users commit is visible to the FK constraint
+      await new Promise(r => setTimeout(r, 500));
+
       // Create pending member record with C25k fields AND form data in a single INSERT
       const { error: pendingError } = await supabase
         .from('pending_members')
