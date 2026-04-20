@@ -195,22 +195,23 @@ export class ScheduledRunsService {
         }
       }
 
-      // 3b. Get buddy booking counts for C25k runs
+      // 3b. Get buddy booking counts for C25k runs via RPC (bypasses RLS)
       const c25kRunIds = runs.filter(r => r.is_c25k_run).map(r => r.id);
       let buddyCountMap: Record<string, number> = {};
       if (c25kRunIds.length > 0) {
-        const { data: buddyBookings, error: buddyError } = await supabase
-          .from('run_bookings')
-          .select('run_id')
-          .in('run_id', c25kRunIds)
-          .eq('booking_type', 'buddy')
-          .is('cancelled_at', null);
+        const { data: buddyCounts, error: buddyCountError } = await supabase
+          .rpc('get_buddy_booking_counts', { p_run_ids: c25kRunIds }) as {
+            data: Array<{ run_id: string; buddy_count: number }> | null;
+            error: any;
+          };
 
-        if (!buddyError && buddyBookings) {
-          buddyBookings.forEach(b => {
-            buddyCountMap[b.run_id] = (buddyCountMap[b.run_id] || 0) + 1;
-          });
+        if (buddyCountError) {
+          console.error('Failed to fetch buddy booking counts:', buddyCountError);
         }
+
+        (buddyCounts || []).forEach(item => {
+          buddyCountMap[item.run_id] = item.buddy_count || 0;
+        });
       }
 
       // 4. Get LIRF data (with better caching)
