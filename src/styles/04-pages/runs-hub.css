@@ -1,0 +1,70 @@
+/* ==============================================
+   RUNS OVERVIEW (admin tab inside Runs hub)
+   ============================================== */
+
+.runs-overview-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.runs-overview-stat {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  text-align: center;
+}
+
+.runs-overview-stat__number {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.runs-overview-stat__number--red   { color: var(--red-primary); }
+.runs-overview-stat__number--amber { color: var(--warning-color); }
+.runs-overview-stat__number--green { color: var(--success-color); }
+
+.runs-overview-stat__label {
+  font-size: 13px;
+  color: var(--gray-500);
+  font-weight: 500;
+}
+
+/* Coverage row backgrounds */
+.runs-overview-row--urgent  { background-color: #fee2e2; }
+.runs-overview-row--partial { background-color: #fef3c7; }
+.runs-overview-row--full    { background-color: #dcfce7; }
+
+/* Empty state */
+.runs-overview-empty {
+  text-align: center;
+  padding: 40px;
+}
+
+.runs-overview-empty__icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 480px) {
+  .runs-overview-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .runs-overview-stat {
+    padding: 12px 8px;
+  }
+
+  .runs-overview-stat__number {
+    font-size: 1.5rem;
+  }
+
+  .runs-overview-stat__label {
+    font-size: 11px;
+  }
+}

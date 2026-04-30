@@ -13,7 +13,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
 
   const navigation: { id: string; name: string; icon: string; badge?: number }[] = [
     { id: 'dashboard', name: 'Dashboard', icon: '🏠' },
-    { id: 'scheduled-runs', name: 'Scheduled Runs', icon: '🏃‍♂️' },
+    { id: 'runs-hub', name: 'Runs', icon: '🏃‍♂️' },
     { id: 'profile', name: 'My Profile', icon: '👤' },
     { id: 'ea-membership', name: 'Club Membership', icon: '🏅' },
     { id: 'leagues-hub', name: 'Leagues', icon: '🏆' },
@@ -29,8 +29,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
   // Add LIRF-specific navigation using permissions
   if (permissions.canManageRuns) {
     navigation.push(
-      { id: 'manage-runs', name: 'Manage Scheduled Runs', icon: '📅' },
-      { id: 'lead-your-run', name: 'Lead Your Runs', icon: '🎯' },
       { id: 'communications', name: 'Communications', icon: '📧' }
     )
   }

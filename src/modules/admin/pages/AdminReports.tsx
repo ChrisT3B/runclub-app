@@ -3,6 +3,7 @@ import { supabase } from '@/services/supabase';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { InvitationService } from '../../../services/invitationService';
+import { ScheduledRunsService } from '../services/scheduledRunsService';
 
 interface RegistrationStats {
   totalInvited: number;
@@ -245,100 +246,16 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
 
   const fetchLirfLookAhead = async () => {
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Start of today
-      const sevenDaysFromNow = new Date();
-      sevenDaysFromNow.setDate(today.getDate() + 7);
-      sevenDaysFromNow.setHours(23, 59, 59, 999); // End of day
-
-      // Format dates as YYYY-MM-DD for date-only comparison
-      const todayStr = today.toISOString().split('T')[0];
-      const sevenDaysStr = sevenDaysFromNow.toISOString().split('T')[0];
-
-      console.log('Fetching runs between:', todayStr, 'and', sevenDaysStr);
-
-      // Fetch scheduled runs with LIRF assignments
-      const { data: upcomingRuns, error: runsError } = await supabase
-        .from('scheduled_runs')
-        .select(`
-          id,
-          run_title,
-          run_date,
-          assigned_lirf_1,
-          assigned_lirf_2,
-          assigned_lirf_3,
-          lirfs_required
-        `)
-        .gte('run_date', todayStr)
-        .lte('run_date', sevenDaysStr)
-        .order('run_date', { ascending: true });
-
-      if (runsError) {
-        console.error('Supabase error fetching runs:', runsError);
-        throw runsError;
-      }
-
-      console.log('Fetched upcoming runs:', upcomingRuns);
-
-      if (!upcomingRuns || upcomingRuns.length === 0) {
-        setLirfLookAhead([]);
-        return;
-      }
-
-      // Get all unique LIRF IDs to fetch their names
-      const lirfIds = new Set<string>();
-      upcomingRuns.forEach((run: any) => {
-        if (run.assigned_lirf_1) lirfIds.add(run.assigned_lirf_1);
-        if (run.assigned_lirf_2) lirfIds.add(run.assigned_lirf_2);
-        if (run.assigned_lirf_3) lirfIds.add(run.assigned_lirf_3);
-      });
-
-      // Fetch member names for all assigned LIRFs
-      const { data: members, error: membersError } = await supabase
-        .from('members')
-        .select('id, full_name')
-        .in('id', Array.from(lirfIds));
-
-      if (membersError) {
-        console.error('Error fetching LIRF member names:', membersError);
-      }
-
-      console.log('Fetched LIRF members:', members);
-
-      // Create a lookup map
-      const memberMap = new Map(members?.map((m: any) => [m.id, m.full_name]) || []);
-
-      // Transform the data
-      const tableData: LirfLookAhead[] = upcomingRuns.map((run: any) => {
-        // Count how many LIRF positions are filled
-        const lirfCount = [
-          run.assigned_lirf_1,
-          run.assigned_lirf_2,
-          run.assigned_lirf_3,
-        ].filter(Boolean).length;
-
-        const lirfsRequired = run.lirfs_required || 0;
-        const hasLirf = lirfCount > 0;
-
-        // Get all assigned LIRF names
-        const lirfNames = [
-          run.assigned_lirf_1 ? memberMap.get(run.assigned_lirf_1) : null,
-          run.assigned_lirf_2 ? memberMap.get(run.assigned_lirf_2) : null,
-          run.assigned_lirf_3 ? memberMap.get(run.assigned_lirf_3) : null,
-        ].filter(Boolean);
-
-        return {
-          date: run.run_date,
-          runName: run.run_title,
-          lirfAssigned: hasLirf,
-          lirfName: lirfNames.length > 0 ? lirfNames.join(', ') : 'None',
-          runId: run.id,
-          lirfCount,
-          lirfsRequired,
-        };
-      });
-
-      console.log('Final LIRF look-ahead data:', tableData);
+      const coverage = await ScheduledRunsService.getLirfCoverage(7);
+      const tableData: LirfLookAhead[] = coverage.map(row => ({
+        date: row.date,
+        runName: row.runName,
+        lirfAssigned: row.lirfCount > 0,
+        lirfName: row.lirfNames.length > 0 ? row.lirfNames.join(', ') : 'None',
+        runId: row.runId,
+        lirfCount: row.lirfCount,
+        lirfsRequired: row.lirfsRequired,
+      }));
       setLirfLookAhead(tableData);
     } catch (error) {
       console.error('Error fetching LIRF look-ahead:', error);

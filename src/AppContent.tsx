@@ -5,12 +5,10 @@ import { useAuth } from './modules/auth/context/AuthContext';
 import { DashboardLayout } from './shared/layouts/DashboardLayout';
 import { AuthContent } from './modules/auth/components/AuthContent';
 import { DashboardContent } from './modules/dashboard/components/DashboardContent';
-import { ViewScheduledRuns } from './modules/runs/components/ViewScheduledRuns';
-import { ManageScheduledRuns } from './modules/admin/components/ManageScheduledRuns';
+import { RunsHub } from './modules/runs/components/RunsHub';
 import { ProfilePage } from './modules/membership/components/ProfilePage';
 import { MemberList } from './modules/admin/components/MemberList';
 import { CreateRunPage } from './modules/admin/components/CreateRunPage';
-import { LeadYourRun } from './modules/activeruns/components/LeadYourRun';
 import { RunAttendance } from './modules/activeruns/components/RunAttendance';
 import { CommunicationsDashboard } from './modules/communications/components/CommunicationsDashboard';
 import { AdminReports } from './modules/admin/pages/AdminReports';
@@ -120,13 +118,13 @@ export const AppContent: React.FC = () => {
     
     if (attendanceRunId) {
       return (
-        <RunAttendance 
+        <RunAttendance
           runId={attendanceRunId}
           runTitle={attendanceRunTitle}
           onBack={() => {
             setAttendanceRunId(null);
             setAttendanceRunTitle('');
-            setCurrentPage('lead-your-run');
+            setCurrentPage('runs-hub');
           }}
         />
       );
@@ -136,13 +134,20 @@ export const AppContent: React.FC = () => {
       case 'dashboard':
         console.log('✅ Rendering DashboardContent');
         return <DashboardContent onNavigate={handleNavigation} />;
+      case 'runs-hub':
       case 'view-runs':
       case 'scheduled-runs':
-        console.log('✅ Rendering ViewScheduledRuns');
-        return <ViewScheduledRuns />;
       case 'manage-runs':
-        console.log('✅ Rendering ManageScheduledRuns');
-        return <ManageScheduledRuns />;
+      case 'lead-your-run':
+        console.log('✅ Rendering RunsHub');
+        return (
+          <RunsHub
+            onNavigateToAttendance={(runId: string, runTitle: string) => {
+              setAttendanceRunId(runId);
+              setAttendanceRunTitle(runTitle);
+            }}
+          />
+        );
       case 'profile':
         console.log('✅ Rendering ProfilePage');
         return <ProfilePage />;
@@ -158,16 +163,6 @@ export const AppContent: React.FC = () => {
               setCurrentPage('dashboard');
             }}
             onCancel={() => setCurrentPage('dashboard')}
-          />
-        );
-      case 'lead-your-run':
-        console.log('✅ Rendering LeadYourRun');
-        return (
-          <LeadYourRun 
-            onNavigateToAttendance={(runId: string, runTitle: string) => {
-              setAttendanceRunId(runId);
-              setAttendanceRunTitle(runTitle);
-            }}
           />
         );
       case 'communications':
