@@ -470,12 +470,12 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
     <div>
       <div className="page-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
-          <button 
+          <button
             onClick={onBack}
-            className="btn btn-secondary"
+            className="btn btn-primary"
             style={{ fontSize: '14px' }}
           >
-            ← Back to Lead Your Run
+            ← Back to Runs
           </button>
           <h1 className="page-title">📝 Manage Attendance</h1>
         </div>

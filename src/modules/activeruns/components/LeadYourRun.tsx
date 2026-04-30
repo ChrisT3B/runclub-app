@@ -420,12 +420,12 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                   {canViewBookings(run) && (
                     <button
-                      className="btn btn-secondary"
+                      className="btn btn-primary"
                       onClick={() => loadRunBookings(run.id)}
                       disabled={loadingBookings}
                       style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
-                      {loadingBookings ? '⏳' : '👥'} 
+                      {loadingBookings ? '⏳' : '👥'}
                       {loadingBookings ? 'Loading...' : `View Bookings (${run.bookings_count || 0})`}
                     </button>
                   )}
@@ -444,7 +444,7 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
 
                   {canManageAttendance(run) && (
                     <button
-                      className="btn btn-secondary"
+                      className="btn btn-primary"
                       onClick={() => onNavigateToAttendance?.(run.id, run.run_title)}
                       style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                     >

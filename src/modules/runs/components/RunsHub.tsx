@@ -10,20 +10,38 @@ interface RunsHubProps {
 
 type TabId = 'all-runs' | 'my-assignments' | 'overview';
 
+const RETURN_TAB_KEY = 'runsHubReturnTab';
+const VALID_TABS: ReadonlyArray<TabId> = ['all-runs', 'my-assignments', 'overview'];
+
 export const RunsHub: React.FC<RunsHubProps> = ({ onNavigateToAttendance }) => {
   const { permissions } = useAuth();
   const isLirfOrAdmin = permissions.canManageRuns;
   const isAdmin = permissions.canManageMembers;
 
   const defaultTab: TabId = (() => {
-    if (typeof window !== 'undefined' && sessionStorage.getItem('scrollToRunId')) {
-      return 'all-runs';
+    if (typeof window === 'undefined') return 'all-runs';
+
+    // Dashboard deep-link: jump to the run on All Runs
+    if (sessionStorage.getItem('scrollToRunId')) return 'all-runs';
+
+    // Returning from RunAttendance: restore the tab the user was on
+    const stored = sessionStorage.getItem(RETURN_TAB_KEY);
+    if (stored && (VALID_TABS as readonly string[]).includes(stored)) {
+      sessionStorage.removeItem(RETURN_TAB_KEY);
+      return stored as TabId;
     }
+
     if (isLirfOrAdmin && !isAdmin) return 'my-assignments';
     return 'all-runs';
   })();
 
   const [activeTab, setActiveTab] = useState<TabId>(defaultTab);
+
+  const handleNavigateToAttendance = (runId: string, runTitle: string) => {
+    // Remember which tab to return to after the attendance flow
+    sessionStorage.setItem(RETURN_TAB_KEY, activeTab);
+    onNavigateToAttendance(runId, runTitle);
+  };
 
   return (
     <div>
@@ -63,7 +81,7 @@ export const RunsHub: React.FC<RunsHubProps> = ({ onNavigateToAttendance }) => {
 
       {isLirfOrAdmin && (
         <div style={{ display: activeTab === 'my-assignments' ? 'block' : 'none' }}>
-          <LeadYourRun onNavigateToAttendance={onNavigateToAttendance} />
+          <LeadYourRun onNavigateToAttendance={handleNavigateToAttendance} />
         </div>
       )}
 
