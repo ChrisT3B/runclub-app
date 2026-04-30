@@ -1,4 +1,14 @@
 /* ==============================================
+   RUNS — All Runs tab admin action bar
+   ============================================== */
+
+.view-scheduled-runs__action-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+/* ==============================================
    RUNS OVERVIEW (admin tab inside Runs hub)
    ============================================== */
 

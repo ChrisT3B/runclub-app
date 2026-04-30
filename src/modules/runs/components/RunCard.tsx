@@ -44,6 +44,10 @@ interface RunCardProps {
   onCloseLirfSuccessModal?: () => void;
   onShowLirfSuccessModal?: (run: any) => void;
   isC25kParticipant?: boolean;
+  onEditRun?: (runId: string) => void;
+  onDeleteRun?: (runId: string, runTitle: string) => void;
+  canDeleteThisRun?: boolean;
+  deleteTooltip?: string;
 }
 
 export const RunCard: React.FC<RunCardProps> = ({
@@ -70,6 +74,10 @@ export const RunCard: React.FC<RunCardProps> = ({
   onCloseLirfSuccessModal,
   onShowLirfSuccessModal,
   isC25kParticipant = false,
+  onEditRun,
+  onDeleteRun,
+  canDeleteThisRun = false,
+  deleteTooltip,
 }) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -383,6 +391,28 @@ export const RunCard: React.FC<RunCardProps> = ({
 
           {/* LIRF Button */}
           {renderLirfButton()}
+
+          {/* Edit Button (LIRF/admin) */}
+          {onEditRun && (
+            <button
+              onClick={() => onEditRun(run.id)}
+              className="action-btn action-btn--secondary"
+            >
+              ✏️ {getButtonText('Edit Run', 'Edit', false, '')}
+            </button>
+          )}
+
+          {/* Delete Button (LIRF/admin, deletability respected) */}
+          {onDeleteRun && (
+            <button
+              onClick={() => canDeleteThisRun && onDeleteRun(run.id, run.run_title)}
+              className="action-btn action-btn--danger"
+              disabled={!canDeleteThisRun}
+              title={deleteTooltip}
+            >
+              🗑️ {getButtonText('Delete Run', 'Delete', false, '')}
+            </button>
+          )}
         </div>
       </div>
 

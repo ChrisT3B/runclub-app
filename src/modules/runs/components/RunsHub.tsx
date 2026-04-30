@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { ViewScheduledRuns } from './ViewScheduledRuns';
 import { LeadYourRun } from '../../activeruns/components/LeadYourRun';
-import { ManageScheduledRuns } from '../../admin/components/ManageScheduledRuns';
 import { RunsOverview } from './RunsOverview';
 
 interface RunsHubProps {
   onNavigateToAttendance: (runId: string, runTitle: string) => void;
 }
 
-type TabId = 'all-runs' | 'my-assignments' | 'manage' | 'overview';
+type TabId = 'all-runs' | 'my-assignments' | 'overview';
 
 export const RunsHub: React.FC<RunsHubProps> = ({ onNavigateToAttendance }) => {
   const { permissions } = useAuth();
@@ -47,16 +46,6 @@ export const RunsHub: React.FC<RunsHubProps> = ({ onNavigateToAttendance }) => {
           </button>
         )}
 
-        {isLirfOrAdmin && (
-          <button
-            type="button"
-            className={`filter-tab ${activeTab === 'manage' ? 'filter-tab--active' : ''}`}
-            onClick={() => setActiveTab('manage')}
-          >
-            Manage
-          </button>
-        )}
-
         {isAdmin && (
           <button
             type="button"
@@ -75,12 +64,6 @@ export const RunsHub: React.FC<RunsHubProps> = ({ onNavigateToAttendance }) => {
       {isLirfOrAdmin && (
         <div style={{ display: activeTab === 'my-assignments' ? 'block' : 'none' }}>
           <LeadYourRun onNavigateToAttendance={onNavigateToAttendance} />
-        </div>
-      )}
-
-      {isLirfOrAdmin && (
-        <div style={{ display: activeTab === 'manage' ? 'block' : 'none' }}>
-          <ManageScheduledRuns />
         </div>
       )}
 
