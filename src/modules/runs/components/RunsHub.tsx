@@ -43,6 +43,22 @@ export const RunsHub: React.FC<RunsHubProps> = ({ onNavigateToAttendance }) => {
     onNavigateToAttendance(runId, runTitle);
   };
 
+  // Overview row click → switch to All Runs and scroll/highlight that run.
+  // ViewScheduledRuns is already mounted (display:none), so its scroll-on-mount
+  // effect won't re-fire — handle the scroll directly here.
+  const handleNavigateToRun = (runId: string) => {
+    setActiveTab('all-runs');
+    setTimeout(() => {
+      const el = document.getElementById(`run-card-${runId}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.boxShadow = '0 0 20px rgba(220, 38, 38, 0.5)';
+      setTimeout(() => {
+        el.style.boxShadow = '';
+      }, 2000);
+    }, 100);
+  };
+
   return (
     <div>
       <div className="filter-tabs">
@@ -87,7 +103,7 @@ export const RunsHub: React.FC<RunsHubProps> = ({ onNavigateToAttendance }) => {
 
       {isAdmin && (
         <div style={{ display: activeTab === 'overview' ? 'block' : 'none' }}>
-          <RunsOverview />
+          <RunsOverview onNavigateToRun={handleNavigateToRun} />
         </div>
       )}
     </div>

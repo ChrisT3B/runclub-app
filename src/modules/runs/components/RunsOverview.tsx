@@ -3,7 +3,11 @@ import { ScheduledRunsService, LirfCoverageRow } from '../../admin/services/sche
 
 const COVERAGE_DAYS = 30;
 
-export const RunsOverview: React.FC = () => {
+interface RunsOverviewProps {
+  onNavigateToRun?: (runId: string) => void;
+}
+
+export const RunsOverview: React.FC<RunsOverviewProps> = ({ onNavigateToRun }) => {
   const [rows, setRows] = useState<LirfCoverageRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -104,7 +108,22 @@ export const RunsOverview: React.FC = () => {
                     className={`member-table__row ${coverageClass(row)}`}
                   >
                     <td className="member-table__cell">{formatDate(row.date)}</td>
-                    <td className="member-table__cell">{row.runName}</td>
+                    <td className="member-table__cell">
+                      {onNavigateToRun ? (
+                        <a
+                          href={`#scheduled-runs?runId=${row.runId}`}
+                          className="runs-overview-link"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            onNavigateToRun(row.runId);
+                          }}
+                        >
+                          {row.runName}
+                        </a>
+                      ) : (
+                        row.runName
+                      )}
+                    </td>
                     <td className="member-table__cell">
                       {row.lirfCount} / {row.lirfsRequired}
                     </td>

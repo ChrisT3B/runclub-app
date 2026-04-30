@@ -203,6 +203,18 @@
 .runs-overview-row--partial { background-color: #fef3c7; }
 .runs-overview-row--full    { background-color: #dcfce7; }
 
+/* Run name link inside the Overview table */
+.runs-overview-link {
+  color: var(--red-primary);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.runs-overview-link:hover {
+  color: var(--red-dark);
+}
+
 /* Empty state */
 .runs-overview-empty {
   text-align: center;
