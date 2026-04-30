@@ -8,6 +8,41 @@
   margin-bottom: 16px;
 }
 
+@media (max-width: 768px) {
+  .view-scheduled-runs__action-bar {
+    margin-bottom: 12px;
+  }
+  .view-scheduled-runs__action-bar .btn {
+    width: 100%;
+  }
+}
+
+/* ==============================================
+   RUN CARD — compact Edit/Delete buttons
+   ============================================== */
+
+.run-card__manage-btn {
+  padding: 6px 12px;
+  font-size: 14px;
+  gap: 4px;
+}
+
+.run-card__manage-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* btn-danger isn't defined globally; scope it here for the Delete button */
+.btn-danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
 /* ==============================================
    RUNS OVERVIEW (admin tab inside Runs hub)
    ============================================== */

@@ -395,22 +395,24 @@ export const RunCard: React.FC<RunCardProps> = ({
           {/* Edit Button (LIRF/admin) */}
           {onEditRun && (
             <button
+              type="button"
               onClick={() => onEditRun(run.id)}
-              className="action-btn action-btn--secondary"
+              className="btn btn-secondary run-card__manage-btn"
             >
-              ✏️ {getButtonText('Edit Run', 'Edit', false, '')}
+              ✏️ <span className="mobile-hide-text">Edit</span>
             </button>
           )}
 
           {/* Delete Button (LIRF/admin, deletability respected) */}
           {onDeleteRun && (
             <button
+              type="button"
               onClick={() => canDeleteThisRun && onDeleteRun(run.id, run.run_title)}
-              className="action-btn action-btn--danger"
+              className="btn btn-danger run-card__manage-btn"
               disabled={!canDeleteThisRun}
               title={deleteTooltip}
             >
-              🗑️ {getButtonText('Delete Run', 'Delete', false, '')}
+              🗑️ <span className="mobile-hide-text">Delete</span>
             </button>
           )}
         </div>
