@@ -220,8 +220,8 @@ export const RunCard: React.FC<RunCardProps> = ({
       className={`card run-card ${run.is_booked ? 'run-card--booked' : ''} ${run.is_full ? 'run-card--full' : ''} ${isUrgent ? 'run-card--urgent' : ''} ${run.user_is_assigned_lirf ? 'run-card--assigned' : ''}`}
     >
       <div className="card-content" style={{ padding: '18px' }}>
-        {/* Header with badges */}
-        <div className="responsive-header">
+        {/* Header with badges + admin actions (top-right) */}
+        <div className="run-card__title-row">
           <div>
             <h3 className="card-title">{run.run_title}</h3>
             <div className="run-card__badges">
@@ -249,6 +249,31 @@ export const RunCard: React.FC<RunCardProps> = ({
               )}
             </div>
           </div>
+
+          {(onEditRun || onDeleteRun) && (
+            <div className="run-card__admin-actions">
+              {onEditRun && (
+                <button
+                  type="button"
+                  onClick={() => onEditRun(run.id)}
+                  className="btn btn-secondary run-card__manage-btn"
+                >
+                  ✏️ <span className="mobile-hide-text">Edit</span>
+                </button>
+              )}
+              {onDeleteRun && (
+                <button
+                  type="button"
+                  onClick={() => canDeleteThisRun && onDeleteRun(run.id, run.run_title)}
+                  className="btn btn-danger run-card__manage-btn"
+                  disabled={!canDeleteThisRun}
+                  title={deleteTooltip}
+                >
+                  🗑️ <span className="mobile-hide-text">Delete</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Run Info Grid */}
@@ -391,30 +416,6 @@ export const RunCard: React.FC<RunCardProps> = ({
 
           {/* LIRF Button */}
           {renderLirfButton()}
-
-          {/* Edit Button (LIRF/admin) */}
-          {onEditRun && (
-            <button
-              type="button"
-              onClick={() => onEditRun(run.id)}
-              className="btn btn-secondary run-card__manage-btn"
-            >
-              ✏️ <span className="mobile-hide-text">Edit</span>
-            </button>
-          )}
-
-          {/* Delete Button (LIRF/admin, deletability respected) */}
-          {onDeleteRun && (
-            <button
-              type="button"
-              onClick={() => canDeleteThisRun && onDeleteRun(run.id, run.run_title)}
-              className="btn btn-danger run-card__manage-btn"
-              disabled={!canDeleteThisRun}
-              title={deleteTooltip}
-            >
-              🗑️ <span className="mobile-hide-text">Delete</span>
-            </button>
-          )}
         </div>
       </div>
 

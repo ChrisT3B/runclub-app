@@ -18,6 +18,29 @@
 }
 
 /* ==============================================
+   RUN CARD — title row with top-right admin actions
+   ============================================== */
+
+.run-card__title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.run-card__title-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.run-card__admin-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ==============================================
    RUN CARD — compact Edit/Delete buttons
    ============================================== */
 
