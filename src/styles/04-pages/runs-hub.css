@@ -67,6 +67,32 @@
 }
 
 /* ==============================================
+   ACTION BUTTON — success variant (Complete Run)
+   ============================================== */
+
+.action-btn--success {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: white;
+}
+
+.action-btn--success:hover:not(:disabled) {
+  background: #15803d;
+  border-color: #15803d;
+}
+
+/* Equal-width sizing inside .run-card-actions-container — extends the
+   existing rule in Buttons.css which only targets primary/secondary/danger */
+.run-card-actions-container .action-btn--success {
+  margin: 0 !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  flex: 1 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+/* ==============================================
    RUNS OVERVIEW (admin tab inside Runs hub)
    ============================================== */
 

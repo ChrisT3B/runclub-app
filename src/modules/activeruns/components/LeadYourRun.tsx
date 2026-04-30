@@ -416,14 +416,13 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {/* Action Buttons — equal-width row matching All Runs cards */}
+                <div className="run-card-actions-container">
                   {canViewBookings(run) && (
                     <button
-                      className="btn btn-primary"
+                      className="action-btn action-btn--primary"
                       onClick={() => loadRunBookings(run.id)}
                       disabled={loadingBookings}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
                       {loadingBookings ? '⏳' : '👥'}
                       {loadingBookings ? 'Loading...' : `View Bookings (${run.bookings_count || 0})`}
@@ -432,21 +431,19 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
 
                   {canStartRun(run) && (
                     <button
-                      className="btn btn-primary"
+                      className="action-btn action-btn--primary"
                       onClick={() => updateRunStatus(run.id, 'in_progress')}
                       disabled={statusUpdating === run.id}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
-                      {statusUpdating === run.id ? '⏳' : '▶️'} 
+                      {statusUpdating === run.id ? '⏳' : '▶️'}
                       {statusUpdating === run.id ? 'Starting...' : 'Start Run'}
                     </button>
                   )}
 
                   {canManageAttendance(run) && (
                     <button
-                      className="btn btn-primary"
+                      className="action-btn action-btn--primary"
                       onClick={() => onNavigateToAttendance?.(run.id, run.run_title)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
                       📝 Manage Attendance
                     </button>
@@ -454,34 +451,20 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
 
                   {canCompleteRun(run) && (
                     <button
-                      className="btn btn-success"
+                      className="action-btn action-btn--success"
                       onClick={() => updateRunStatus(run.id, 'completed')}
                       disabled={statusUpdating === run.id}
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px',
-                        background: '#16a34a',
-                        borderColor: '#16a34a'
-                      }}
                     >
-                      {statusUpdating === run.id ? '⏳' : '✅'} 
+                      {statusUpdating === run.id ? '⏳' : '✅'}
                       {statusUpdating === run.id ? 'Completing...' : 'Complete Run'}
                     </button>
                   )}
 
                   {run.run_status === 'completed' && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      color: '#16a34a',
-                      fontSize: '14px',
-                      fontWeight: '500'
-                    }}>
+                    <div className="action-status" style={{ color: '#16a34a', fontWeight: 500 }}>
                       ✅ Run completed
                       {run.completed_at && (
-                        <span style={{ color: 'var(--gray-500)', fontSize: '12px' }}>
+                        <span style={{ color: 'var(--gray-500)', fontSize: '12px', marginLeft: '6px' }}>
                           at {new Date(run.completed_at).toLocaleTimeString('en-GB')}
                         </span>
                       )}
