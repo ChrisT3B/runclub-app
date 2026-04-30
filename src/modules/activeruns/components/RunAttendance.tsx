@@ -649,14 +649,13 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
                         <button
                           onClick={() => markAttendance(booking.member_id, true)}
                           disabled={saving === booking.member_id}
-                          className="btn btn-success"
-                          style={{ 
-                            fontSize: '14px',
-                            background: isPresent ? '#16a34a' : '#22c55e',
-                            borderColor: isPresent ? '#16a34a' : '#22c55e',
-                            opacity: isPresent ? 1 : 0.8,
-                            flex: 1
-                          }}
+                          className={
+                            isPresent
+                              ? 'attendance-btn attendance-btn--present attendance-btn--selected'
+                              : isMarked
+                                ? 'attendance-btn attendance-btn--inactive'
+                                : 'attendance-btn attendance-btn--present'
+                          }
                         >
                           {saving === booking.member_id ? '⏳' : '✅'} Present
                         </button>
@@ -664,15 +663,13 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
                         <button
                           onClick={() => markAttendance(booking.member_id, false)}
                           disabled={saving === booking.member_id}
-                          className="btn btn-secondary"
-                          style={{ 
-                            fontSize: '14px',
-                            background: isMarked && !isPresent ? '#dc2626' : '#ef4444',
-                            borderColor: isMarked && !isPresent ? '#dc2626' : '#ef4444',
-                            color: 'white',
-                            opacity: isMarked && !isPresent ? 1 : 0.8,
-                            flex: 1
-                          }}
+                          className={
+                            isMarked && !isPresent
+                              ? 'attendance-btn attendance-btn--absent attendance-btn--selected'
+                              : isPresent
+                                ? 'attendance-btn attendance-btn--inactive'
+                                : 'attendance-btn attendance-btn--absent'
+                          }
                         >
                           {saving === booking.member_id ? '⏳' : '❌'} Absent
                         </button>

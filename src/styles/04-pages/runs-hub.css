@@ -67,6 +67,76 @@
 }
 
 /* ==============================================
+   ATTENDANCE BUTTONS — Present / Absent toggle pair
+   ============================================== */
+
+.attendance-btn {
+  flex: 1;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  font-weight: 500;
+  font-family: var(--font-heading);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.attendance-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Filled colour states — used both pre-decision (equal options) and when selected */
+.attendance-btn--present {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: white;
+}
+
+.attendance-btn--present:hover:not(:disabled) {
+  background: #15803d;
+  border-color: #15803d;
+}
+
+.attendance-btn--absent {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: white;
+}
+
+.attendance-btn--absent:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+/* Inactive — the "other option" once a state has been chosen */
+.attendance-btn--inactive {
+  background: white;
+  border-color: var(--gray-300);
+  color: var(--gray-500);
+}
+
+.attendance-btn--inactive:hover:not(:disabled) {
+  background: var(--gray-50);
+  color: var(--gray-700);
+}
+
+/* Selected — pairs with --present or --absent to add a clear ring */
+.attendance-btn--selected.attendance-btn--present {
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.30);
+}
+
+.attendance-btn--selected.attendance-btn--absent {
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.30);
+}
+
+/* ==============================================
    ACTION BUTTON — success variant (Complete Run)
    ============================================== */
 
