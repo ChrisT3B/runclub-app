@@ -76,7 +76,7 @@ export const RunsHub: React.FC<RunsHubProps> = ({ onNavigateToAttendance }) => {
             className={`filter-tab ${activeTab === 'my-assignments' ? 'filter-tab--active' : ''}`}
             onClick={() => setActiveTab('my-assignments')}
           >
-            My Assignments
+            Lead Your Runs
           </button>
         )}
 
@@ -95,10 +95,11 @@ export const RunsHub: React.FC<RunsHubProps> = ({ onNavigateToAttendance }) => {
         <ViewScheduledRuns />
       </div>
 
-      {isLirfOrAdmin && (
-        <div style={{ display: activeTab === 'my-assignments' ? 'block' : 'none' }}>
-          <LeadYourRun onNavigateToAttendance={handleNavigateToAttendance} />
-        </div>
+      {/* Lead Your Runs — conditionally mounted so it re-fetches fresh
+          assignment data each time the tab is selected. (All Runs and
+          Overview stay mounted via display:none to preserve their state.) */}
+      {isLirfOrAdmin && activeTab === 'my-assignments' && (
+        <LeadYourRun onNavigateToAttendance={handleNavigateToAttendance} />
       )}
 
       {isAdmin && (
