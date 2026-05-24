@@ -76,7 +76,7 @@ export const RunsHub: React.FC<RunsHubProps> = ({ onNavigateToAttendance }) => {
             className={`filter-tab ${activeTab === 'my-assignments' ? 'filter-tab--active' : ''}`}
             onClick={() => setActiveTab('my-assignments')}
           >
-            Lead Your Runs
+            Lead Runs
           </button>
         )}
 
