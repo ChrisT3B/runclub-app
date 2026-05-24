@@ -49,6 +49,15 @@ export interface CreateScheduledRunData {
   created_by_name?: string;     // ADD: Name for display
 }
 
+export interface LirfCoverageRow {
+  runId: string;
+  date: string;          // YYYY-MM-DD
+  runName: string;
+  lirfCount: number;
+  lirfsRequired: number;
+  lirfNames: string[];   // empty array if none assigned
+}
+
 export interface RunWithDetails extends ScheduledRun {
   booking_count: number;
   buddy_booking_count: number;
@@ -300,6 +309,85 @@ export class ScheduledRunsService {
       console.error('ScheduledRunsService.getScheduledRunsWithDetails error:', error);
       throw error;
     }
+  }
+
+  /**
+   * LIRF coverage rows for upcoming runs over the next `days` days.
+   * Used by Dashboard look-ahead, AdminReports look-ahead, and RunsOverview —
+   * single source of truth instead of three duplicated queries.
+   */
+  static async getLirfCoverage(days: number): Promise<LirfCoverageRow[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const horizon = new Date();
+    horizon.setDate(today.getDate() + days);
+    horizon.setHours(23, 59, 59, 999);
+
+    const todayStr = today.toISOString().split('T')[0];
+    const horizonStr = horizon.toISOString().split('T')[0];
+
+    const { data: runs, error: runsError } = await supabase
+      .from('scheduled_runs')
+      .select('id, run_title, run_date, assigned_lirf_1, assigned_lirf_2, assigned_lirf_3, lirfs_required')
+      .gte('run_date', todayStr)
+      .lte('run_date', horizonStr)
+      .order('run_date', { ascending: true });
+
+    if (runsError) {
+      console.error('ScheduledRunsService.getLirfCoverage runs query error:', runsError);
+      throw new Error(runsError.message);
+    }
+
+    const runRows = (runs as Array<{
+      id: string;
+      run_title: string;
+      run_date: string;
+      assigned_lirf_1: string | null;
+      assigned_lirf_2: string | null;
+      assigned_lirf_3: string | null;
+      lirfs_required: number | null;
+    }> | null) ?? [];
+
+    if (runRows.length === 0) return [];
+
+    const lirfIds = new Set<string>();
+    runRows.forEach(r => {
+      if (r.assigned_lirf_1) lirfIds.add(r.assigned_lirf_1);
+      if (r.assigned_lirf_2) lirfIds.add(r.assigned_lirf_2);
+      if (r.assigned_lirf_3) lirfIds.add(r.assigned_lirf_3);
+    });
+
+    let memberMap = new Map<string, string>();
+    if (lirfIds.size > 0) {
+      const { data: members, error: membersError } = await supabase
+        .from('members')
+        .select('id, full_name')
+        .in('id', Array.from(lirfIds));
+
+      if (membersError) {
+        console.error('ScheduledRunsService.getLirfCoverage members query error:', membersError);
+      } else {
+        memberMap = new Map(
+          ((members as { id: string; full_name: string }[] | null) ?? [])
+            .map(m => [m.id, m.full_name])
+        );
+      }
+    }
+
+    return runRows.map(run => {
+      const assignedIds = [run.assigned_lirf_1, run.assigned_lirf_2, run.assigned_lirf_3].filter(Boolean) as string[];
+      const lirfNames = assignedIds
+        .map(id => memberMap.get(id))
+        .filter((n): n is string => Boolean(n));
+      return {
+        runId: run.id,
+        date: run.run_date,
+        runName: run.run_title,
+        lirfCount: assignedIds.length,
+        lirfsRequired: run.lirfs_required ?? 0,
+        lirfNames,
+      };
+    });
   }
 
   /**

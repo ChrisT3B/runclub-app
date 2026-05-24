@@ -10,16 +10,23 @@ import { ShareCallbacks } from '../utils/runUtils';
 import { ConfirmationModal } from '../../../shared/components/ui/ConfirmationModal';
 import { RunCard } from './RunCard';
 import { RunFilters, FilterType, FilterCounts } from './RunFilters';
+import { CreateScheduledRunForm } from '../../admin/components/CreateScheduledRunForm';
+import { EditScheduledRunForm } from '../../admin/components/EditScheduledRunForm';
 
 
 export const ViewScheduledRuns: React.FC = () => {
-  const { state, permissions } = useAuth();
+  const { state, permissions, logout } = useAuth();
   const [runs, setRuns] = useState<RunWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
   //const [assignmentLoading, setAssignmentLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
+
+  // Create/Edit modal state (LIRF/admin)
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingRunId, setEditingRunId] = useState<string | null>(null);
+  const [deletableRuns, setDeletableRuns] = useState<string[]>([]);
   
   // Error Modal State
   const [errorModal, setErrorModal] = useState<{
@@ -144,6 +151,110 @@ const closeShareModal = () => {
   useEffect(() => {
     loadScheduledRuns();
   }, [loadScheduledRuns]);
+
+  // Load deletable runs for LIRF/admin so the Delete button can respect permissions
+  useEffect(() => {
+    if (!canManageRuns || !state.user?.id || !permissions.accessLevel || runs.length === 0) {
+      setDeletableRuns([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const ids = await ScheduledRunsService.getDeletableRuns(
+          state.user!.id,
+          permissions.accessLevel
+        );
+        if (!cancelled) setDeletableRuns(ids);
+      } catch (err) {
+        console.error('Failed to load deletable runs:', err);
+        if (!cancelled) setDeletableRuns([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [canManageRuns, state.user?.id, permissions.accessLevel, runs]);
+
+  // Edit/Delete handlers (LIRF/admin)
+  const handleEditRun = (runId: string) => {
+    setEditingRunId(runId);
+  };
+
+  const closeEditForm = () => {
+    setEditingRunId(null);
+  };
+
+  const handleEditSuccess = () => {
+    setEditingRunId(null);
+    loadScheduledRuns();
+  };
+
+  const handleCreateSuccess = () => {
+    setShowCreateForm(false);
+    loadScheduledRuns();
+  };
+
+  const getDeleteTooltip = (run: RunWithDetails): string => {
+    if (run.run_status === 'in_progress') return 'Cannot delete a run that has started';
+    if (run.run_status === 'completed') return 'Cannot delete a completed run';
+    if (permissions.accessLevel === 'lirf' && run.created_by !== state.user?.id) {
+      return 'You can only delete runs you created';
+    }
+    if (permissions.accessLevel === 'member') return 'You do not have permission to delete runs';
+    return 'Delete this run';
+  };
+
+  const performDeleteRun = async (runId: string) => {
+    if (!state.user?.id || !permissions.accessLevel) {
+      setErrorModal({
+        isOpen: true,
+        title: 'Authentication Error',
+        message: 'Please log in again to delete this run.',
+      });
+      return;
+    }
+    try {
+      await ScheduledRunsService.deleteScheduledRun(runId, state.user.id, permissions.accessLevel);
+      await loadScheduledRuns();
+    } catch (err: any) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('CSRF_TOKEN_MISSING') || msg.includes('CSRF_VALIDATION_FAILED')) {
+        setErrorModal({
+          isOpen: true,
+          title: 'Session Expired',
+          message: 'Your session has expired. Please log in again.',
+        });
+        await logout();
+        return;
+      }
+      setErrorModal({
+        isOpen: true,
+        title: 'Delete Failed',
+        message: msg || 'Failed to delete the run. Please try again.',
+      });
+    }
+  };
+
+  const handleDeleteRun = (runId: string, runTitle: string) => {
+    if (!deletableRuns.includes(runId)) {
+      setErrorModal({
+        isOpen: true,
+        title: 'Cannot Delete',
+        message: 'You cannot delete this run. It may have started/completed or you may not have permission.',
+      });
+      return;
+    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Run',
+      message: `Are you sure you want to delete "${runTitle}"? This action cannot be undone.`,
+      onConfirm: () => {
+        closeConfirmModal();
+        performDeleteRun(runId);
+      },
+    });
+  };
 
   // Scroll to specific run if coming from Reports page
   useEffect(() => {
@@ -510,6 +621,25 @@ const handleLirfCloseSuccessModal = () => {
     }
   };
 
+  if (showCreateForm) {
+    return (
+      <CreateScheduledRunForm
+        onSuccess={handleCreateSuccess}
+        onCancel={() => setShowCreateForm(false)}
+      />
+    );
+  }
+
+  if (editingRunId) {
+    return (
+      <EditScheduledRunForm
+        runId={editingRunId}
+        onSuccess={handleEditSuccess}
+        onCancel={closeEditForm}
+      />
+    );
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -605,6 +735,21 @@ const handleLirfCloseSuccessModal = () => {
         </div>
       )}
 
+      {/* Schedule a New Run (LIRF/admin) */}
+      {canManageRuns && (
+        <div className="view-scheduled-runs__action-bar">
+          <button
+            type="button"
+            onClick={() => setShowCreateForm(true)}
+            className="btn btn-primary"
+          >
+            <span>🏃‍♂️</span>
+            <span className="mobile-hide-text">Schedule a Run</span>
+            <span className="mobile-show-text">Schedule</span>
+          </button>
+        </div>
+      )}
+
       {/* ✅ EXISTING: Use working RunFilters component */}
       <RunFilters
         currentFilter={filter}
@@ -657,6 +802,10 @@ const handleLirfCloseSuccessModal = () => {
                showLirfSuccessModal={lirfSuccessModal.isOpen && lirfSuccessModal.run?.id === run.id}
               onCloseLirfSuccessModal={handleLirfCloseSuccessModal}
                  onShowLirfSuccessModal={handleLirfShowSuccessModal}
+              onEditRun={canManageRuns ? handleEditRun : undefined}
+              onDeleteRun={canManageRuns ? handleDeleteRun : undefined}
+              canDeleteThisRun={canManageRuns ? deletableRuns.includes(run.id) : false}
+              deleteTooltip={canManageRuns ? getDeleteTooltip(run) : undefined}
             />
             </div>
           ))}
