@@ -22,6 +22,7 @@ export interface ScheduledRun {
   assigned_lirf_2?: string;
   assigned_lirf_3?: string;
   is_c25k_run?: boolean;
+  is_dog_friendly?: boolean;
   created_by: string;
   created_by_name?: string;
   created_at: string;
@@ -45,6 +46,7 @@ export interface CreateScheduledRunData {
   assigned_lirf_2?: string;
   assigned_lirf_3?: string;
   is_c25k_run?: boolean;
+  is_dog_friendly?: boolean;
   created_by: string;
   created_by_name?: string;     // ADD: Name for display
 }
@@ -63,11 +65,12 @@ export interface RunWithDetails extends ScheduledRun {
   buddy_booking_count: number;
   is_booked: boolean;
   user_booking_id?: string;
-  user_booking_type?: 'standard' | 'c25k_participant' | 'buddy';
+  user_booking_type?: 'standard' | 'c25k_participant' | 'buddy' | 'with_dog';
   is_full: boolean;
   is_buddy_slots_full: boolean;
   user_can_book_as_c25k: boolean;
   user_can_book_as_buddy: boolean;
+  user_booking_includes_dog: boolean;
   lirf_vacancies: number;
   user_is_assigned_lirf: boolean;
   assigned_lirfs: Array<{
@@ -248,6 +251,7 @@ export class ScheduledRunsService {
         // User booking info
         const userBooking = userBookingsMap[run.id];
         const isBooked = !!userBooking;
+        const userBookingIncludesDog = userBooking?.booking_type === 'with_dog';
 
         // LIRF assignments
         const assignedLirfs: Array<{id: string, name: string, position: number}> = [];
@@ -296,6 +300,7 @@ export class ScheduledRunsService {
           is_buddy_slots_full: isBuddySlotsFull,
           user_can_book_as_c25k: userCanBookAsC25k,
           user_can_book_as_buddy: userCanBookAsBuddy,
+          user_booking_includes_dog: userBookingIncludesDog,
           lirf_vacancies: run.lirfs_required - assignedLirfs.length,
           user_is_assigned_lirf: userIsAssignedLirf,
           assigned_lirfs: assignedLirfs,
@@ -510,6 +515,7 @@ export class ScheduledRunsService {
           end_date: runData.end_date || null,
           lirfs_required: runData.lirfs_required,
           is_c25k_run: runData.is_c25k_run || false,
+          is_dog_friendly: runData.is_dog_friendly || false,
           assigned_lirf_1: null, // Set to null initially
           assigned_lirf_2: null,
           assigned_lirf_3: null,

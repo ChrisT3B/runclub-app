@@ -605,6 +605,22 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
                               Buddy
                             </span>
                           )}
+                          {booking.booking_type === 'with_dog' && (
+                            <span
+                              title="Bringing a dog"
+                              aria-label="Bringing a dog"
+                              style={{
+                                background: '#dcfce7',
+                                color: '#166534',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                fontWeight: '600'
+                              }}
+                            >
+                              🐕 Dog
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: '14px', color: 'var(--gray-600)' }}>
                           📧 {booking.member_email}

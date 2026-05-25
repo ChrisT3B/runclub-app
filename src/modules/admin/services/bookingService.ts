@@ -1,7 +1,7 @@
 import { supabase } from '../../../services/supabase';
 import { validateCsrfToken, getCsrfToken } from '../../../utils/csrfProtection';
 
-export type BookingType = 'standard' | 'c25k_participant' | 'buddy';
+export type BookingType = 'standard' | 'c25k_participant' | 'buddy' | 'with_dog';
 
 export interface RunBooking {
   id: string;
@@ -20,6 +20,7 @@ export interface CreateBookingData {
   run_id: string;
   member_id: string;
   is_c25k_participant?: boolean;
+  booking_type_override?: BookingType;
 }
 
 export interface BookingWithRunDetails extends RunBooking {
@@ -61,7 +62,7 @@ export class BookingService {
 
     const { data, error } = await supabase
       .from('scheduled_runs')
-      .select('max_participants, run_title, assigned_lirf_1, assigned_lirf_2, assigned_lirf_3, is_c25k_run')
+      .select('max_participants, run_title, assigned_lirf_1, assigned_lirf_2, assigned_lirf_3, is_c25k_run, is_dog_friendly')
       .eq('id', runId)
       .single();
 
@@ -69,8 +70,56 @@ export class BookingService {
 
     this.runDataCache.set(cacheKey, data);
     this.runDataCacheExpiry = now + this.RUN_CACHE_DURATION;
-    
+
     return data;
+  }
+
+  /**
+   * Accept the dog policy for a member.
+   * Sets dog_policy_accepted = true and dog_policy_accepted_at = now() on the members row.
+   */
+  static async acceptDogPolicy(memberId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('members')
+        .update({
+          dog_policy_accepted: true,
+          dog_policy_accepted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', memberId);
+
+      if (error) {
+        throw new Error('Failed to record dog policy acceptance');
+      }
+    } catch (error) {
+      console.error('BookingService.acceptDogPolicy error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch the dog policy URL from club_documents table.
+   * Returns the URL string, or null if not found.
+   */
+  static async getDogPolicyUrl(): Promise<string | null> {
+    try {
+      const { data, error } = await supabase
+        .from('club_documents')
+        .select('url')
+        .eq('document_key', 'dog_policy')
+        .single();
+
+      if (error || !data) {
+        console.error('Failed to fetch dog policy URL:', error);
+        return null;
+      }
+
+      return data.url;
+    } catch (error) {
+      console.error('BookingService.getDogPolicyUrl error:', error);
+      return null;
+    }
   }
 
   /**
@@ -154,10 +203,13 @@ export class BookingService {
         );
       }
 
-      // Determine booking type for C25k runs
-      let bookingType: BookingType = 'standard';
+      // Determine booking type for C25k runs.
+      // Explicit override (e.g. 'with_dog' from the dog-friendly flow) wins —
+      // dog-friendly and C25K runs are mutually exclusive at the admin form level,
+      // so override and C25K logic should never conflict in practice.
+      let bookingType: BookingType = bookingData.booking_type_override ?? 'standard';
 
-      if (runData.is_c25k_run) {
+      if (!bookingData.booking_type_override && runData.is_c25k_run) {
         if (bookingData.is_c25k_participant) {
           bookingType = 'c25k_participant';
         } else {

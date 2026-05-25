@@ -247,6 +247,19 @@ export const RunCard: React.FC<RunCardProps> = ({
                   C25K
                 </span>
               )}
+              {run.is_dog_friendly && (
+                <span style={{
+                  display: 'inline-block',
+                  padding: '4px 8px',
+                  background: '#f0fdf4',
+                  color: '#15803d',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: '600'
+                }}>
+                  🐕 Dog Friendly
+                </span>
+              )}
             </div>
           </div>
 

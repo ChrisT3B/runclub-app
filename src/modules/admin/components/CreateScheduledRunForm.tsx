@@ -19,6 +19,7 @@ interface ScheduledRunData {
   is_recurring: boolean;
   weekly_recurrences: number;
   is_c25k_run: boolean;
+  is_dog_friendly: boolean;
   lirfs_required: number;
   assigned_lirf_1: string;
   assigned_lirf_2: string;
@@ -47,6 +48,7 @@ export const CreateScheduledRunForm: React.FC<CreateScheduledRunFormProps> = ({
     is_recurring: false,
     weekly_recurrences: 2, // CHANGED: from 1 to 2 to match dropdown
     is_c25k_run: false,
+    is_dog_friendly: false,
     lirfs_required: 1,
     assigned_lirf_1: '',
     assigned_lirf_2: '',
@@ -354,17 +356,37 @@ const generateWeeklyRuns = (baseData: ScheduledRunData) => {
 
               {/* C25k Run Toggle */}
               <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: formData.is_dog_friendly ? 'not-allowed' : 'pointer', opacity: formData.is_dog_friendly ? 0.6 : 1 }}>
                   <input
                     type="checkbox"
                     name="is_c25k_run"
                     checked={formData.is_c25k_run}
                     onChange={handleInputChange}
+                    disabled={formData.is_dog_friendly}
                   />
                   <span className="form-label" style={{ margin: 0 }}>This is a Couch to 5k Run</span>
                 </label>
                 <p style={{ fontSize: '12px', color: 'var(--gray-600)', marginTop: '4px', marginLeft: '24px' }}>
                   C25k runs are visible to all members. C25k participants can book unlimited slots; regular members can book as buddies (max 3 per run).
+                </p>
+              </div>
+
+              {/* Dog-Friendly Run Toggle */}
+              <div className="form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: formData.is_c25k_run ? 'not-allowed' : 'pointer', opacity: formData.is_c25k_run ? 0.6 : 1 }}>
+                  <input
+                    type="checkbox"
+                    name="is_dog_friendly"
+                    checked={formData.is_dog_friendly}
+                    onChange={handleInputChange}
+                    disabled={formData.is_c25k_run}
+                  />
+                  <span className="form-label" style={{ margin: 0 }}>Dog-friendly run</span>
+                </label>
+                <p style={{ fontSize: '12px', color: 'var(--gray-600)', marginTop: '4px', marginLeft: '24px' }}>
+                  {formData.is_c25k_run
+                    ? 'Dog-friendly runs cannot also be C25K runs.'
+                    : 'Only designate runs that have been assessed against the Standing Dog-Friendly Route Register.'}
                 </p>
               </div>
             </div>

@@ -5,6 +5,7 @@ import { UserPlus, UserMinus, UserX, Loader2 } from 'lucide-react';
 import { BookingService, BookingError } from '../../admin/services/bookingService';
 import { RunWithDetails } from '../../admin/services/scheduledRunsService';
 import { BookingSuccessModal } from './BookingSuccessModal';
+import { DogBookingModal } from './DogBookingModal';
 import { useAuth } from '../../auth/context/AuthContext';
 
 interface BookingManagerProps {
@@ -53,7 +54,8 @@ export const BookingManager: React.FC<BookingManagerProps> = ({
   className = '',
   isC25kParticipant = false
 }) => {
-  const { logout } = useAuth();
+  const { logout, state: authState } = useAuth();
+  const dogPolicyAccepted = authState.member?.dog_policy_accepted ?? false;
 
   const [state, setState] = useState<BookingManagerState>({
     isLoading: false,
@@ -61,6 +63,7 @@ export const BookingManager: React.FC<BookingManagerProps> = ({
     showSuccessModal: false,
     successData: null
   });
+  const [showDogModal, setShowDogModal] = useState(false);
 
   // Detect mobile for responsive text
   const isMobile = window.innerWidth <= 768;
@@ -108,8 +111,10 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
     onError(new BookingError(config.message, error.type, config.title));
   }, [rollbackOptimisticUpdate, onError]);
 
-  // Core booking function with optimistic updates
-  const handleBookRun = useCallback(async () => {
+  // Core booking function with optimistic updates.
+  // For dog-friendly runs, callers route via handleBookRun (below) which first
+  // shows the DogBookingModal and then calls performBookRun with the chosen type.
+  const performBookRun = useCallback(async (bookingTypeChoice: 'standard' | 'with_dog' = 'standard') => {
     if (!userId) {
       onError(new BookingError('Please log in to book runs.', 'AUTH_ERROR', 'Login Required'));
       return;
@@ -118,14 +123,15 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
     if (state.isLoading) return;
 
     // Set loading state
-    setState(prev => ({ 
-      ...prev, 
-      isLoading: true, 
-      lastAction: 'booking' 
+    setState(prev => ({
+      ...prev,
+      isLoading: true,
+      lastAction: 'booking'
     }));
 
     // Determine booking type for optimistic update
     const isBuddyBooking = run.is_c25k_run && !isC25kParticipant;
+    const isDogBooking = bookingTypeChoice === 'with_dog';
 
     // Optimistic UI update
     const optimisticRun: RunWithDetails = {
@@ -136,7 +142,10 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
       is_full: isBuddyBooking ? run.is_full : (run.booking_count + 1) >= run.max_participants,
       is_buddy_slots_full: isBuddyBooking ? (run.buddy_booking_count + 1) >= 3 : run.is_buddy_slots_full,
       user_booking_id: 'optimistic-' + Date.now(),
-      user_booking_type: isBuddyBooking ? 'buddy' : (run.is_c25k_run ? 'c25k_participant' : 'standard'),
+      user_booking_type: isDogBooking
+        ? 'with_dog'
+        : (isBuddyBooking ? 'buddy' : (run.is_c25k_run ? 'c25k_participant' : 'standard')),
+      user_booking_includes_dog: isDogBooking,
       user_can_book_as_c25k: false,
       user_can_book_as_buddy: false,
     };
@@ -148,7 +157,8 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
       const booking = await BookingService.createBooking({
         run_id: run.id,
         member_id: userId,
-        is_c25k_participant: isC25kParticipant
+        is_c25k_participant: isC25kParticipant,
+        booking_type_override: isDogBooking ? 'with_dog' : undefined
       });
 
       // Update with real booking data
@@ -191,13 +201,37 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
       );
       handleBookingError(bookingError, run);
     } finally {
-      setState(prev => ({ 
-        ...prev, 
-        isLoading: false, 
-        lastAction: null 
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        lastAction: null
       }));
     }
-  }, [userId, run, state.isLoading, handleOptimisticUpdate, handleBookingError, showSuccessModal, onError]);
+  }, [userId, run, state.isLoading, isC25kParticipant, handleOptimisticUpdate, handleBookingError, rollbackOptimisticUpdate, logout, showSuccessModal, onError]);
+
+  // Entry point for the "Join" button. Intercepts dog-friendly runs to show
+  // the DogBookingModal; otherwise proceeds directly with a standard booking.
+  const handleBookRun = useCallback(() => {
+    if (run.is_dog_friendly && !run.is_booked) {
+      setShowDogModal(true);
+    } else {
+      performBookRun('standard');
+    }
+  }, [run.is_dog_friendly, run.is_booked, performBookRun]);
+
+  const handleDogModalConfirmWithoutDog = useCallback(() => {
+    setShowDogModal(false);
+    performBookRun('standard');
+  }, [performBookRun]);
+
+  const handleDogModalConfirmWithDog = useCallback(() => {
+    setShowDogModal(false);
+    performBookRun('with_dog');
+  }, [performBookRun]);
+
+  const handleDogModalCancel = useCallback(() => {
+    setShowDogModal(false);
+  }, []);
 
   // Core cancel booking function
   const handleCancelBooking = useCallback(async () => {
@@ -226,6 +260,7 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
       is_buddy_slots_full: newBuddyCount >= 3,
       user_booking_id: undefined,
       user_booking_type: undefined,
+      user_booking_includes_dog: false,
       user_can_book_as_c25k: !!(run.is_c25k_run && isC25kParticipant && newMainCount < run.max_participants),
       user_can_book_as_buddy: !!(run.is_c25k_run && !isC25kParticipant && newBuddyCount < 3),
     };
@@ -419,6 +454,18 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
           onClose={handleCloseSuccessModal}
           run={state.successData.run}
           bookingType={state.successData.action}
+        />
+      )}
+
+      {/* Dog Booking Two-Step Modal */}
+      {showDogModal && (
+        <DogBookingModal
+          isOpen={showDogModal}
+          memberId={userId || ''}
+          dogPolicyAlreadyAccepted={dogPolicyAccepted}
+          onConfirmWithoutDog={handleDogModalConfirmWithoutDog}
+          onConfirmWithDog={handleDogModalConfirmWithDog}
+          onCancel={handleDogModalCancel}
         />
       )}
     </div>
