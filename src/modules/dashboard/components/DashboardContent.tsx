@@ -128,7 +128,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
         .from('run_attendance')
         .select('id')
         .eq('member_id', state.user.id)
-        .eq('attended', true);
+        .eq('marked_present', true);
 
       if (attendanceError) {
         console.error('Error fetching attendance count:', attendanceError);
