@@ -11,7 +11,6 @@ import { UpdatePrompt } from './shared/components/ui/UpdatePrompt';
 import { PrivacyPolicy } from './modules/auth/components/PrivacyPolicy';
 import { C25kRegisterForm } from './modules/auth/components/C25kRegisterForm';
 import './styles/fonts.css';
-import './styles/main.css'; // Ensure main styles are loaded
 
 
 

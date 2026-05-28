@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import '../race-league.css';
 import { RaceLeagueService, RaceLeagueRace } from '../services/RaceLeagueService';
 import { League } from '../../leagues/types';
 import { RaceLeagueInfoPanel } from '../components/RaceLeagueInfoPanel';
