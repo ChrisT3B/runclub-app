@@ -52,7 +52,8 @@ export default async function handler(req, res) {
       bcc: bcc || undefined,
       subject: subject,
       html: html,
-      text: text
+      text: text,
+      replyTo: 'runalcester@gmail.com'
     });
 
     console.log(`✅ Vercel API: Email sent successfully to ${to}`);
