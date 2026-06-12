@@ -354,6 +354,40 @@ export class ParkrunLeagueService {
       }
     }
 
+    // Null out ranks on entries that have fallen outside the 6-month window
+    const activeIds = active.map((e: any) => e.id);
+
+    const { data: expiredEntries } = await supabase
+      .from('parkrun_league_entries')
+      .select('id')
+      .eq('league_id', leagueId)
+      .eq('status', 'approved')
+      .lt('event_date', cutoffStr)
+      .not('current_rank', 'is', null);
+
+    if (expiredEntries && expiredEntries.length > 0) {
+      const expiredIds = expiredEntries
+        .map((e: any) => e.id)
+        .filter((id: string) => !activeIds.includes(id));
+
+      for (const id of expiredIds) {
+        const { error: clearError } = await supabase
+          .from('parkrun_league_entries')
+          .update({
+            current_rank:    null,
+            last_rank:       null,
+            rank_updated_at: now,
+          })
+          .eq('id', id);
+
+        if (clearError) {
+          console.error(`recalculateRanks: failed to clear expired rank for entry ${id}:`, clearError);
+        }
+      }
+
+      console.log(`recalculateRanks: cleared ranks on ${expiredIds.length} expired entries`);
+    }
+
     console.log(`Ranks recalculated for league ${leagueId} — ${active.length} entries updated`);
   }
 }
