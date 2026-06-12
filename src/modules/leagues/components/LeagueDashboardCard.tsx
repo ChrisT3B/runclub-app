@@ -137,19 +137,37 @@ export const LeagueDashboardCard: React.FC<LeagueDashboardCardProps> = ({ onNavi
       );
     }
 
+    // Approved but expired (outside the 6-month window — no active rank)
+    if (position?.current_rank == null) {
+      return (
+        <div className="league-card-row">
+          <span className="league-card-name">Parkrun League:</span>
+          <span className="league-card-position">Entry expired</span>
+          <div className="league-card-actions">
+            {submissionsOpen ? (
+              <button onClick={() => onNavigate('leagues-submit')}>Submit a new result</button>
+            ) : (
+              <span className="league-submissions-closed">Entries open 1st May</span>
+            )}
+            <button onClick={() => onNavigate('leagues')}>View league table</button>
+          </div>
+        </div>
+      );
+    }
+
     // Approved with rank
-    const rankEntry = position ? {
+    const rankEntry = {
       current_rank: position.current_rank,
       last_rank: latestEntry.last_rank,
       rank_updated_at: latestEntry.rank_updated_at,
-    } : { current_rank: null, last_rank: null, rank_updated_at: null };
+    };
 
     return (
       <div className="league-card-row">
         <span className="league-card-name">Parkrun League:</span>
         <RankArrow entry={rankEntry} />
         <span className="league-card-position">
-          Position {position?.current_rank ?? '—'}, {(position?.age_grade_percent ?? latestEntry.age_grade_percent).toFixed(2)}%
+          Position {position.current_rank}, {(position.age_grade_percent ?? latestEntry.age_grade_percent).toFixed(2)}%
         </span>
         <div className="league-card-actions">
           {submissionsOpen ? (

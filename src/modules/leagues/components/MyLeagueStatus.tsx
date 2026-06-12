@@ -67,11 +67,23 @@ export const MyLeagueStatus: React.FC<MyLeagueStatusProps> = ({ leagueId, latest
       );
     }
 
+    // Approved but expired (outside the 6-month window — no active rank)
+    if (position?.current_rank == null) {
+      return (
+        <div className="league-status-badge league-status-badge--neutral">
+          Your last entry has expired (outside the 6-month window) —{' '}
+          <button onClick={() => onNavigate('leagues-submit')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', textDecoration: 'underline', padding: 0, font: 'inherit' }}>
+            Submit a new result
+          </button>
+        </div>
+      );
+    }
+
     // Approved
     return (
       <div className="league-status-badge league-status-badge--approved">
         <RankArrow entry={latestEntry} />
-        Position {position?.current_rank ?? '—'}, {latestEntry.age_grade_percent.toFixed(2)}%
+        Position {position.current_rank}, {latestEntry.age_grade_percent.toFixed(2)}%
       </div>
     );
   };
