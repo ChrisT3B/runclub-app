@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronDown, ChevronUp, Download, RefreshCw } from 'lucide-react';
+import { format } from 'date-fns';
+import { ChevronDown, ChevronUp, Download, RefreshCw, Share2 } from 'lucide-react';
 import { useAuth } from '../../auth/context/AuthContext';
 import {
   ParkrunImprovementService,
   ImprovementReportMember,
 } from '../services/ParkrunImprovementService';
+import { LeagueShareModal } from '../components/LeagueShareModal';
+import { LeagueShareVariant } from '../types/leagueShare';
 import '../leagues.css';
+import '../leagues-share.css';
 
 interface ParkrunImprovementReportPageProps {
   onNavigate: (page: string) => void;
@@ -28,6 +32,7 @@ export const ParkrunImprovementReportPage: React.FC<ParkrunImprovementReportPage
   const [exporting, setExporting] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillMessage, setBackfillMessage] = useState<string | null>(null);
+  const [shareVariants, setShareVariants] = useState<LeagueShareVariant[] | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -60,6 +65,22 @@ export const ParkrunImprovementReportPage: React.FC<ParkrunImprovementReportPage
     }
   };
 
+  const handleShare = () => {
+    const variant: LeagueShareVariant = {
+      label: '',
+      data: {
+        leagueName: 'Parkrun Improvement League',
+        updatedDate: format(new Date(), 'd MMMM yyyy'),
+        entries: report.map((member, index) => ({
+          rank:   index + 1,
+          name:   member.member_name,
+          detail: `+${member.total_improvement.toFixed(2)}%`,
+        })),
+      },
+    };
+    setShareVariants([variant]);
+  };
+
   const handleBackfill = async () => {
     setBackfilling(true);
     setBackfillMessage(null);
@@ -87,6 +108,14 @@ export const ParkrunImprovementReportPage: React.FC<ParkrunImprovementReportPage
           >
             <RefreshCw size={14} />
             {backfilling ? 'Recalculating…' : 'Recalculate All'}
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={handleShare}
+            disabled={report.length === 0}
+          >
+            <Share2 size={14} />
+            Share Standings
           </button>
           <button
             className="btn btn-primary"
@@ -182,6 +211,10 @@ export const ParkrunImprovementReportPage: React.FC<ParkrunImprovementReportPage
             </tbody>
           </table>
         </div>
+      )}
+
+      {shareVariants && (
+        <LeagueShareModal variants={shareVariants} onClose={() => setShareVariants(null)} />
       )}
     </div>
   );

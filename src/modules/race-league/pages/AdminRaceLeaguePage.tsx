@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { format, parseISO } from 'date-fns';
+import { Share2 } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { RaceLeagueService, RaceLeagueRace, getRaceStatus, RACE_STATUS_LABELS, RACE_STATUS_CSS } from '../services/RaceLeagueService';
 import { League } from '../../leagues/types';
 import { PointsEditor } from '../components/PointsEditor';
 import { AdminRaceForm } from '../components/AdminRaceForm';
+import { LeagueShareModal } from '../../leagues/components/LeagueShareModal';
+import { LeagueShareVariant } from '../../leagues/types/leagueShare';
+import '../../leagues/leagues-share.css';
 
 interface AdminRaceLeaguePageProps {
   onNavigate: (page: string, raceId?: string) => void;
@@ -16,6 +20,8 @@ export const AdminRaceLeaguePage: React.FC<AdminRaceLeaguePageProps> = ({ onNavi
   const [races, setRaces] = useState<RaceLeagueRace[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [shareVariants, setShareVariants] = useState<LeagueShareVariant[] | null>(null);
+  const [buildingShare, setBuildingShare] = useState(false);
 
   const loadData = async () => {
     const user = (await supabase.auth.getUser()).data.user;
@@ -50,6 +56,38 @@ export const AdminRaceLeaguePage: React.FC<AdminRaceLeaguePageProps> = ({ onNavi
     setLeague(refreshed);
   };
 
+  const handleShare = async () => {
+    if (!league) return;
+    setBuildingShare(true);
+    try {
+      const updatedDate = format(new Date(), 'd MMMM yyyy');
+      const [maleStandings, femaleStandings] = await Promise.all([
+        RaceLeagueService.getStandings(league.id, 'male'),
+        RaceLeagueService.getStandings(league.id, 'female'),
+      ]);
+
+      const buildVariant = (label: string, standings: typeof maleStandings): LeagueShareVariant => ({
+        label,
+        data: {
+          leagueName: `${league.name} — ${label}`,
+          updatedDate,
+          entries: standings.map((s, i) => ({
+            rank:   i + 1,
+            name:   s.member_name ?? 'Unknown',
+            detail: `${s.total_points} pts`,
+          })),
+        },
+      });
+
+      setShareVariants([
+        buildVariant('Male', maleStandings),
+        buildVariant('Female', femaleStandings),
+      ]);
+    } finally {
+      setBuildingShare(false);
+    }
+  };
+
   const handleRaceCreated = async () => {
     setShowAddForm(false);
     if (league) {
@@ -60,7 +98,13 @@ export const AdminRaceLeaguePage: React.FC<AdminRaceLeaguePageProps> = ({ onNavi
 
   return (
     <div>
-      <h2>Race League Admin</h2>
+      <div className="league-share-bar">
+        <h2>Race League Admin</h2>
+        <button className="btn btn-secondary" onClick={handleShare} disabled={buildingShare || !league}>
+          <Share2 size={16} />
+          {buildingShare ? 'Loading…' : 'Share Standings'}
+        </button>
+      </div>
 
       {/* Season Settings */}
       <div className="card" style={{ marginBottom: '24px' }}>
@@ -128,6 +172,10 @@ export const AdminRaceLeaguePage: React.FC<AdminRaceLeaguePageProps> = ({ onNavi
             )}
           </div>
         </div>
+      )}
+
+      {shareVariants && (
+        <LeagueShareModal variants={shareVariants} onClose={() => setShareVariants(null)} />
       )}
     </div>
   );
