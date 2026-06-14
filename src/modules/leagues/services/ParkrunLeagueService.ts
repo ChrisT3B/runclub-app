@@ -3,6 +3,7 @@ import { InputSanitizer }       from '../../../utils/inputSanitizer';
 import { SQLSecurityValidator }  from '../../../utils/sqlSecurityValidator';
 import { GmailSMTP }            from '../../../utils/GmailSMTP';
 import { NotificationService }  from '../../communications/services/NotificationService';
+import { ParkrunImprovementService } from './ParkrunImprovementService';
 import {
   League, ParkrunLeagueEntry, LeaderboardRow,
   SubmitEntryFormData, RankFields, getRankMovement
@@ -275,6 +276,14 @@ export class ParkrunLeagueService {
 
     if (decision === 'approved') {
       await ParkrunLeagueService.recalculateRanks(leagueId);
+
+      // Recalculate improvement tracking for this member. Must never block or
+      // break the approval, so swallow any failure here.
+      try {
+        await ParkrunImprovementService.recalculateImprovement(entry.user_id);
+      } catch (improvementError) {
+        console.error('reviewEntry: improvement recalculation failed:', improvementError);
+      }
     }
 
     if (decision === 'rejected') {

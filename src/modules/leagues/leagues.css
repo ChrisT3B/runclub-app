@@ -443,3 +443,100 @@
   font-style: italic;
   margin: 0;
 }
+
+/* ── Improvement Report (admin only) ─────────────────────────────────── */
+.improvement-report__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.improvement-report__title {
+  margin: 0;
+}
+
+.improvement-report__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.improvement-report__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.improvement-report__notice {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--red-light);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  color: var(--gray-700);
+}
+
+.improvement-report__loading {
+  color: var(--gray-500);
+}
+
+/* Member rows expand on all viewports (unlike the mobile-only leaderboard) */
+.improvement-report .league-table tbody tr {
+  cursor: pointer;
+}
+
+.improvement-report .league-table tr[data-expanded="true"] {
+  background: var(--gray-100);
+}
+
+.improvement-report__chevron {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--space-2);
+  color: var(--gray-500);
+  vertical-align: middle;
+}
+
+.improvement-report__col-total,
+.improvement-report__col-entries {
+  text-align: right;
+}
+
+.improvement-report__detail-row > td {
+  padding: 0;
+  background: var(--gray-50);
+}
+
+.improvement-report__detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-sm);
+}
+
+.improvement-report__detail-table th,
+.improvement-report__detail-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.improvement-report__detail-table th {
+  color: var(--gray-500);
+  font-weight: var(--font-medium);
+}
+
+.improvement-report__detail-table td {
+  color: var(--gray-900);
+}
+
+.improvement-report__delta--up {
+  color: var(--success-color);
+  font-weight: var(--font-medium);
+}
+
+.improvement-report__delta--flat {
+  color: var(--gray-500);
+}

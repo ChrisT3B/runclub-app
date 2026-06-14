@@ -39,6 +39,20 @@ export const LeagueAdminHubPage: React.FC<LeagueAdminHubPageProps> = ({ onNaviga
 
       <div className="card" style={{ marginBottom: '16px' }}>
         <div className="card-header">
+          <h3 className="card-title">Improvement Report</h3>
+        </div>
+        <div className="card-content">
+          <p style={{ color: 'var(--gray-600)', marginBottom: '12px' }}>
+            View each member's age-grade improvement over the league year and export the data as CSV.
+          </p>
+          <button className="btn btn-primary" onClick={() => onNavigate('admin-league-improvement')}>
+            View Improvement Report &rarr;
+          </button>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: '16px' }}>
+        <div className="card-header">
           <h3 className="card-title">Race League</h3>
         </div>
         <div className="card-content">
