@@ -61,7 +61,7 @@ export const LeagueShareCard: React.FC<LeagueShareCardProps> = ({ data, topN, ca
             </div>
           )}
           {showTime && (
-            <div style={{ width: '56px', fontSize: '14px', color: '#6b7280', marginLeft: '12px', flexShrink: 0, textAlign: 'right' }}>
+            <div style={{ width: '72px', fontSize: '14px', color: '#6b7280', marginLeft: '12px', flexShrink: 0, textAlign: 'right' }}>
               {entry.time ?? ''}
             </div>
           )}

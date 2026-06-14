@@ -22,6 +22,7 @@ export const AdminRaceLeaguePage: React.FC<AdminRaceLeaguePageProps> = ({ onNavi
   const [loading, setLoading] = useState(true);
   const [shareVariants, setShareVariants] = useState<LeagueShareVariant[] | null>(null);
   const [buildingShare, setBuildingShare] = useState(false);
+  const [shareRaceId, setShareRaceId] = useState<string | null>(null);
 
   const loadData = async () => {
     const user = (await supabase.auth.getUser()).data.user;
@@ -85,6 +86,16 @@ export const AdminRaceLeaguePage: React.FC<AdminRaceLeaguePageProps> = ({ onNavi
       ]);
     } finally {
       setBuildingShare(false);
+    }
+  };
+
+  const handleShareRace = async (race: RaceLeagueRace) => {
+    setShareRaceId(race.id);
+    try {
+      const variants = await RaceLeagueService.getRaceShareData(race.id, race.name, race.race_date);
+      setShareVariants(variants);
+    } finally {
+      setShareRaceId(null);
     }
   };
 
@@ -165,6 +176,16 @@ export const AdminRaceLeaguePage: React.FC<AdminRaceLeaguePageProps> = ({ onNavi
                       <button className="btn btn-secondary" onClick={() => onNavigate('admin-race-league-race', race.id)}>
                         Manage &rarr;
                       </button>
+                      {race.results_locked && (
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => handleShareRace(race)}
+                          disabled={shareRaceId === race.id}
+                        >
+                          <Share2 size={14} />
+                          {shareRaceId === race.id ? 'Loading…' : 'Share Results'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

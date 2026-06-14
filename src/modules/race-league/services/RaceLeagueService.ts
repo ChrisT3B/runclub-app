@@ -1,7 +1,9 @@
+import { format, parseISO }    from 'date-fns';
 import { supabase }            from '../../../services/supabase';
 import { InputSanitizer }      from '../../../utils/inputSanitizer';
 import { SQLSecurityValidator } from '../../../utils/sqlSecurityValidator';
 import { League }              from '../../leagues/types';
+import { LeagueShareEntry, LeagueShareVariant } from '../../leagues/types/leagueShare';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -188,6 +190,52 @@ export class RaceLeagueService {
       ...e,
       member_name: memberMap.get(e.user_id) ?? 'Unknown',
     }));
+  }
+
+  // ── Share individual race results ────────────────────────────────────────────
+
+  /**
+   * Builds share variants (Men / Women) for a single race's results.
+   * Each entry shows the member's gender position and finish time.
+   * Returns an array ready to hand straight to LeagueShareModal's `variants`.
+   */
+  static async getRaceShareData(
+    raceId:   string,
+    raceName: string,
+    raceDate: string
+  ): Promise<LeagueShareVariant[]> {
+    const entries = await RaceLeagueService.getRaceEntries(raceId);
+    const formattedDate = format(parseISO(raceDate), 'd MMMM yyyy');
+
+    const toShareEntries = (gender: Gender): LeagueShareEntry[] =>
+      entries
+        .filter(e => e.gender === gender)
+        .sort((a, b) => a.finish_time.localeCompare(b.finish_time))
+        .map((e, i) => ({
+          rank:   i + 1,
+          name:   e.member_name ?? 'Unknown',
+          time:   e.finish_time,
+          detail: `${e.points_awarded} pts`,
+        }));
+
+    return [
+      {
+        label: 'Men',
+        data: {
+          leagueName:  `${raceName} — Men's Results`,
+          entries:     toShareEntries('male'),
+          updatedDate: formattedDate,
+        },
+      },
+      {
+        label: 'Women',
+        data: {
+          leagueName:  `${raceName} — Women's Results`,
+          entries:     toShareEntries('female'),
+          updatedDate: formattedDate,
+        },
+      },
+    ];
   }
 
   // ── Gender profile ─────────────────────────────────────────────────────────
