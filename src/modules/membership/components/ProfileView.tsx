@@ -1,5 +1,6 @@
 // src/modules/membership/components/ProfileView.tsx
 import React from 'react';
+import { format, parseISO } from 'date-fns';
 import { useAuth } from '../../auth/context/AuthContext';
 import { useProfileQuery } from '../services/profileServices';
 import { usePWAInstall } from '../../../shared/hooks/usePWAInstall';
@@ -109,6 +110,34 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onEdit }) => {
                   {emailStatus.icon} {emailStatus.text}
                 </span>
               </div>
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '4px' }}>🐕 Dog Policy:</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  background: member?.dog_policy_accepted ? '#dcfce7' : '#fef2f2',
+                  color: member?.dog_policy_accepted ? '#166534' : '#dc2626',
+                  padding: '4px 12px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  {member?.dog_policy_accepted ? '✅ Accepted' : '❌ Not accepted'}
+                </span>
+                {member?.dog_policy_accepted && member?.dog_policy_accepted_at && (
+                  <span style={{ fontSize: '12px', color: 'var(--gray-500)' }}>
+                    {format(parseISO(member.dog_policy_accepted_at), 'd MMM yyyy')}
+                  </span>
+                )}
+              </div>
+              {!member?.dog_policy_accepted && (
+                <div style={{ fontSize: '12px', color: 'var(--gray-500)', marginTop: '6px' }}>
+                  Accept the policy when booking onto a dog-friendly run if you plan to bring a dog.
+                </div>
+              )}
             </div>
           </div>
 
