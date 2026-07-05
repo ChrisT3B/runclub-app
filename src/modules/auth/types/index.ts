@@ -47,6 +47,8 @@ export interface Member {
   health_conditions: string;
   email_notifications_enabled?: boolean;
   is_c25k_participant?: boolean;
+  dog_policy_accepted?: boolean;
+  dog_policy_accepted_at?: string;
   created_at: string;
   updated_at: string;
 

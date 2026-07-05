@@ -554,19 +554,21 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
                 const isMarked = attendanceRecord !== undefined;
                 
                 return (
-                  <div 
+                  <div
                     key={booking.id}
-                    style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
                       alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '12px',
                       padding: '16px',
                       background: isPresent ? '#f0fdf4' : isMarked ? '#fef2f2' : 'var(--gray-50)',
                       borderRadius: '8px',
                       border: `1px solid ${isPresent ? '#bbf7d0' : isMarked ? '#fecaca' : 'var(--gray-200)'}`
                     }}
                   >
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                       <div style={{ 
                         fontWeight: '600', 
                         color: 'var(--gray-900)', 
@@ -600,6 +602,22 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
                             Buddy
                           </span>
                         )}
+                        {booking.booking_type === 'with_dog' && (
+                          <span
+                            title="Bringing a dog"
+                            aria-label="Bringing a dog"
+                            style={{
+                              background: '#dcfce7',
+                              color: '#166534',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: '600'
+                            }}
+                          >
+                            🐕 Dog
+                          </span>
+                        )}
                         {booking.is_manual_addition && (
                           <span style={{
                             background: '#fef3c7',
@@ -625,7 +643,7 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
                       )}
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', minWidth: '180px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'stretch', flex: '0 1 180px', width: '100%', maxWidth: '100%' }}>
                       {/* Emergency Info Button */}
                       {booking.member && isPresent && (
                         <button
