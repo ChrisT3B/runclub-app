@@ -225,7 +225,7 @@ const closeShareModal = () => {
           title: 'Session Expired',
           message: 'Your session has expired. Please log in again.',
         });
-        await logout();
+        await logout('csrf_delete_run');
         return;
       }
       setErrorModal({

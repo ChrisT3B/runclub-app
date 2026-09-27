@@ -99,7 +99,7 @@ export const ManageScheduledRuns: React.FC = () => {
           errorMessage.includes('CSRF_VALIDATION_FAILED')) {
         console.log('🔒 CSRF validation failed - logging out user');
         setError('Your session has expired. Please log in again.');
-        await logout();
+        await logout('csrf_manage_runs');
         return;
       }
       // ========== END: CSRF ERROR HANDLING ==========

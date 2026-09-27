@@ -85,7 +85,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ onCancel, onSa
           errorMessage.includes('CSRF_VALIDATION_FAILED')) {
         console.log('🔒 CSRF validation failed - logging out user');
         setError('Your session has expired. Please log in again.');
-        await logout();
+        await logout('csrf_profile');
         return;
       }
       // ========== END: CSRF ERROR HANDLING ==========

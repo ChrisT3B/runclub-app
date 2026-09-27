@@ -25,6 +25,7 @@ import {
   clearCsrfToken,
   clearCsrfTokenFromDatabase
 } from '../../../utils/csrfProtection';
+import { logDiagnosticEvent } from '../../../utils/securityDiagnostics';
 
 // =====================================
 // 🆕 NEW: MINIMAL DATABASE LOGGING SERVICE
@@ -139,9 +140,27 @@ class SessionSecurityService {
         localStorage.setItem('session_fingerprint', fingerprint);
         localStorage.setItem('session_start_time', Date.now().toString());
         localStorage.setItem('last_activity', Date.now().toString());
+      } else {
+        // A failed insert here leaves no active_sessions row, so the CSRF
+        // token has nowhere to be stored - a prime suspect for the logouts
+        await logDiagnosticEvent('session_register_failed', {
+          user_id: userId,
+          error: error.message,
+          code: error.code,
+          details: error.details ?? null
+        });
+        console.warn('⚠️ Session registration failed:', error.message);
       }
     } catch (error) {
       console.error('Failed to register session:', error);
+      try {
+        await logDiagnosticEvent('session_register_failed', {
+          user_id: userId,
+          error: String(error)
+        });
+      } catch {
+        // Diagnostics must never affect login
+      }
     }
   }
 
@@ -309,6 +328,10 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
       } catch (csrfError) {
         // Don't fail login if CSRF token creation fails
         console.error('⚠️ Failed to create CSRF token (non-critical):', csrfError);
+        await logDiagnosticEvent('csrf_create_failed', {
+          user_id: result.data.id,
+          error: String(csrfError)
+        });
       }
       // ========== END: CSRF TOKEN GENERATION ==========
     }
@@ -459,10 +482,21 @@ export const registerUser = async (registerData: RegistrationData): Promise<Auth
 };
 
 // SIMPLIFIED LOGOUT - Remove the problematic SessionSecurityService calls
-export const logoutUser = async (): Promise<void> => {
+export const logoutUser = async (reason: string = 'unspecified'): Promise<void> => {
   try {
     console.log('🔓 Starting logout...');
-    
+
+    // Read this BEFORE cleanupSession, which removes session_start_time
+    const sessionStartTime = localStorage.getItem('session_start_time');
+    const msSinceLogin = sessionStartTime && Number.isFinite(Number(sessionStartTime))
+      ? Date.now() - Number(sessionStartTime)
+      : null;
+    const displayMode =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (navigator as any).standalone === true
+        ? 'standalone'
+        : 'browser';
+
     // Get session info before logout
     const { data: { session } } = await supabase.auth.getSession();
     const { data: { user } } = await supabase.auth.getUser();
@@ -478,7 +512,9 @@ export const logoutUser = async (): Promise<void> => {
       // Log secure logout event
       await SessionSecurityService.logSecurityEvent('secure_logout', {
         user_id: user.id,
-        reason: 'user_initiated'
+        reason,
+        ms_since_login: msSinceLogin,
+        display_mode: displayMode
       });
     }
 

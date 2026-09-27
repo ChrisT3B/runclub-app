@@ -168,7 +168,7 @@ export const useLogoutMutation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: () => logoutUser(),
+    mutationFn: (reason?: string) => logoutUser(reason),
     onSuccess: () => {
       // Clear all auth-related cache
       queryClient.removeQueries({ queryKey: ['auth'] });

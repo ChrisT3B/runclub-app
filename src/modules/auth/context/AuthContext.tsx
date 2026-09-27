@@ -61,8 +61,8 @@ const login = async (credentials: LoginCredentials) => {
     return registerMutation.mutateAsync(data);
   };
   
-  const logout = async () => {
-    return logoutMutation.mutateAsync();
+  const logout = async (reason?: string) => {
+    return logoutMutation.mutateAsync(reason);
   };
   
   const verifyEmail = async (token: string) => {

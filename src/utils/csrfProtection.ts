@@ -9,6 +9,7 @@
 // if authenticated user has no token in sessionStorage.
 
 import { supabase } from '../services/supabase';
+import { logDiagnosticEvent } from './securityDiagnostics';
 
 /**
  * Generate a cryptographically secure CSRF token
@@ -45,6 +46,8 @@ export const getCsrfToken = (): string | null => {
     const token = sessionStorage.getItem('csrf_token');
     if (!token) {
       console.warn('⚠️ No CSRF token found in sessionStorage');
+      // Fire-and-forget: this function is synchronous and must stay that way
+      logDiagnosticEvent('csrf_token_missing', {}).catch(() => {});
     }
     return token;
   } catch (error) {
@@ -105,6 +108,11 @@ export const validateCsrfToken = async (
 
     if (error) {
       console.error('❌ CSRF validation database error:', error);
+      await logDiagnosticEvent('csrf_validation_failed', {
+        user_id: userId,
+        reason: 'db_error',
+        error: error.message
+      });
       return {
         isValid: false,
         error: 'Security verification failed. Please try again.'
@@ -114,6 +122,42 @@ export const validateCsrfToken = async (
     // Step 4: Check if token exists in database
     if (!data) {
       console.warn('⚠️ CSRF validation failed: Token not found in database');
+
+      // Snapshot the user's session rows before the caller logs them out and
+      // cleanupSession deletes the evidence. Isolated so a failure here still
+      // lets the main event be written.
+      let sessions: Array<Record<string, unknown>> | null = null;
+      let sessionsQueryError: string | null = null;
+      try {
+        const { data: sessionRows, error: sessionsError } = await supabase
+          .from('active_sessions')
+          .select('created_at, session_token, csrf_token, expires_at')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (sessionsError) {
+          sessionsQueryError = sessionsError.message;
+        } else {
+          sessions = (sessionRows ?? []).map(row => ({
+            created_at: row.created_at,
+            token_suffix: row.session_token?.slice(-6) ?? null,
+            csrf_prefix: row.csrf_token?.slice(0, 8) ?? null,
+            expires_at: row.expires_at
+          }));
+        }
+      } catch (snapshotError) {
+        sessionsQueryError = String(snapshotError);
+      }
+
+      await logDiagnosticEvent('csrf_validation_failed', {
+        user_id: userId,
+        reason: 'not_found',
+        local_token_prefix: token.slice(0, 8),
+        sessions,
+        sessions_query_error: sessionsQueryError
+      });
+
       return {
         isValid: false,
         error: 'Security token not found. Please log in again.'
@@ -127,6 +171,11 @@ export const validateCsrfToken = async (
 
       if (expirationDate < now) {
         console.warn('⚠️ CSRF validation failed: Session expired');
+        await logDiagnosticEvent('csrf_validation_failed', {
+          user_id: userId,
+          reason: 'expired',
+          expires_at: data.expires_at
+        });
         return {
           isValid: false,
           error: 'Your session has expired. Please log in again.'
@@ -159,15 +208,32 @@ export const storeCsrfTokenInDatabase = async (
   sessionToken: string
 ): Promise<void> => {
   try {
-    const { error } = await supabase
+    // .select('id') so we can tell an update that matched no row (the silent
+    // failure this investigation is chasing) from one that worked
+    const { data, error } = await supabase
       .from('active_sessions')
       .update({ csrf_token: csrfToken })
       .eq('user_id', userId)
-      .eq('session_token', sessionToken.slice(-20));
+      .eq('session_token', sessionToken.slice(-20))
+      .select('id');
 
     if (error) {
+      await logDiagnosticEvent('csrf_store_failed', {
+        user_id: userId,
+        error: error.message,
+        code: error.code
+      });
       console.error('❌ Failed to store CSRF token in database:', error);
       throw new Error('Failed to store security token in database');
+    }
+
+    if (!data || data.length === 0) {
+      await logDiagnosticEvent('csrf_store_no_row', {
+        user_id: userId,
+        session_token_suffix: sessionToken.slice(-6)
+      });
+      console.warn('⚠️ CSRF token update matched no active_sessions row');
+      // Deliberately not throwing - existing behaviour is to carry on
     }
 
     console.log('✅ CSRF token stored in database for session:', sessionToken.substring(0, 10) + '...');
@@ -215,15 +281,23 @@ export const isCsrfError = (error: unknown): boolean => {
  */
 export const clearCsrfTokenFromDatabase = async (userId: string): Promise<void> => {
   try {
-    const { error } = await supabase
+    // NOTE: the user_id-only filter is the suspected cause of tokens being
+    // wiped by a logout elsewhere. Left as-is deliberately - fixing it is a
+    // separate work package. .select('id') tells us how many rows it hit.
+    const { data, error } = await supabase
       .from('active_sessions')
       .update({ csrf_token: null })
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .select('id');
 
     if (error) {
       console.error('❌ Failed to clear CSRF token from database:', error);
       // Don't throw - logout should proceed even if this fails
     } else {
+      await logDiagnosticEvent('csrf_cleared', {
+        user_id: userId,
+        rows_cleared: data?.length ?? 0
+      });
       console.log('🧹 CSRF token cleared from database for user:', userId);
     }
   } catch (error) {
