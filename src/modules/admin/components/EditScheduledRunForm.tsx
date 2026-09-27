@@ -127,13 +127,15 @@ const handleSubmit = async (e: React.FormEvent) => {
   setError('');
 
   try {
-    // Clean up the form data - remove empty string UUIDs
-    const cleanFormData = { ...formData };
-    
-    // Remove empty LIRF assignments
-    if (cleanFormData.assigned_lirf_1 === '') delete cleanFormData.assigned_lirf_1;
-    if (cleanFormData.assigned_lirf_2 === '') delete cleanFormData.assigned_lirf_2;
-    if (cleanFormData.assigned_lirf_3 === '') delete cleanFormData.assigned_lirf_3;
+    // Clean up the form data - empty string UUIDs become an explicit null so
+    // that clearing a LIRF dropdown actually clears the column. Deleting the
+    // key instead would omit it from the update and leave the old LIRF in place.
+    const cleanFormData = {
+      ...formData,
+      assigned_lirf_1: formData.assigned_lirf_1 || null,
+      assigned_lirf_2: formData.assigned_lirf_2 || null,
+      assigned_lirf_3: formData.assigned_lirf_3 || null,
+    };
 
     const updateData = {
       ...cleanFormData,

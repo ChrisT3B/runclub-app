@@ -42,9 +42,10 @@ export interface CreateScheduledRunData {
   weekly_recurrences: number;
   end_date?: string;
   lirfs_required: number;
-  assigned_lirf_1?: string;
-  assigned_lirf_2?: string;
-  assigned_lirf_3?: string;
+  // null clears the slot; undefined leaves it untouched on an update
+  assigned_lirf_1?: string | null;
+  assigned_lirf_2?: string | null;
+  assigned_lirf_3?: string | null;
   is_c25k_run?: boolean;
   is_dog_friendly?: boolean;
   created_by: string;
@@ -514,9 +515,9 @@ export class ScheduledRunsService {
    * Validate LIRF assignments before creating/updating a run
    */
   static async validateLirfAssignments(runId: string, lirfAssignments: {
-    assigned_lirf_1?: string;
-    assigned_lirf_2?: string;
-    assigned_lirf_3?: string;
+    assigned_lirf_1?: string | null;
+    assigned_lirf_2?: string | null;
+    assigned_lirf_3?: string | null;
   }): Promise<void> {
     const lirfIds = [
       lirfAssignments.assigned_lirf_1,

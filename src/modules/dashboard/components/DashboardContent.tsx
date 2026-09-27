@@ -38,7 +38,7 @@ interface LirfLookAhead {
 // could not be resolved.
 const formatLirfNames = (row: LirfCoverageRow): string => {
   const parts: string[] = [];
-  if (row.leadAssigned) parts.push(`Lead: ${row.leadName ?? 'Assigned'}`);
+  if (row.leadAssigned) parts.push(`${row.leadName ?? 'Assigned'} (Lead)`);
   parts.push(...row.supportNames);
   return parts.length > 0 ? parts.join(', ') : 'None';
 };
