@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Download, ExternalLink, Shield } from 'lucide-react';
+import { LirfRole } from '../../admin/services/scheduledRunsService';
 
 interface LirfAssignmentSuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
   run: any; // ScheduledRun type
+  role?: LirfRole; // when absent, behaves exactly as before (Lead wording)
 }
 
 const LirfAssignmentSuccessModal: React.FC<LirfAssignmentSuccessModalProps> = ({
   isOpen,
   onClose,
-  run
+  run,
+  role
 }) => {
     if (!isOpen || !run) return null;
   const [calendarMethod, setCalendarMethod] = useState<string | null>(null);
@@ -31,6 +34,18 @@ const LirfAssignmentSuccessModal: React.FC<LirfAssignmentSuccessModalProps> = ({
     return null;
   }
 
+  // Role-derived copy. No role prop = today's Lead wording.
+  const isSupport = role === 'support';
+  const rolePrefix = isSupport ? 'Supporting' : 'Leading';
+  const roleLine = isSupport ? "You're a Support LIRF" : "You're the Lead LIRF";
+  const roleSubtitle = isSupport
+    ? 'Thanks for supporting this run'
+    : 'Thanks for choosing to Lead this run for the club';
+  const roleCalendarDescription = isSupport
+    ? "You're a Support LIRF on this run."
+    : "You're leading this run for Run Alcester.";
+  const roleFilePrefix = isSupport ? 'supporting' : 'leading';
+
   // Format date and time for display
   const formatDate = (dateString: string) => {
     return new Date(dateString + 'T12:00:00').toLocaleDateString('en-GB', {
@@ -49,16 +64,16 @@ const LirfAssignmentSuccessModal: React.FC<LirfAssignmentSuccessModalProps> = ({
     });
   };
 
-  // Generate calendar event data with "Leading:" prefix
+  // Generate calendar event data with a role-specific prefix
   const generateCalendarEvent = () => {
-    const eventTitle = `Leading: ${run.run_title}`;
+    const eventTitle = `${rolePrefix}: ${run.run_title}`;
     const eventDate = run.run_date;
     const eventTime = run.run_time;
     const location = run.meeting_point || 'TBC';
     
     // Create description with LIRF-specific content
     const description = [
-      `You're leading this run for Run Alcester.`,
+      roleCalendarDescription,
       `Please arrive 15 minutes early to greet participants and review the route.`,
       run.description ? `Run Details: ${run.description}` : '',
       `Distance: ${run.approximate_distance || 'TBC'}`
@@ -109,7 +124,7 @@ const LirfAssignmentSuccessModal: React.FC<LirfAssignmentSuccessModalProps> = ({
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `leading-${run.run_title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.ics`;
+    link.download = `${roleFilePrefix}-${run.run_title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.ics`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -196,12 +211,13 @@ const LirfAssignmentSuccessModal: React.FC<LirfAssignmentSuccessModalProps> = ({
           <Shield size={48} className="success-shield" />
         </div>
         <h2 className="success-title">LIRF Assignment Confirmed!</h2>
-        <p className="success-subtitle">Thanks for choosing to Lead this run for the club</p>
+        <p className="success-subtitle">{roleSubtitle}</p>
+        <p className="success-recognition">{roleLine}</p>
       </div>
 
       {/* Run Details */}
       <div className="run-details-preview">
-        <h3>Leading: {run.run_title}</h3>
+        <h3>{rolePrefix}: {run.run_title}</h3>
         <div className="run-details-grid">
           <div className="detail-item">
             <strong>📅 Date:</strong> {formatDate(run.run_date)}
@@ -259,7 +275,7 @@ const LirfAssignmentSuccessModal: React.FC<LirfAssignmentSuccessModalProps> = ({
         
         {calendarMethod && (
           <p className="calendar-success">
-            ✅ Calendar event created with "Leading:" prefix
+            ✅ Calendar event created with "{rolePrefix}:" prefix
           </p>
         )}
       </div>

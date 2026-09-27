@@ -51,6 +51,12 @@ export interface CreateScheduledRunData {
   created_by_name?: string;     // ADD: Name for display
 }
 
+/**
+ * LIRF role is defined by slot position, not by a database column.
+ * assigned_lirf_1 = Lead, assigned_lirf_2 / _3 = Support.
+ */
+export type LirfRole = 'lead' | 'support';
+
 export interface LirfCoverageRow {
   runId: string;
   date: string;          // YYYY-MM-DD
@@ -58,6 +64,11 @@ export interface LirfCoverageRow {
   lirfCount: number;
   lirfsRequired: number;
   lirfNames: string[];   // empty array if none assigned
+  leadAssigned: boolean;
+  leadName: string | null;   // null when assigned but the name cannot be resolved
+  supportCount: number;      // filled support slots within lirfsRequired
+  supportRequired: number;
+  supportNames: string[];
 }
 
 export interface RunWithDetails extends ScheduledRun {
@@ -73,10 +84,15 @@ export interface RunWithDetails extends ScheduledRun {
   user_booking_includes_dog: boolean;
   lirf_vacancies: number;
   user_is_assigned_lirf: boolean;
+  lead_lirf_vacant: boolean;
+  support_lirfs_required: number;
+  support_vacancies: number;
+  user_lirf_role: LirfRole | null;
   assigned_lirfs: Array<{
     id: string;
     name: string;
     position: number;
+    role: LirfRole;
   }>;
   active_bookings: Array<{
     id: string;
@@ -253,23 +269,39 @@ export class ScheduledRunsService {
         const isBooked = !!userBooking;
         const userBookingIncludesDog = userBooking?.booking_type === 'with_dog';
 
-        // LIRF assignments
-        const assignedLirfs: Array<{id: string, name: string, position: number}> = [];
+        // LIRF assignments — slot 1 is Lead, slots 2 and 3 are Support
+        const assignedLirfs: Array<{id: string, name: string, position: number, role: LirfRole}> = [];
         let userIsAssignedLirf = false;
+        let userLirfRole: LirfRole | null = null;
 
-        [
+        const lirfSlots = [
           { id: run.assigned_lirf_1, pos: 1 },
           { id: run.assigned_lirf_2, pos: 2 },
           { id: run.assigned_lirf_3, pos: 3 }
-        ].forEach(({ id, pos }) => {
+        ];
+
+        lirfSlots.forEach(({ id, pos }) => {
           if (id) {
+            const role: LirfRole = pos === 1 ? 'lead' : 'support';
             const lirf = lirfMap.get(id);
             if (lirf) {
-              assignedLirfs.push({ id: lirf.id, name: lirf.full_name, position: pos });
+              assignedLirfs.push({ id: lirf.id, name: lirf.full_name, position: pos, role });
             }
-            if (id === userId) userIsAssignedLirf = true;
+            if (id === userId) {
+              userIsAssignedLirf = true;
+              // Lead wins if the same user somehow occupies more than one slot
+              if (userLirfRole !== 'lead') userLirfRole = role;
+            }
           }
         });
+
+        // Role counts come from the raw columns, so an unresolvable name never
+        // makes a filled slot look vacant.
+        const lirfsRequired = run.lirfs_required ?? 1;
+        const supportLirfsRequired = Math.max(lirfsRequired - 1, 0);
+        const filledSupportSlots = lirfSlots
+          .filter(({ id, pos }) => Boolean(id) && pos >= 2 && pos <= lirfsRequired)
+          .length;
 
         // C25k buddy system: determine booking permissions
         const isFull = run.is_c25k_run
@@ -303,6 +335,10 @@ export class ScheduledRunsService {
           user_booking_includes_dog: userBookingIncludesDog,
           lirf_vacancies: run.lirfs_required - assignedLirfs.length,
           user_is_assigned_lirf: userIsAssignedLirf,
+          lead_lirf_vacant: !run.assigned_lirf_1,
+          support_lirfs_required: supportLirfsRequired,
+          support_vacancies: Math.max(supportLirfsRequired - filledSupportSlots, 0),
+          user_lirf_role: userLirfRole,
           assigned_lirfs: assignedLirfs,
           active_bookings: []
         };
@@ -384,15 +420,44 @@ export class ScheduledRunsService {
       const lirfNames = assignedIds
         .map(id => memberMap.get(id))
         .filter((n): n is string => Boolean(n));
+
+      // Slot 1 is Lead, slots 2 and 3 are Support. Counts come from the raw
+      // columns so an unresolvable name never looks like a vacancy.
+      const lirfsRequired = run.lirfs_required ?? 0;
+      const supportRequired = Math.max(lirfsRequired - 1, 0);
+      const supportIds = [
+        { id: run.assigned_lirf_2, pos: 2 },
+        { id: run.assigned_lirf_3, pos: 3 }
+      ].filter(({ id, pos }) => Boolean(id) && pos <= lirfsRequired);
+      const supportNames = supportIds
+        .map(({ id }) => memberMap.get(id as string))
+        .filter((n): n is string => Boolean(n));
+
       return {
         runId: run.id,
         date: run.run_date,
         runName: run.run_title,
         lirfCount: assignedIds.length,
-        lirfsRequired: run.lirfs_required ?? 0,
+        lirfsRequired,
         lirfNames,
+        leadAssigned: Boolean(run.assigned_lirf_1),
+        leadName: run.assigned_lirf_1 ? (memberMap.get(run.assigned_lirf_1) ?? null) : null,
+        supportCount: supportIds.length,
+        supportRequired,
+        supportNames,
       };
     });
+  }
+
+  /**
+   * Single source of truth for LIRF coverage status.
+   * Consumed by RunsOverview, DashboardContent and AdminReports — do not
+   * re-derive coverage status anywhere else.
+   */
+  static getCoverageStatus(row: LirfCoverageRow): 'no_lead' | 'support_gap' | 'full' {
+    if (!row.leadAssigned) return 'no_lead';
+    if (row.supportCount < row.supportRequired) return 'support_gap';
+    return 'full';
   }
 
   /**

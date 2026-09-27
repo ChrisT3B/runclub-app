@@ -3,7 +3,7 @@ import { supabase } from '@/services/supabase';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { InvitationService } from '../../../services/invitationService';
-import { ScheduledRunsService } from '../services/scheduledRunsService';
+import { ScheduledRunsService, LirfCoverageRow } from '../services/scheduledRunsService';
 
 interface RegistrationStats {
   totalInvited: number;
@@ -28,7 +28,19 @@ interface LirfLookAhead {
   runId: string;
   lirfCount: number;
   lirfsRequired: number;
+  coverageStatus: 'no_lead' | 'support_gap' | 'full';
+  supportCount: number;
+  supportRequired: number;
 }
+
+// Lead first, then support names. "Assigned" covers a filled slot whose name
+// could not be resolved.
+const formatLirfNames = (row: LirfCoverageRow): string => {
+  const parts: string[] = [];
+  if (row.leadAssigned) parts.push(`Lead: ${row.leadName ?? 'Assigned'}`);
+  parts.push(...row.supportNames);
+  return parts.length > 0 ? parts.join(', ') : 'None';
+};
 
 interface PendingInvitation {
   id: string;
@@ -251,10 +263,13 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
         date: row.date,
         runName: row.runName,
         lirfAssigned: row.lirfCount > 0,
-        lirfName: row.lirfNames.length > 0 ? row.lirfNames.join(', ') : 'None',
+        lirfName: formatLirfNames(row),
         runId: row.runId,
         lirfCount: row.lirfCount,
         lirfsRequired: row.lirfsRequired,
+        coverageStatus: ScheduledRunsService.getCoverageStatus(row),
+        supportCount: row.supportCount,
+        supportRequired: row.supportRequired,
       }));
       setLirfLookAhead(tableData);
     } catch (error) {
@@ -530,15 +545,16 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
                   </tr>
                 ) : (
                   lirfLookAhead.map((run) => {
-                    // Determine background color based on LIRF count vs required
-                    // 0 filled = Red (#fee2e2)
-                    // 1+ vacancy = Amber (#fef3c7)
-                    // All filled = Green (#dcfce7)
-                    let backgroundColor = '#dcfce7'; // Green - all filled
-                    if (run.lirfCount === 0) {
-                      backgroundColor = '#fee2e2'; // Red - none filled
-                    } else if (run.lirfCount < run.lirfsRequired) {
-                      backgroundColor = '#fef3c7'; // Amber - has vacancies
+                    // Row tint follows getCoverageStatus so it always agrees
+                    // with the badge
+                    // no_lead = Red (#fee2e2)
+                    // support_gap = Amber (#fef3c7)
+                    // full = Green (#dcfce7)
+                    let backgroundColor = '#dcfce7'; // Green - fully staffed
+                    if (run.coverageStatus === 'no_lead') {
+                      backgroundColor = '#fee2e2'; // Red - no Lead LIRF
+                    } else if (run.coverageStatus === 'support_gap') {
+                      backgroundColor = '#fef3c7'; // Amber - support missing
                     }
 
                     return (
@@ -567,12 +583,12 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
                           </a>
                         </td>
                         <td className="member-table__cell">
-                          {run.lirfCount >= run.lirfsRequired ? (
+                          {run.coverageStatus === 'full' ? (
                             <span className="status-badge status-badge--active">Full ({run.lirfCount}/{run.lirfsRequired})</span>
-                          ) : run.lirfCount > 0 ? (
-                            <span className="status-badge" style={{ backgroundColor: '#f59e0b', color: 'white' }}>Partial ({run.lirfCount}/{run.lirfsRequired})</span>
+                          ) : run.coverageStatus === 'support_gap' ? (
+                            <span className="status-badge" style={{ backgroundColor: '#f59e0b', color: 'white' }}>Support needed ({run.supportCount}/{run.supportRequired})</span>
                           ) : (
-                            <span className="status-badge status-badge--inactive">None (0/{run.lirfsRequired})</span>
+                            <span className="status-badge" style={{ backgroundColor: '#dc2626', color: 'white' }}>No Lead</span>
                           )}
                         </td>
                         <td className="member-table__cell">{run.lirfName}</td>
