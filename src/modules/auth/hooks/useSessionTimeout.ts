@@ -1,6 +1,7 @@
 // src/modules/auth/hooks/useSessionTimeout.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { logDiagnosticEvent } from '../../../utils/securityDiagnostics';
 
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 const WARNING_TIME = 5 * 60 * 1000; // 5 minutes before logout
@@ -80,7 +81,7 @@ export const useSessionTimeout = () => {
         isExpired: true,
         timeRemaining: 0,
       }));
-      logout();
+      logout('inactivity_timeout');
     }, SESSION_TIMEOUT);
   }, [state.isAuthenticated, logout]);
 
@@ -91,7 +92,7 @@ export const useSessionTimeout = () => {
   }, [updateActivity]);
 
   // 🚨 SECURITY: Check for device fingerprint mismatch (session hijacking)
-  const checkDeviceSecurity = useCallback(() => {
+  const checkDeviceSecurity = useCallback(async () => {
     if (!state.isAuthenticated) return;
 
     const currentFingerprint = generateDeviceFingerprint();
@@ -121,7 +122,19 @@ export const useSessionTimeout = () => {
       };
       
       console.error('Security Event:', securityEvent);
-      
+
+      // Record this BEFORE the auth token is cleared and the page redirects -
+      // logoutUser finds no session by then, so it writes nothing. Capped at
+      // 1.5s so a slow network can never delay the security logout.
+      await Promise.race([
+        logDiagnosticEvent('fingerprint_mismatch_logout', {
+          user_id: state.user?.id,
+          stored_prefix: storedFingerprint.slice(0, 8),
+          current_prefix: currentFingerprint.slice(0, 8)
+        }),
+        new Promise(r => setTimeout(r, 1500))
+      ]);
+
       // 🔒 IMMEDIATELY CLEAR ALL SESSION DATA - NO USER CHOICE
       localStorage.removeItem('session_fingerprint');
       localStorage.removeItem('session_start_time');
@@ -132,7 +145,7 @@ export const useSessionTimeout = () => {
       window.location.href = '/';
       
       // Also call logout as backup
-      logout();
+      logout('fingerprint_mismatch');
       
       return; // Exit early after security action
     }

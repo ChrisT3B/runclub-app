@@ -14,7 +14,7 @@ export const SessionSecurityWrapper: React.FC<SessionSecurityWrapperProps> = ({ 
 
   // Handle logout (convert Promise to void function)
   const handleLogout = () => {
-    logout().catch(console.error);
+    logout('warning_modal').catch(console.error);
   };
 
   // Only apply session security to authenticated users

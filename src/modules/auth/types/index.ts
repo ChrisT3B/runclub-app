@@ -81,7 +81,7 @@ export interface AuthContextValue {
   state: AuthState;
   login: (credentials: LoginCredentials) => Promise<AuthResponse>;
   register: (data: RegistrationData) => Promise<AuthResponse>;
-  logout: () => Promise<void>;
+  logout: (reason?: string) => Promise<void>;
   resetPassword: (email: string) => Promise<AuthResponse>;
   updatePassword: (data: UpdatePasswordData) => Promise<AuthResponse>;
   verifyEmail: (token: string) => Promise<EmailVerificationResult>;

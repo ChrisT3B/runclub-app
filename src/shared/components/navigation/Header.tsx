@@ -16,7 +16,7 @@ export const Header: React.FC<HeaderProps> = ({
   // 🆕 NEW: Proper logout handler
   const handleLogout = async () => {
     try {
-      await logout();
+      await logout('header_button');
       console.log('✅ Logout completed');
     } catch (error) {
       console.error('❌ Logout failed:', error);

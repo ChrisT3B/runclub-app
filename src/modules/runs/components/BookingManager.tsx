@@ -190,7 +190,7 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
           errorMessage.includes('CSRF_VALIDATION_FAILED')) {
         console.log('🔒 CSRF validation failed - logging out user');
         rollbackOptimisticUpdate();
-        await logout();
+        await logout('csrf_booking');
         return;
       }
       // ========== END: CSRF ERROR HANDLING ==========
@@ -292,7 +292,7 @@ const handleBookingError = useCallback((error: BookingError, originalRun: RunWit
           errorMessage.includes('CSRF_VALIDATION_FAILED')) {
         console.log('🔒 CSRF validation failed - logging out user');
         rollbackOptimisticUpdate();
-        await logout();
+        await logout('csrf_cancel');
         return;
       }
       // ========== END: CSRF ERROR HANDLING ==========
