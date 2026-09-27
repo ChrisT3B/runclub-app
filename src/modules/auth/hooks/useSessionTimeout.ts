@@ -129,8 +129,11 @@ export const useSessionTimeout = () => {
       await Promise.race([
         logDiagnosticEvent('fingerprint_mismatch_logout', {
           user_id: state.user?.id,
-          stored_prefix: storedFingerprint.slice(0, 8),
-          current_prefix: currentFingerprint.slice(0, 8)
+          // Logged whole, not truncated: these are already only 32 chars, and
+          // an 8-char prefix is always "Mozill" on both sides - no signal.
+          // The full current user agent is in the row's user_agent column.
+          stored_fingerprint: storedFingerprint,
+          current_fingerprint: currentFingerprint
         }),
         new Promise(r => setTimeout(r, 1500))
       ]);
