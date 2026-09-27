@@ -130,6 +130,13 @@ const LirfAssignmentManager: React.FC<LirfAssignmentManagerProps> = ({
     );
   }, [user?.id, leadVacant, supportVacancies, assignRole, onAssignmentError]);
 
+  /**
+   * The parent reloads on success and swaps the whole list for a spinner, which
+   * unmounts this component and loses assignedRole. Fall back to the role on
+   * the refreshed run so the success modal keeps the right wording.
+   */
+  const successRole: LirfRole | undefined = assignedRole ?? run.user_lirf_role ?? undefined;
+
   const handleRoleChosen = useCallback((role: LirfRole) => {
     setShowRoleChoice(false);
     void assignRole(role);
@@ -191,7 +198,7 @@ const LirfAssignmentManager: React.FC<LirfAssignmentManagerProps> = ({
           isOpen={showSuccessModal}
           onClose={onCloseSuccessModal}
           run={run}
-          role={assignedRole ?? undefined}
+          role={successRole}
         />
       )}
     </div>
