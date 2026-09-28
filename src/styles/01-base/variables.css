@@ -24,6 +24,7 @@
   /* Status Colors */
   --success-color: #10b981;
   --warning-color: #f59e0b;
+  --warning-text: #92400e;     /* dark amber, readable on white; matches pending badge text */
   --danger-color: #ef4444;
   --info-color: #3b82f6;
 

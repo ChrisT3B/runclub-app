@@ -11,8 +11,8 @@ export const LeagueAdminHubPage: React.FC<LeagueAdminHubPageProps> = ({ onNaviga
   if (!permissions.canManageMembers) {
     return (
       <div>
-        <h2 style={{ marginBottom: '24px' }}>League Admin</h2>
-        <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--gray-500)' }}>
+        <h2 className="league-admin-hub__title">League Admin</h2>
+        <div className="league-admin-hub__denied">
           Access denied. Admin access required.
         </div>
       </div>
@@ -21,14 +21,14 @@ export const LeagueAdminHubPage: React.FC<LeagueAdminHubPageProps> = ({ onNaviga
 
   return (
     <div>
-      <h2 style={{ marginBottom: '24px' }}>League Admin</h2>
+      <h2 className="league-admin-hub__title">League Admin</h2>
 
-      <div className="card" style={{ marginBottom: '16px' }}>
+      <div className="card league-admin-hub__card">
         <div className="card-header">
           <h3 className="card-title">Parkrun League</h3>
         </div>
         <div className="card-content">
-          <p style={{ color: 'var(--gray-600)', marginBottom: '12px' }}>
+          <p className="league-admin-hub__description">
             Review pending parkrun submissions and manage the leaderboard.
           </p>
           <button className="btn btn-primary" onClick={() => onNavigate('admin-leagues')}>
@@ -37,12 +37,12 @@ export const LeagueAdminHubPage: React.FC<LeagueAdminHubPageProps> = ({ onNaviga
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: '16px' }}>
+      <div className="card league-admin-hub__card">
         <div className="card-header">
           <h3 className="card-title">Improvement Report</h3>
         </div>
         <div className="card-content">
-          <p style={{ color: 'var(--gray-600)', marginBottom: '12px' }}>
+          <p className="league-admin-hub__description">
             View each member's age-grade improvement over the league year and export the data as CSV.
           </p>
           <button className="btn btn-primary" onClick={() => onNavigate('admin-league-improvement')}>
@@ -51,12 +51,26 @@ export const LeagueAdminHubPage: React.FC<LeagueAdminHubPageProps> = ({ onNaviga
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: '16px' }}>
+      <div className="card league-admin-hub__card">
+        <div className="card-header">
+          <h3 className="card-title">Expiring Entries</h3>
+        </div>
+        <div className="card-content">
+          <p className="league-admin-hub__description">
+            See which members have a leaderboard result over 5 months old so you can remind them to submit a newer one.
+          </p>
+          <button className="btn btn-primary" onClick={() => onNavigate('admin-league-expiring')}>
+            View Expiring Entries &rarr;
+          </button>
+        </div>
+      </div>
+
+      <div className="card league-admin-hub__card">
         <div className="card-header">
           <h3 className="card-title">Race League</h3>
         </div>
         <div className="card-content">
-          <p style={{ color: 'var(--gray-600)', marginBottom: '12px' }}>
+          <p className="league-admin-hub__description">
             Manage races, control submissions, configure points, and lock results.
           </p>
           <button className="btn btn-primary" onClick={() => onNavigate('admin-race-league')}>

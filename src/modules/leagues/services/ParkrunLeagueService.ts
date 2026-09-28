@@ -8,6 +8,7 @@ import {
   League, ParkrunLeagueEntry, LeaderboardRow,
   SubmitEntryFormData, RankFields, getRankMovement
 } from '../types';
+import { getEntryExpiry } from '../utils/entryExpiry';
 
 function buildRejectionEmailHtml(
   name: string,
@@ -90,6 +91,18 @@ export class ParkrunLeagueService {
       member_name: nameMap.get(entry.user_id) ?? 'Unknown',
       rank: i + 1,
     }));
+  }
+
+  /**
+   * Leaderboard entries whose event_date is more than 5 months old.
+   * Sorted so the soonest to drop off is first.
+   * Reuses getLeaderboard() so the list always matches what members see.
+   */
+  static async getExpiringEntries(leagueId: string): Promise<LeaderboardRow[]> {
+    const rows = await ParkrunLeagueService.getLeaderboard(leagueId);
+    return rows
+      .filter(row => getEntryExpiry(row.event_date).isExpiringSoon)
+      .sort((a, b) => a.event_date.localeCompare(b.event_date));
   }
 
   static async getMyEntries(leagueId: string, year: number): Promise<ParkrunLeagueEntry[]> {
