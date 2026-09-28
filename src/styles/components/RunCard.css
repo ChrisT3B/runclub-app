@@ -423,3 +423,62 @@
    - .share-menu positioning (handled by dropdown only)
    ============================================== */
 
+
+/* ==========================================================================
+   LIRF role choice modal (Lead / Support)
+   ========================================================================== */
+
+.lirf-role-choice__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 0 var(--space-5) var(--space-5) var(--space-5);
+}
+
+.lirf-role-choice__note {
+  margin: 0;
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+}
+
+.lirf-role-choice__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.lirf-role-choice__option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  text-align: left;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  color: var(--gray-900);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.lirf-role-choice__option:hover {
+  background: var(--red-light);
+  border-color: var(--red-primary);
+}
+
+.lirf-role-choice__option-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.lirf-role-choice__option-label {
+  font-size: var(--font-base);
+  font-weight: 600;
+}
+
+.lirf-role-choice__option-subtext {
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+}

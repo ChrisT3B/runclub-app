@@ -377,24 +377,23 @@ export const RunDetailsPage: React.FC = () => {
                 <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--gray-500)', marginBottom: '8px' }}>
                   👨‍🏫 LIRF Assignments
                 </div>
-                {run.assigned_lirfs.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {run.assigned_lirfs.map((lirf, index) => (
-                      <div key={index} style={{ color: 'var(--gray-700)' }}>
-                        • {lirf.name}
-                      </div>
-                    ))}
-                    {run.lirf_vacancies > 0 && (
-                      <div style={{ color: 'var(--red-600)', fontWeight: '500' }}>
-                        • {run.lirf_vacancies} position{run.lirf_vacancies > 1 ? 's' : ''} still needed
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div style={{ color: 'var(--gray-500)', fontStyle: 'italic' }}>
-                    No LIRFs assigned yet
-                  </div>
-                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {run.assigned_lirfs.map((lirf, index) => (
+                    <div key={index} style={{ color: 'var(--gray-700)' }}>
+                      • {lirf.role === 'lead' ? 'Lead' : 'Support'}: {lirf.name}
+                    </div>
+                  ))}
+                  {run.lead_lirf_vacant && (
+                    <div style={{ color: 'var(--red-600)', fontWeight: '500' }}>
+                      • Lead LIRF needed
+                    </div>
+                  )}
+                  {run.support_vacancies > 0 && (
+                    <div style={{ color: 'var(--red-600)', fontWeight: '500' }}>
+                      • {run.support_vacancies} support LIRF{run.support_vacancies > 1 ? 's' : ''} needed
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

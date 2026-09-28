@@ -487,15 +487,15 @@ const generateWeeklyRuns = (baseData: ScheduledRunData) => {
                   onChange={handleInputChange}
                   className="form-input"
                 >
-                  <option value={1}>1 LIRF</option>
-                  <option value={2}>2 LIRFs</option>
-                  <option value={3}>3 LIRFs</option>
+                  <option value={1}>1 (Lead only)</option>
+                  <option value={2}>2 (Lead + 1 Support)</option>
+                  <option value={3}>3 (Lead + 2 Support)</option>
                 </select>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                 <div className="form-group">
-                  <label className="form-label" htmlFor="assigned_lirf_1">LIRF 1</label>
+                  <label className="form-label" htmlFor="assigned_lirf_1">Lead LIRF</label>
                   <select
                     id="assigned_lirf_1"
                     name="assigned_lirf_1"
@@ -512,7 +512,7 @@ const generateWeeklyRuns = (baseData: ScheduledRunData) => {
 
                 {formData.lirfs_required >= 2 && (
                   <div className="form-group">
-                    <label className="form-label" htmlFor="assigned_lirf_2">LIRF 2</label>
+                    <label className="form-label" htmlFor="assigned_lirf_2">Support LIRF</label>
                     <select
                       id="assigned_lirf_2"
                       name="assigned_lirf_2"
@@ -530,7 +530,7 @@ const generateWeeklyRuns = (baseData: ScheduledRunData) => {
 
                 {formData.lirfs_required >= 3 && (
                   <div className="form-group">
-                    <label className="form-label" htmlFor="assigned_lirf_3">LIRF 3</label>
+                    <label className="form-label" htmlFor="assigned_lirf_3">Support LIRF 2</label>
                     <select
                       id="assigned_lirf_3"
                       name="assigned_lirf_3"

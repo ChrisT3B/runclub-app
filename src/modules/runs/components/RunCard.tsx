@@ -232,7 +232,11 @@ export const RunCard: React.FC<RunCardProps> = ({
                 </span>
               )}
               {run.is_full && <span className="badge badge--full">Full</span>}
-              {run.user_is_assigned_lirf && <span className="badge badge--assigned">LIRF</span>}
+              {run.user_is_assigned_lirf && (
+                <span className="badge badge--assigned">
+                  {run.user_lirf_role === 'support' ? 'Support LIRF' : 'Lead LIRF'}
+                </span>
+              )}
               {isUrgent && <span className="badge badge--urgent">Urgent</span>}
               {run.is_c25k_run && (
                 <span style={{
@@ -392,24 +396,23 @@ export const RunCard: React.FC<RunCardProps> = ({
             <div className="lirf-info__title">
               LIRF Assignments
             </div>
-            {run.assigned_lirfs.length > 0 ? (
-              <div className="lirf-info__list">
-                {run.assigned_lirfs.map((lirf, index) => (
-                  <div key={index} className="lirf-info__item">
-                    • {lirf.name}
-                  </div>
-                ))}
-                {run.lirf_vacancies > 0 && (
-                  <div className="lirf-info__vacancy">
-                    • {run.lirf_vacancies} position{run.lirf_vacancies > 1 ? 's' : ''} still needed
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="lirf-info__empty">
-                No LIRFs assigned yet
-              </div>
-            )}
+            <div className="lirf-info__list">
+              {run.assigned_lirfs.map((lirf, index) => (
+                <div key={index} className="lirf-info__item">
+                  • {lirf.role === 'lead' ? 'Lead' : 'Support'}: {lirf.name}
+                </div>
+              ))}
+              {run.lead_lirf_vacant && (
+                <div className="lirf-info__vacancy">
+                  • Lead LIRF needed
+                </div>
+              )}
+              {run.support_vacancies > 0 && (
+                <div className="lirf-info__vacancy">
+                  • {run.support_vacancies} support LIRF{run.support_vacancies > 1 ? 's' : ''} needed
+                </div>
+              )}
+            </div>
           </div>
         )}
 

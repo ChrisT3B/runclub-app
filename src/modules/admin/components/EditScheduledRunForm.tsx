@@ -127,13 +127,15 @@ const handleSubmit = async (e: React.FormEvent) => {
   setError('');
 
   try {
-    // Clean up the form data - remove empty string UUIDs
-    const cleanFormData = { ...formData };
-    
-    // Remove empty LIRF assignments
-    if (cleanFormData.assigned_lirf_1 === '') delete cleanFormData.assigned_lirf_1;
-    if (cleanFormData.assigned_lirf_2 === '') delete cleanFormData.assigned_lirf_2;
-    if (cleanFormData.assigned_lirf_3 === '') delete cleanFormData.assigned_lirf_3;
+    // Clean up the form data - empty string UUIDs become an explicit null so
+    // that clearing a LIRF dropdown actually clears the column. Deleting the
+    // key instead would omit it from the update and leave the old LIRF in place.
+    const cleanFormData = {
+      ...formData,
+      assigned_lirf_1: formData.assigned_lirf_1 || null,
+      assigned_lirf_2: formData.assigned_lirf_2 || null,
+      assigned_lirf_3: formData.assigned_lirf_3 || null,
+    };
 
     const updateData = {
       ...cleanFormData,
@@ -370,15 +372,15 @@ const handleDescriptionChange = (value: string) => {
                 onChange={handleInputChange}
                 className="form-input"
               >
-                <option value={1}>1 LIRF</option>
-                <option value={2}>2 LIRFs</option>
-                <option value={3}>3 LIRFs</option>
+                <option value={1}>1 (Lead only)</option>
+                <option value={2}>2 (Lead + 1 Support)</option>
+                <option value={3}>3 (Lead + 2 Support)</option>
               </select>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
               <div className="form-group">
-                <label className="form-label" htmlFor="assigned_lirf_1">LIRF 1</label>
+                <label className="form-label" htmlFor="assigned_lirf_1">Lead LIRF</label>
                 <select
                   id="assigned_lirf_1"
                   name="assigned_lirf_1"
@@ -395,7 +397,7 @@ const handleDescriptionChange = (value: string) => {
 
               {formData.lirfs_required >= 2 && (
                 <div className="form-group">
-                  <label className="form-label" htmlFor="assigned_lirf_2">LIRF 2</label>
+                  <label className="form-label" htmlFor="assigned_lirf_2">Support LIRF</label>
                   <select
                     id="assigned_lirf_2"
                     name="assigned_lirf_2"
@@ -413,7 +415,7 @@ const handleDescriptionChange = (value: string) => {
 
               {formData.lirfs_required >= 3 && (
                 <div className="form-group">
-                  <label className="form-label" htmlFor="assigned_lirf_3">LIRF 3</label>
+                  <label className="form-label" htmlFor="assigned_lirf_3">Support LIRF 2</label>
                   <select
                     id="assigned_lirf_3"
                     name="assigned_lirf_3"

@@ -29,9 +29,11 @@ export const RunsOverview: React.FC<RunsOverviewProps> = ({ onNavigateToRun }) =
     };
   }, []);
 
-  const urgentCount = rows.filter(r => r.lirfCount === 0).length;
-  const partialCount = rows.filter(r => r.lirfCount > 0 && r.lirfCount < r.lirfsRequired).length;
-  const fullCount = rows.filter(r => r.lirfCount >= r.lirfsRequired && r.lirfsRequired > 0).length;
+  const statusOf = (row: LirfCoverageRow) => ScheduledRunsService.getCoverageStatus(row);
+
+  const noLeadCount = rows.filter(r => statusOf(r) === 'no_lead').length;
+  const supportGapCount = rows.filter(r => statusOf(r) === 'support_gap').length;
+  const fullCount = rows.filter(r => statusOf(r) === 'full').length;
 
   const formatDate = (d: string) =>
     new Date(d + 'T12:00:00').toLocaleDateString('en-GB', {
@@ -41,9 +43,22 @@ export const RunsOverview: React.FC<RunsOverviewProps> = ({ onNavigateToRun }) =
     });
 
   const coverageClass = (row: LirfCoverageRow): string => {
-    if (row.lirfCount === 0) return 'runs-overview-row--urgent';
-    if (row.lirfCount < row.lirfsRequired) return 'runs-overview-row--partial';
-    return 'runs-overview-row--full';
+    switch (statusOf(row)) {
+      case 'no_lead': return 'runs-overview-row--urgent';
+      case 'support_gap': return 'runs-overview-row--partial';
+      default: return 'runs-overview-row--full';
+    }
+  };
+
+  const leadCellText = (row: LirfCoverageRow): string => {
+    if (!row.leadAssigned) return 'Needed';
+    return row.leadName ?? 'Assigned';
+  };
+
+  const supportCellText = (row: LirfCoverageRow): string => {
+    if (row.supportRequired === 0) return 'Not required';
+    const names = row.supportNames.length > 0 ? row.supportNames.join(', ') : 'None';
+    return `${names} (${row.supportCount}/${row.supportRequired})`;
   };
 
   if (loading) {
@@ -62,15 +77,15 @@ export const RunsOverview: React.FC<RunsOverviewProps> = ({ onNavigateToRun }) =
       <div className="runs-overview-stats">
         <div className="runs-overview-stat">
           <div className="runs-overview-stat__number runs-overview-stat__number--red">
-            {urgentCount}
+            {noLeadCount}
           </div>
-          <div className="runs-overview-stat__label">No LIRF assigned</div>
+          <div className="runs-overview-stat__label">No Lead LIRF</div>
         </div>
         <div className="runs-overview-stat">
           <div className="runs-overview-stat__number runs-overview-stat__number--amber">
-            {partialCount}
+            {supportGapCount}
           </div>
-          <div className="runs-overview-stat__label">Partially covered</div>
+          <div className="runs-overview-stat__label">Support gap</div>
         </div>
         <div className="runs-overview-stat">
           <div className="runs-overview-stat__number runs-overview-stat__number--green">
@@ -98,7 +113,8 @@ export const RunsOverview: React.FC<RunsOverviewProps> = ({ onNavigateToRun }) =
                   <th className="member-table__header-cell">Date</th>
                   <th className="member-table__header-cell">Run</th>
                   <th className="member-table__header-cell">Coverage</th>
-                  <th className="member-table__header-cell">LIRF(s)</th>
+                  <th className="member-table__header-cell">Lead</th>
+                  <th className="member-table__header-cell">Support</th>
                 </tr>
               </thead>
               <tbody>
@@ -127,9 +143,8 @@ export const RunsOverview: React.FC<RunsOverviewProps> = ({ onNavigateToRun }) =
                     <td className="member-table__cell">
                       {row.lirfCount} / {row.lirfsRequired}
                     </td>
-                    <td className="member-table__cell">
-                      {row.lirfNames.length > 0 ? row.lirfNames.join(', ') : 'None assigned'}
-                    </td>
+                    <td className="member-table__cell">{leadCellText(row)}</td>
+                    <td className="member-table__cell">{supportCellText(row)}</td>
                   </tr>
                 ))}
               </tbody>
