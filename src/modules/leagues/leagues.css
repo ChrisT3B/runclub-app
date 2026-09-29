@@ -540,3 +540,114 @@
 .improvement-report__delta--flat {
   color: var(--gray-500);
 }
+
+/* ── League Admin hub (replaces former inline styles) ────────────────── */
+.league-admin-hub__title {
+  margin-bottom: var(--space-6);
+}
+
+.league-admin-hub__denied {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  color: var(--gray-500);
+}
+
+.league-admin-hub__card {
+  margin-bottom: var(--space-4);
+}
+
+.league-admin-hub__description {
+  color: var(--gray-600);
+  margin-bottom: var(--space-3);
+}
+
+/* ── Static league table (no row interaction, e.g. admin reports) ────── */
+.league-table.league-table--static tbody tr {
+  cursor: default;
+}
+
+/* ── Expiring entry flag (leaderboard) ───────────────────────────────── */
+.league-table__expiry-badge {
+  margin-left: var(--space-2);
+  padding: 2px var(--space-2);
+  gap: var(--space-1);
+  font-size: var(--font-xs);
+  vertical-align: middle;
+}
+
+.league-table__expiry-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-xs);
+  color: var(--gray-500);
+}
+
+@media (max-width: 639px) {
+  .league-table__expiry-text {
+    display: none;
+  }
+
+  .league-table__expiry-badge {
+    padding: 2px var(--space-1);
+  }
+
+  .league-table__detail-value--expiring {
+    color: var(--warning-text);
+  }
+
+  /* Third detail item (Drops off) can overflow at 360px */
+  .league-table__detail {
+    flex-wrap: wrap;
+  }
+}
+
+/* ── Expiring Entries Report (admin only) ────────────────────────────── */
+.expiry-report__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.expiry-report__title {
+  margin: 0;
+}
+
+.expiry-report__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.expiry-report__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.expiry-report__intro {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+}
+
+.expiry-report__notice {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  color: var(--gray-700);
+}
+
+.expiry-report__loading {
+  color: var(--gray-500);
+}
+
+.expiry-report__col-days {
+  text-align: right;
+}

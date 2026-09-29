@@ -29,6 +29,7 @@ import { AdminRaceLeagueRacePage }  from './modules/race-league/pages/AdminRaceL
 import { LeaguesHubPage }          from './modules/leagues/pages/LeaguesHubPage';
 import { LeagueAdminHubPage }      from './modules/leagues/pages/LeagueAdminHubPage';
 import { ParkrunImprovementReportPage } from './modules/leagues/pages/ParkrunImprovementReportPage';
+import { ParkrunExpiryReportPage } from './modules/leagues/pages/ParkrunExpiryReportPage';
 
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
@@ -202,6 +203,8 @@ export const AppContent: React.FC = () => {
         return <AdminLeaguePage onNavigate={handleNavigation} />;
       case 'admin-league-improvement':
         return <ParkrunImprovementReportPage onNavigate={handleNavigation} />;
+      case 'admin-league-expiring':
+        return <ParkrunExpiryReportPage onNavigate={handleNavigation} />;
       case 'race-league':
         return <RaceLeaguePage onNavigate={handleRaceNavigation} />;
       case 'race-league-race':
