@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Pencil } from 'lucide-react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { EnhancedDescriptionEditor } from './EnhancedDescriptionEditor';
@@ -57,6 +57,12 @@ const RunTemplateForm: React.FC<RunTemplateFormProps> = ({ template, onSaved, on
   const [formData, setFormData] = useState<RunTemplateInput>(template ? toInput(template) : EMPTY_INPUT);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // The form opens above the list, so bring it into view when it opens
+  useEffect(() => {
+    cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -96,7 +102,7 @@ const RunTemplateForm: React.FC<RunTemplateFormProps> = ({ template, onSaved, on
   };
 
   return (
-    <div className="card run-templates__form-card">
+    <div className="card run-templates__form-card" ref={cardRef}>
       <div className="card-header">
         <h3 className="card-title">{template ? 'Edit Template' : 'New Template'}</h3>
         <p className="card-description">

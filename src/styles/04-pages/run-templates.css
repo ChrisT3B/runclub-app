@@ -35,6 +35,8 @@
 
 .run-templates__form-card {
   margin-bottom: var(--space-6);
+  /* Clear the 64px sticky header when scrolled into view */
+  scroll-margin-top: var(--space-20);
 }
 
 .run-templates__row {
