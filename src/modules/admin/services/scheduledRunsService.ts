@@ -23,6 +23,8 @@ export interface ScheduledRun {
   assigned_lirf_3?: string;
   is_c25k_run?: boolean;
   is_dog_friendly?: boolean;
+  // Set by generate_recurring_run_instances(); read-only from the frontend
+  template_id?: string;
   created_by: string;
   created_by_name?: string;
   created_at: string;
