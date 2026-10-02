@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { ScheduledRunsService } from '../services/scheduledRunsService';
+import { RunTemplatesService } from '../services/runTemplatesService';
 import { EnhancedDescriptionEditor } from './EnhancedDescriptionEditor';
 
 interface EditScheduledRunFormProps {
@@ -36,7 +37,9 @@ export const EditScheduledRunForm: React.FC<EditScheduledRunFormProps> = ({
   const [loadingRun, setLoadingRun] = useState(true);
   const [error, setError] = useState('');
   const [lirfs, setLirfs] = useState<any[]>([]);
-  
+  // Kept out of formData so it is never sent back in the update
+  const [templateTitle, setTemplateTitle] = useState<string | null>(null);
+
   const [formData, setFormData] = useState<ScheduledRunData>({
     id: '',
     run_title: '',
@@ -81,11 +84,25 @@ export const EditScheduledRunForm: React.FC<EditScheduledRunFormProps> = ({
         assigned_lirf_2: runData.assigned_lirf_2 || '',
         assigned_lirf_3: runData.assigned_lirf_3 || ''
       });
+      loadTemplateTitle(runData.template_id);
     } catch (error) {
       console.error('Failed to load run data:', error);
       setError('Failed to load run data');
     } finally {
       setLoadingRun(false);
+    }
+  };
+
+  // Templates are admin-only under RLS, so LIRFs skip the lookup entirely.
+  // A failed lookup just means no note; it is never shown as an error.
+  const loadTemplateTitle = async (templateId?: string) => {
+    setTemplateTitle(null);
+    if (!templateId || !permissions.canManageMembers) return;
+    try {
+      const template = await RunTemplatesService.getTemplate(templateId);
+      setTemplateTitle(template?.run_title ?? null);
+    } catch (error) {
+      console.error('Failed to load run template:', error);
     }
   };
 
@@ -203,6 +220,12 @@ const handleDescriptionChange = (value: string) => {
       </div>
       
       <div className="card-content">
+        {templateTitle && (
+          <div className="run-templates__source-note">
+            Generated from template: {templateTitle}
+          </div>
+        )}
+
         {error && (
           <div style={{ 
             background: '#fef2f2', 

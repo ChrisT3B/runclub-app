@@ -1,0 +1,116 @@
+/* ==============================================
+   RUN TEMPLATES - Admin manager for recurring run templates
+   (RunTemplatesManager.tsx)
+   ============================================== */
+
+.run-templates__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.run-templates__new-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.run-templates__error {
+  background: var(--red-light);
+  border: 1px solid var(--red-primary);
+  color: var(--red-primary);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-5);
+}
+
+.run-templates__loading,
+.run-templates__empty {
+  color: var(--gray-600);
+  padding: var(--space-10) var(--space-4);
+  text-align: center;
+}
+
+.run-templates__form-card {
+  margin-bottom: var(--space-6);
+}
+
+.run-templates__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.run-templates__checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.run-templates__checkbox--disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.run-templates__checkbox-label {
+  margin: 0;
+}
+
+.run-templates__hint {
+  font-size: var(--font-xs);
+  color: var(--gray-600);
+  margin: var(--space-1) 0 0 var(--space-6);
+}
+
+.run-templates__form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.run-templates__row--inactive {
+  color: var(--gray-500);
+}
+
+.run-templates__tag {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--gray-100);
+  color: var(--gray-700);
+  font-size: var(--font-xs);
+  font-weight: var(--font-medium);
+}
+
+.run-templates__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.run-templates__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Read-only provenance note on EditScheduledRunForm.tsx */
+.run-templates__source-note {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  color: var(--gray-700);
+  font-size: var(--font-sm);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-5);
+}
+
+@media (max-width: 640px) {
+  .run-templates__row {
+    grid-template-columns: 1fr;
+  }
+}
