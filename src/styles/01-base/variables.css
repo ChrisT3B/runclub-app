@@ -27,6 +27,7 @@
   --warning-text: #92400e;     /* dark amber, readable on white; matches pending badge text */
   --danger-color: #ef4444;
   --info-color: #3b82f6;
+  --info-light: #eff6ff;       /* light blue background for informational notices */
 
   /* Typography Scale */
   --font-xs: 0.75rem;    /* 12px */

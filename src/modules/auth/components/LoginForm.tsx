@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { AppLogo } from '../../../shared/components/ui/AppLogo'
 import type { LoginCredentials } from '../types'
@@ -15,15 +15,35 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onForgotPassword,
   onRegister
 }) => {
-  const { state, login } = useAuth()
+  const { state, login, loginMutation } = useAuth()
+  const isSubmitting = loginMutation.isPending
+  const isBusy = state.loading || isSubmitting
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: '',
     password: '',
   })
 
+  // Set by useSessionRestore when an 8-hour session ends
+  const [authNotice] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem('auth_notice')
+    } catch {
+      return null
+    }
+  })
+
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('auth_notice')
+    } catch {
+      // Notice is cosmetic - ignore storage errors
+    }
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+    if (isSubmitting) return
+
     try {
          console.log('🔐 Attempting login...'); // Add this line
       await login(credentials)
@@ -140,6 +160,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               />
             </div>
 
+            {authNotice === 'session_expired' && (
+              <div className="auth-notice" role="status">
+                For your security, sessions end after 8 hours. Please log in again.
+              </div>
+            )}
+
             {state.error && (
               <div style={{ 
                 background: '#fef2f2', 
@@ -156,16 +182,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
             <button
               type="submit"
-              disabled={state.loading}
+              disabled={isBusy}
               className="btn btn-primary"
-              style={{ 
+              style={{
                 width: '100%',
                 padding: '12px',
                 fontSize: '16px',
                 fontWeight: '600',
-                background: state.loading ? 'var(--gray-400)' : 'var(--red-primary)',
-                borderColor: state.loading ? 'var(--gray-400)' : 'var(--red-primary)',
-                cursor: state.loading ? 'not-allowed' : 'pointer',
+                background: isBusy ? 'var(--gray-400)' : 'var(--red-primary)',
+                borderColor: isBusy ? 'var(--gray-400)' : 'var(--red-primary)',
+                cursor: isBusy ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -173,19 +199,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => {
-                if (!state.loading) {
+                if (!isBusy) {
                   e.currentTarget.style.transform = 'translateY(-1px)';
                   e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(220, 38, 38, 0.25)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (!state.loading) {
+                if (!isBusy) {
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = 'none';
                 }
               }}
             >
-              {state.loading && (
+              {isBusy && (
                 <div style={{
                   width: '16px',
                   height: '16px',
@@ -195,7 +221,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   animation: 'spin 1s linear infinite'
                 }}></div>
               )}
-              {state.loading ? 'Signing In...' : 'Sign In'}
+              {isBusy ? 'Signing In...' : 'Sign In'}
             </button>
 
             <div style={{ 

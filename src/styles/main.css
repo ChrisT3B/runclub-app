@@ -30,6 +30,7 @@
    PAGE-SPECIFIC STYLES
    ============================================== */
 @import './04-pages/forms.css';
+@import './04-pages/auth.css';
 @import './04-pages/members.css';
 @import './04-pages/communications.css';
 @import './04-pages/lead-your-run.css';
