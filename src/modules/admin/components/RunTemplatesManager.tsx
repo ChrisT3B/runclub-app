@@ -378,7 +378,7 @@ export const RunTemplatesManager: React.FC<RunTemplatesManagerProps> = () => {
       ) : (
         <div className="card">
           <div className="table-container">
-            <table className="member-table">
+            <table className="member-table run-templates__table">
               <thead className="member-table__header">
                 <tr>
                   <th className="member-table__header-cell">Day</th>
@@ -396,21 +396,21 @@ export const RunTemplatesManager: React.FC<RunTemplatesManagerProps> = () => {
                     key={t.id}
                     className={`member-table__row ${t.active ? '' : 'run-templates__row--inactive'}`}
                   >
-                    <td className="member-table__cell">{DAY_NAMES[t.day_of_week]}</td>
-                    <td className="member-table__cell">{t.run_time.slice(0, 5)}</td>
-                    <td className="member-table__cell">
+                    <td className="member-table__cell" data-label="Day">{DAY_NAMES[t.day_of_week]}</td>
+                    <td className="member-table__cell" data-label="Time">{t.run_time.slice(0, 5)}</td>
+                    <td className="member-table__cell run-templates__cell--title">
                       {t.run_title}
                       {t.is_c25k_run && <span className="run-templates__tag">C25K</span>}
                       {t.is_dog_friendly && <span className="run-templates__tag">Dogs</span>}
                     </td>
-                    <td className="member-table__cell">{t.meeting_point ?? '—'}</td>
-                    <td className="member-table__cell">{t.lirfs_required}</td>
-                    <td className="member-table__cell">
+                    <td className="member-table__cell" data-label="Meeting point">{t.meeting_point ?? '—'}</td>
+                    <td className="member-table__cell" data-label="LIRFs">{t.lirfs_required}</td>
+                    <td className="member-table__cell" data-label="Status">
                       <span className={`status-badge ${t.active ? 'status-badge--active' : 'status-badge--inactive'}`}>
                         {t.active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="member-table__cell">
+                    <td className="member-table__cell run-templates__cell--actions">
                       <div className="run-templates__actions">
                         <button
                           className="btn btn-secondary"

@@ -96,6 +96,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  white-space: nowrap;
 }
 
 /* Read-only provenance note on EditScheduledRunForm.tsx */
@@ -112,5 +113,69 @@
 @media (max-width: 640px) {
   .run-templates__row {
     grid-template-columns: 1fr;
+  }
+
+  .run-templates__new-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Table becomes a stack of cards: title on top, labelled fields, actions at the bottom */
+  .run-templates__table thead {
+    display: none;
+  }
+
+  .run-templates__table,
+  .run-templates__table tbody {
+    display: block;
+  }
+
+  .run-templates__table .member-table__row {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--gray-200);
+  }
+
+  .run-templates__table .member-table__cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
+    font-size: var(--font-sm);
+  }
+
+  .run-templates__table .member-table__cell[data-label]::before {
+    content: attr(data-label);
+    color: var(--gray-500);
+    font-weight: var(--font-medium);
+  }
+
+  .run-templates__table .run-templates__cell--title {
+    order: -1;
+    display: block;
+    font-size: var(--font-base);
+    font-weight: var(--font-semibold);
+    color: var(--gray-900);
+    padding-bottom: var(--space-2);
+  }
+
+  .run-templates__row--inactive .run-templates__cell--title {
+    color: var(--gray-500);
+  }
+
+  .run-templates__table .run-templates__cell--actions {
+    padding-top: var(--space-3);
+  }
+
+  .run-templates__cell--actions .run-templates__actions {
+    width: 100%;
+    flex-wrap: nowrap;
+  }
+
+  .run-templates__cell--actions .run-templates__actions .btn {
+    flex: 1;
+    justify-content: center;
   }
 }
