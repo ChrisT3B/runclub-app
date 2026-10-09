@@ -1,1 +1,14 @@
- 
+/* ==============================================
+   AUTH PAGES
+   ============================================== */
+
+/* Informational notice on the login form (e.g. 8-hour session ended) */
+.auth-notice {
+  background: var(--info-light);
+  border: 1px solid var(--info-color);
+  color: var(--gray-800);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-5);
+  font-size: var(--font-sm);
+}

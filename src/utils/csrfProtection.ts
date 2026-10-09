@@ -57,6 +57,28 @@ export const getCsrfToken = (): string | null => {
 };
 
 /**
+ * Read the CSRF token from sessionStorage without logging anything.
+ * Use this for housekeeping checks - getCsrfToken() records a
+ * csrf_token_missing event, which must only mean "a protected action
+ * found no token".
+ */
+export const peekCsrfToken = (): string | null => {
+  try {
+    return sessionStorage.getItem('csrf_token');
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Silent check for a CSRF token in sessionStorage (see peekCsrfToken)
+ */
+export const hasCsrfToken = (): boolean => {
+  const token = peekCsrfToken();
+  return typeof token === 'string' && token.length > 0;
+};
+
+/**
  * Clear CSRF token from sessionStorage (on logout)
  */
 export const clearCsrfToken = (): void => {
@@ -277,17 +299,31 @@ export const isCsrfError = (error: unknown): boolean => {
 };
 
 /**
- * Clear CSRF token from database (on logout)
+ * Clear this device's CSRF token from the database (on logout).
+ * Only the row holding this device's token is touched, so the member's
+ * other devices keep their tokens and stay able to book.
+ * @param csrfToken - this device's token from sessionStorage, or null if it has none
  */
-export const clearCsrfTokenFromDatabase = async (userId: string): Promise<void> => {
+export const clearCsrfTokenFromDatabase = async (
+  userId: string,
+  csrfToken: string | null
+): Promise<void> => {
   try {
-    // NOTE: the user_id-only filter is the suspected cause of tokens being
-    // wiped by a logout elsewhere. Left as-is deliberately - fixing it is a
-    // separate work package. .select('id') tells us how many rows it hit.
+    if (!csrfToken) {
+      await logDiagnosticEvent('csrf_cleared', {
+        user_id: userId,
+        rows_cleared: 0,
+        skipped: 'no_local_token'
+      });
+      return;
+    }
+
+    // .select('id') tells us how many rows it hit
     const { data, error } = await supabase
       .from('active_sessions')
       .update({ csrf_token: null })
       .eq('user_id', userId)
+      .eq('csrf_token', csrfToken)
       .select('id');
 
     if (error) {

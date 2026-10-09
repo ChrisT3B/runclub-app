@@ -23,9 +23,16 @@ import {
   storeCsrfToken,
   storeCsrfTokenInDatabase,
   clearCsrfToken,
-  clearCsrfTokenFromDatabase
+  clearCsrfTokenFromDatabase,
+  peekCsrfToken,
+  hasCsrfToken
 } from '../../../utils/csrfProtection';
 import { logDiagnosticEvent } from '../../../utils/securityDiagnostics';
+
+// localStorage key holding the time of the last real login, in ms
+const LOGIN_AT_KEY = 'login_at';
+// Must match SessionSecurityService.MAX_SESSION_DURATION_MS
+const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000;
 
 // =====================================
 // 🆕 NEW: MINIMAL DATABASE LOGGING SERVICE
@@ -280,8 +287,21 @@ export const getUserWithProfile = async (userId: string) => {
   }
 };
 
+// Single-flight guard: a second tap on Log in joins the running login
+// instead of starting another one (two runs saved mismatched CSRF tokens)
+let loginInFlight: Promise<AuthResponse> | null = null;
+
 // ENHANCED LOGIN - Uses your existing SecureAuthService + adds minimal database logging
-export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+export const loginUser = (credentials: LoginCredentials): Promise<AuthResponse> => {
+  if (loginInFlight) return loginInFlight;
+
+  loginInFlight = performLogin(credentials).finally(() => {
+    loginInFlight = null;
+  });
+  return loginInFlight;
+};
+
+const performLogin = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   try {
     console.log('🔐 Starting enhanced secure login...');
     
@@ -308,6 +328,8 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
     // If login successful, add session security tracking
     const { data: { session } } = await supabase.auth.getSession();
     if (session && result.data) {
+      localStorage.setItem(LOGIN_AT_KEY, Date.now().toString());
+
       // Register session with security tracking
       await SessionSecurityService.registerSession(result.data.id, session.access_token);
       
@@ -506,7 +528,7 @@ export const logoutUser = async (reason: string = 'unspecified'): Promise<void> 
       await SessionSecurityService.cleanupSession(user.id, session.access_token);
 
       // ========== CSRF TOKEN CLEANUP (before signOut while auth is still valid) ==========
-      await clearCsrfTokenFromDatabase(user.id);
+      await clearCsrfTokenFromDatabase(user.id, peekCsrfToken());
       // ========== END: CSRF TOKEN CLEANUP ==========
 
       // Log secure logout event
@@ -519,10 +541,13 @@ export const logoutUser = async (reason: string = 'unspecified'): Promise<void> 
     }
 
     // Now sign out (auth token still valid above)
-    await supabase.auth.signOut();
+    // 'local' ends this device's login only - the default 'global' signed
+    // the member out on every device
+    await supabase.auth.signOut({ scope: 'local' });
     localStorage.removeItem('device_fingerprint');
     localStorage.removeItem('session_fingerprint');
     localStorage.removeItem('last_activity');
+    localStorage.removeItem(LOGIN_AT_KEY);
     sessionStorage.removeItem('redirectAfterLogin');
 
     // Clear CSRF from sessionStorage (doesn't need auth)
@@ -531,6 +556,62 @@ export const logoutUser = async (reason: string = 'unspecified'): Promise<void> 
     console.log('✅ Enhanced secure logout completed with cache clear');
   } catch (error) {
 window.location.reload();
+  }
+};
+
+// SESSION RESTORE - run when the app opens or returns to the foreground.
+// Enforces the 8-hour session rule here rather than mid-booking, and gives a
+// logged-in tab with no CSRF token (installed app reopened, new tab) its own.
+export const ensureCsrfSession = async (): Promise<'ok' | 'restored' | 'expired' | 'skipped' | 'no_session' | 'failed'> => {
+  try {
+    // A running login creates the token itself - racing it recreates Cause 2
+    if (loginInFlight) return 'skipped';
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return 'no_session';
+
+    const loginAt = Number(localStorage.getItem(LOGIN_AT_KEY));
+    if (!loginAt || !Number.isFinite(loginAt) || Date.now() - loginAt > SESSION_MAX_AGE_MS) {
+      return 'expired';
+    }
+
+    if (hasCsrfToken()) return 'ok';
+
+    // New row rather than updating the login's row: that row is keyed on the
+    // access token at login, which Supabase replaces hourly, and another tab
+    // sharing this login may own its token.
+    // ip_address is omitted: the column is inet (nullable) and the
+    // synchronous fallback is a fingerprint string, not an IP.
+    const csrfToken = generateCsrfToken();
+    const { error } = await supabase
+      .from('active_sessions')
+      .insert({
+        user_id: session.user.id,
+        session_token: 'restored-' + crypto.randomUUID().slice(0, 11),
+        fingerprint_hash: SessionSecurityService.generateFingerprint(),
+        user_agent: navigator.userAgent,
+        device_info: `${navigator.platform} - ${screen.width}x${screen.height}`,
+        expires_at: new Date(loginAt + SESSION_MAX_AGE_MS).toISOString(),
+        is_suspicious: false,
+        csrf_token: csrfToken
+      });
+
+    if (error) {
+      await logDiagnosticEvent('csrf_restore_failed', {
+        error: error.message,
+        code: error.code
+      });
+      return 'failed';
+    }
+
+    storeCsrfToken(csrfToken);
+    await logDiagnosticEvent('csrf_session_restored', {
+      ms_since_real_login: Date.now() - loginAt
+    });
+    return 'restored';
+  } catch (error) {
+    await logDiagnosticEvent('csrf_restore_failed', { error: String(error) });
+    return 'failed';
   }
 };
 

@@ -2,6 +2,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSessionTimeout } from '../hooks/useSessionTimeout';
+import { useSessionRestore } from '../hooks/useSessionRestore';
 import { SessionWarningModal } from '../../../shared/components/ui/SessionWarningModal';
 
 interface SessionSecurityWrapperProps {
@@ -11,6 +12,7 @@ interface SessionSecurityWrapperProps {
 export const SessionSecurityWrapper: React.FC<SessionSecurityWrapperProps> = ({ children }) => {
   const { state, logout } = useAuth();
   const { timeRemaining, showWarning, extendSession } = useSessionTimeout();
+  useSessionRestore();
 
   // Handle logout (convert Promise to void function)
   const handleLogout = () => {
