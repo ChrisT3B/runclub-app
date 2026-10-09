@@ -562,13 +562,13 @@ window.location.reload();
 // SESSION RESTORE - run when the app opens or returns to the foreground.
 // Enforces the 8-hour session rule here rather than mid-booking, and gives a
 // logged-in tab with no CSRF token (installed app reopened, new tab) its own.
-export const ensureCsrfSession = async (): Promise<'ok' | 'restored' | 'expired' | 'skipped' | 'failed'> => {
+export const ensureCsrfSession = async (): Promise<'ok' | 'restored' | 'expired' | 'skipped' | 'no_session' | 'failed'> => {
   try {
     // A running login creates the token itself - racing it recreates Cause 2
     if (loginInFlight) return 'skipped';
 
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return 'skipped';
+    if (!session) return 'no_session';
 
     const loginAt = Number(localStorage.getItem(LOGIN_AT_KEY));
     if (!loginAt || !Number.isFinite(loginAt) || Date.now() - loginAt > SESSION_MAX_AGE_MS) {

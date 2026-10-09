@@ -20,6 +20,11 @@ export const useSessionRestore = (): void => {
   const checkedUserRef = useRef<string | null>(null);
   const checkRunningRef = useRef(false);
   const expiryHandledRef = useRef(false);
+  const reloadHandledRef = useRef(false);
+
+  // Read inside async callbacks - a closure's copy can be a render behind
+  const isAuthenticatedRef = useRef(state.isAuthenticated);
+  isAuthenticatedRef.current = state.isAuthenticated;
 
   const runCheck = async () => {
     if (checkRunningRef.current || expiryHandledRef.current) return;
@@ -27,10 +32,21 @@ export const useSessionRestore = (): void => {
 
     try {
       const result = await ensureCsrfSession();
+
       if (result === 'expired' && !expiryHandledRef.current) {
         expiryHandledRef.current = true;
         sessionStorage.setItem('auth_notice', 'session_expired');
         logoutRef.current('session_expired_8h').catch(console.error);
+        return;
+      }
+
+      // Another tab ended the session while this one still shows the app.
+      // Reloading drops it to the login screen instead of leaving a dead UI
+      // that fails every action. After the reload there is no session, so
+      // the hook returns early and this cannot loop.
+      if (result === 'no_session' && isAuthenticatedRef.current && !reloadHandledRef.current) {
+        reloadHandledRef.current = true;
+        window.location.reload();
       }
     } finally {
       checkRunningRef.current = false;
@@ -42,6 +58,7 @@ export const useSessionRestore = (): void => {
     if (!state.isAuthenticated || !userId) {
       checkedUserRef.current = null;
       expiryHandledRef.current = false;
+      reloadHandledRef.current = false;
       return;
     }
     if (checkedUserRef.current === userId) return;
@@ -63,6 +80,27 @@ export const useSessionRestore = (): void => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [state.isAuthenticated, userId]);
+
+  // A tab that is already on screen when another tab logs out: localStorage
+  // changes fire here, so it reacts without waiting to be focused. The
+  // visibilitychange check above covers a tab sitting in the background.
+  useEffect(() => {
+    if (!state.isAuthenticated || !userId) return;
+
+    const handleStorage = (event: StorageEvent) => {
+      const loginTimeCleared = event.key === 'login_at' && event.newValue === null;
+      const storageCleared = event.key === null;
+
+      if (loginTimeCleared || storageCleared) {
+        runCheck();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
     };
   }, [state.isAuthenticated, userId]);
 };

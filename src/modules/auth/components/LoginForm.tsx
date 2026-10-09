@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { AppLogo } from '../../../shared/components/ui/AppLogo'
 import type { LoginCredentials } from '../types'
@@ -32,14 +32,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     }
   })
 
-  useEffect(() => {
-    try {
-      sessionStorage.removeItem('auth_notice')
-    } catch {
-      // Notice is cosmetic - ignore storage errors
-    }
-  }, [])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isSubmitting) return
@@ -47,6 +39,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     try {
          console.log('🔐 Attempting login...'); // Add this line
       await login(credentials)
+      // Cleared here, not on mount: LoginForm can mount more than once during
+      // a logout and an on-mount removal lets the first mount discard the
+      // notice before the mount that stays on screen can read it.
+      try {
+        sessionStorage.removeItem('auth_notice')
+      } catch {
+        // Notice is cosmetic - ignore storage errors
+      }
       onSuccess?.()
     } catch (error) {
       console.error('Login error:', error)
