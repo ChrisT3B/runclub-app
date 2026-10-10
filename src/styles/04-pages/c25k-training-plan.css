@@ -162,3 +162,49 @@
     padding: var(--space-2) var(--space-3);
   }
 }
+
+/* ============================================
+   C25K closed notice
+   ============================================ */
+
+.c25k-closed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+
+.c25k-closed__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-16);
+  height: var(--space-16);
+  margin-bottom: var(--space-6);
+  border-radius: 50%;
+  background: var(--red-light);
+  color: var(--red-primary);
+}
+
+.c25k-closed__title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-2xl);
+  color: var(--gray-900);
+}
+
+.c25k-closed__text {
+  margin: 0 0 var(--space-6);
+  font-size: var(--font-base);
+  line-height: 1.6;
+  color: var(--gray-600);
+}
+
+.c25k-closed__link {
+  display: inline-flex;
+  text-decoration: none;
+}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../../modules/auth/context/AuthContext'
 import { SendInvitationModal } from '../ui/SendInvitationModal'
+import { C25K_ENABLED } from '../../../modules/c25k/c25kConfig'
 
 interface SidebarProps {
   currentPage?: string
@@ -19,11 +20,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     { id: 'leagues-hub', name: 'Leagues', icon: '🏆' },
   ]
 
-  // C25k: Training Plan for participants/LIRFs/admins, Register for everyone else
-  if (state.member?.is_c25k_participant || permissions.canManageRuns) {
-    navigation.push({ id: 'c25k-training-plan', name: 'C25K Training Plan', icon: '📋' })
-  } else {
-    navigation.push({ id: 'c25k-register', name: 'C25K Registration', icon: '🏃' })
+  if (C25K_ENABLED) {
+    // C25k: Training Plan for participants/LIRFs/admins, Register for everyone else
+    if (state.member?.is_c25k_participant || permissions.canManageRuns) {
+      navigation.push({ id: 'c25k-training-plan', name: 'C25K Training Plan', icon: '📋' })
+    } else {
+      navigation.push({ id: 'c25k-register', name: 'C25K Registration', icon: '🏃' })
+    }
   }
 
   // Add LIRF-specific navigation using permissions
