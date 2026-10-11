@@ -10,6 +10,8 @@ import { SessionSecurityWrapper } from './modules/auth/components/SessionSecurit
 import { UpdatePrompt } from './shared/components/ui/UpdatePrompt';
 import { PrivacyPolicy } from './modules/auth/components/PrivacyPolicy';
 import { C25kRegisterForm } from './modules/auth/components/C25kRegisterForm';
+import { C25kClosedNotice } from './modules/c25k/components/C25kClosedNotice';
+import { C25K_ENABLED } from './modules/c25k/c25kConfig';
 import './styles/fonts.css';
 
 
@@ -33,7 +35,7 @@ function App() {
           <Routes>
             {/* Public pages */}
             <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/c25k" element={<C25kRegisterForm />} />
+            <Route path="/c25k" element={C25K_ENABLED ? <C25kRegisterForm /> : <C25kClosedNotice />} />
 
             {/* Handle email verification specifically */}
             <Route
