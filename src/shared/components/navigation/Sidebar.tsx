@@ -20,13 +20,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     { id: 'leagues-hub', name: 'Leagues', icon: '🏆' },
   ]
 
-  if (C25K_ENABLED) {
-    // C25k: Training Plan for participants/LIRFs/admins, Register for everyone else
-    if (state.member?.is_c25k_participant || permissions.canManageRuns) {
-      navigation.push({ id: 'c25k-training-plan', name: 'C25K Training Plan', icon: '📋' })
-    } else {
-      navigation.push({ id: 'c25k-register', name: 'C25K Registration', icon: '🏃' })
-    }
+  // C25k: Training Plan for participants/LIRFs/admins, Register for everyone else (only while C25K is enabled)
+  if (state.member?.is_c25k_participant || permissions.canManageRuns) {
+    navigation.push({ id: 'c25k-training-plan', name: 'C25K Training Plan', icon: '📋' })
+  } else if (C25K_ENABLED) {
+    navigation.push({ id: 'c25k-register', name: 'C25K Registration', icon: '🏃' })
   }
 
   // Add LIRF-specific navigation using permissions
