@@ -1,0 +1,96 @@
+/* ==============================================
+   LATEST NEWS CARD — member dashboard
+   Newest Wix blog post, shown beneath Upcoming Runs
+   ============================================== */
+
+.latest-news-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: var(--space-6);
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.latest-news-card:hover {
+  border-color: var(--gray-300);
+  box-shadow: var(--shadow-md);
+}
+
+.latest-news-card:focus-visible {
+  outline: 2px solid var(--red-primary);
+  outline-offset: 2px;
+}
+
+.latest-news-card__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--gray-100);
+}
+
+.latest-news-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-4);
+}
+
+.latest-news-card__label {
+  font-size: var(--font-xs);
+  font-weight: var(--font-semibold);
+  color: var(--red-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.latest-news-card__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  font-size: var(--font-lg);
+  font-weight: var(--font-semibold);
+  line-height: 1.3;
+  color: var(--gray-900);
+}
+
+.latest-news-card__date {
+  font-size: var(--font-sm);
+  color: var(--gray-500);
+}
+
+.latest-news-card__teaser {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+}
+
+/* Wider screens: image alongside the text */
+@media (min-width: 640px) {
+  .latest-news-card {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .latest-news-card__image {
+    flex: 0 0 240px;
+    width: 240px;
+    height: auto;
+  }
+
+  .latest-news-card__body {
+    flex: 1;
+    justify-content: center;
+    padding: var(--space-5) var(--space-6);
+  }
+}

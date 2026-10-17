@@ -10,6 +10,7 @@ import { AffiliatedMemberService } from '../../membership/services/affiliatedMem
 import { AffiliatedMemberApplication, EAApplicationSettings } from '../../../types/affiliatedMember';
 import { LeagueDashboardCard } from '../../leagues/components/LeagueDashboardCard';
 import { PWAInstallCard } from '../../../shared/components/ui/PWAInstallCard';
+import { LatestNewsCard } from './LatestNewsCard';
 
 interface DashboardContentProps {
   onNavigate?: (page: string) => void;
@@ -653,6 +654,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }
           )}
         </div>
       </div>
+
+      <LatestNewsCard />
 {/* Quick Stats Card */}
       <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-header">
