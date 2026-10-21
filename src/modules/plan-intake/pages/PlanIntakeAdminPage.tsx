@@ -50,7 +50,7 @@ export const PlanIntakeAdminPage: React.FC<PlanIntakeAdminPageProps> = () => {
     return (
       <div className="page-container plan-intake-admin">
         <div className="page-header">
-          <h1 className="page-title">Plan Intake</h1>
+          <h1 className="page-title">Training Plan Invitation</h1>
         </div>
         <div className="plan-intake-admin__empty">Access denied. Admin access required.</div>
       </div>
@@ -105,7 +105,7 @@ export const PlanIntakeAdminPage: React.FC<PlanIntakeAdminPageProps> = () => {
   return (
     <div className="page-container plan-intake-admin">
       <div className="page-header">
-        <h1 className="page-title">Plan Intake</h1>
+        <h1 className="page-title">Training Plan Invitation</h1>
         <p className="page-description">
           Invite a member to fill in the training plan form. Their answers go to a private Google Sheet.
         </p>

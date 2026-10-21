@@ -46,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
       { id: 'c25k-admin', name: 'C25k Admin', icon: '🏃' },
       { id: 'league-admin-hub', name: 'League Admin', icon: '🏆' },
       { id: 'run-templates', name: 'Run Templates', icon: '🔁' },
-      { id: 'plan-intake-admin', name: 'Plan Intake', icon: '📝' }
+      { id: 'plan-intake-admin', name: 'Training Plan Invitation', icon: '📝' }
     )
   }
 
