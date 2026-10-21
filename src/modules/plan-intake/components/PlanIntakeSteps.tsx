@@ -18,7 +18,14 @@ import type {
 } from '../types';
 import { emptyBaseline, emptyCommitment, isUnder20, runDays } from '../services/planIntakeForm';
 import type { PlanIntakeErrors } from '../services/planIntakeForm';
-import { PlanIntakeDayPicker, PlanIntakeSelect, PlanIntakeTextArea, PlanIntakeTextField } from './PlanIntakeFields';
+import {
+  PLAN_INTAKE_SESSION_OPTIONS,
+  PlanIntakeDayPicker,
+  PlanIntakeSelect,
+  PlanIntakeTextArea,
+  PlanIntakeTextField,
+  PlanIntakeTimePicker,
+} from './PlanIntakeFields';
 import { PlanIntakeRoutineGrid } from './PlanIntakeRoutineGrid';
 
 export interface PlanIntakeStepProps {
@@ -27,7 +34,6 @@ export interface PlanIntakeStepProps {
   errors: PlanIntakeErrors;
 }
 
-const TIME_HINT = 'h:mm:ss or mm:ss, for example 1:45:00 or 24:30';
 const MAX_BASELINES = 3;
 const MAX_COMMITMENTS = 3;
 
@@ -64,13 +70,11 @@ export const PlanIntakeStepAbout: React.FC<PlanIntakeStepProps> = ({ form, updat
         <PlanIntakeTextField id="goal_race_date" label="Race date" type="date" value={form.goal_race_date}
           onChange={v => update({ goal_race_date: v })} error={errors.goal_race_date} />
       </div>
-      <div className="plan-intake__row">
-        <PlanIntakeTextField id="goal_target_time" label="Target time" value={form.goal_target_time}
-          onChange={v => update({ goal_target_time: v })} error={errors.goal_target_time} optional hint={TIME_HINT} maxLength={8} />
-        <PlanIntakeTextField id="goal_secondary" label="Secondary target time" value={form.goal_secondary}
-          onChange={v => update({ goal_secondary: v })} error={errors.goal_secondary} optional
-          hint="A fallback time if the day doesn't go to plan" maxLength={8} />
-      </div>
+      <PlanIntakeTimePicker id="goal_target_time" label="Target time" value={form.goal_target_time}
+        onChange={v => update({ goal_target_time: v })} error={errors.goal_target_time} optional />
+      <PlanIntakeTimePicker id="goal_secondary" label="Secondary target time" value={form.goal_secondary}
+        onChange={v => update({ goal_secondary: v })} error={errors.goal_secondary} optional
+        hint="A fallback time if the day doesn't go to plan" />
     </section>
   </>
 );
@@ -109,8 +113,8 @@ export const PlanIntakeStepFitness: React.FC<PlanIntakeStepProps> = ({ form, upd
               <PlanIntakeTextField id={`baseline${i}_date`} label="Date" type="date" value={b.date}
                 onChange={v => setBaseline(i, { date: v })} error={errors[`baseline${i}_date`]} />
             </div>
-            <PlanIntakeTextField id={`baseline${i}_time`} label="Finish time" value={b.time}
-              onChange={v => setBaseline(i, { time: v })} error={errors[`baseline${i}_time`]} hint={TIME_HINT} maxLength={8} />
+            <PlanIntakeTimePicker id={`baseline${i}_time`} label="Finish time" value={b.time}
+              onChange={v => setBaseline(i, { time: v })} error={errors[`baseline${i}_time`]} />
             <PlanIntakeTextField id={`baseline${i}_conditions`} label="Conditions" value={b.conditions}
               onChange={v => setBaseline(i, { conditions: v })} error={errors[`baseline${i}_conditions`]} optional
               placeholder="e.g. hilly, very hot, ran with a cold" maxLength={200} />
@@ -186,10 +190,10 @@ export const PlanIntakeStepWeek: React.FC<PlanIntakeStepProps> = ({ form, update
         onChange={v => update({ long_run_day: v })}
         options={PLAN_INTAKE_DAYS.map(d => ({ value: d, label: PLAN_INTAKE_DAY_NAMES[d] }))} optional />
       <div className="plan-intake__row">
-        <PlanIntakeTextField id="time_weekday" label="Time per session on a weekday (minutes)" value={form.time_weekday}
-          onChange={v => update({ time_weekday: v })} error={errors.time_weekday} optional inputMode="numeric" maxLength={3} />
-        <PlanIntakeTextField id="time_weekend" label="Time per session at the weekend (minutes)" value={form.time_weekend}
-          onChange={v => update({ time_weekend: v })} error={errors.time_weekend} optional inputMode="numeric" maxLength={3} />
+        <PlanIntakeSelect id="time_weekday" label="Time per session on a weekday" value={form.time_weekday}
+          onChange={v => update({ time_weekday: v })} options={PLAN_INTAKE_SESSION_OPTIONS} error={errors.time_weekday} optional />
+        <PlanIntakeSelect id="time_weekend" label="Time per session at the weekend" value={form.time_weekend}
+          onChange={v => update({ time_weekend: v })} options={PLAN_INTAKE_SESSION_OPTIONS} error={errors.time_weekend} optional />
       </div>
       <PlanIntakeDayPicker id="fixed_rest_days" label="Days you can never train" value={form.fixed_rest_days}
         onChange={days => update({ fixed_rest_days: days })} optional />
