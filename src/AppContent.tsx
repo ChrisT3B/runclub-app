@@ -31,6 +31,7 @@ import { LeagueAdminHubPage }      from './modules/leagues/pages/LeagueAdminHubP
 import { ParkrunImprovementReportPage } from './modules/leagues/pages/ParkrunImprovementReportPage';
 import { ParkrunExpiryReportPage } from './modules/leagues/pages/ParkrunExpiryReportPage';
 import { RunTemplatesManager } from './modules/admin/components/RunTemplatesManager';
+import { PlanIntakeAdminPage } from './modules/plan-intake/pages/PlanIntakeAdminPage';
 
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
@@ -218,6 +219,8 @@ export const AppContent: React.FC = () => {
         return <AdminRaceLeagueRacePage raceId={selectedRaceId ?? ''} onNavigate={handleNavigation} />;
       case 'run-templates':
         return <RunTemplatesManager onNavigate={handleNavigation} />;
+      case 'plan-intake-admin':
+        return <PlanIntakeAdminPage onNavigate={handleNavigation} />;
       default:
         console.log('⚠️ Unknown page, defaulting to DashboardContent. Page was:', currentPage);
         return <DashboardContent onNavigate={handleNavigation} />;

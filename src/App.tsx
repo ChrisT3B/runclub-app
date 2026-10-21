@@ -12,6 +12,7 @@ import { PrivacyPolicy } from './modules/auth/components/PrivacyPolicy';
 import { C25kRegisterForm } from './modules/auth/components/C25kRegisterForm';
 import { C25kClosedNotice } from './modules/c25k/components/C25kClosedNotice';
 import { C25K_ENABLED } from './modules/c25k/c25kConfig';
+import { PlanIntakeFormPage } from './modules/plan-intake/pages/PlanIntakeFormPage';
 import './styles/fonts.css';
 
 
@@ -55,6 +56,18 @@ function App() {
               } 
             />
             
+            {/* Plan intake form (invited athletes) */}
+            <Route
+              path="/plan-intake"
+              element={
+                <ProtectedRoute redirectPath={window.location.pathname}>
+                  <SessionSecurityWrapper>
+                    <PlanIntakeFormPage />
+                  </SessionSecurityWrapper>
+                </ProtectedRoute>
+              }
+            />
+
             {/* All other paths go to AppContent */}
             <Route 
               path="/*" 
