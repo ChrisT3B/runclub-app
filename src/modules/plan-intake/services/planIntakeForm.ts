@@ -1,6 +1,7 @@
 // Plan intake form: empty state, per-step validation, draft storage and conversion
 // to field-key answers. Rules mirror api/plan-intake.js, which validates again.
 
+import { addDays, format } from 'date-fns';
 import {
   PLAN_INTAKE_DAYS,
   PLAN_INTAKE_HEALTH_KEYS,
@@ -86,6 +87,10 @@ export function routineValue(day: PlanIntakeRoutineDay): string {
 
 const isFilled = (value: string) => value.trim() !== '';
 
+/** Today on this device as yyyy-mm-dd. */
+export const todayIso = () => format(new Date(), 'yyyy-MM-dd');
+export const tomorrowIso = () => format(addDays(new Date(), 1), 'yyyy-MM-dd');
+
 function validDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);
@@ -135,6 +140,9 @@ export function validateStep(step: PlanIntakeStepId, form: PlanIntakeFormState):
       required('goal_distance', form.goal_distance, 'Choose the race distance.');
       required('goal_race_date', form.goal_race_date, 'Enter the race date.');
       checkDate(errors, 'goal_race_date', form.goal_race_date);
+      if (!errors.goal_race_date && validDate(form.goal_race_date) && form.goal_race_date <= todayIso()) {
+        errors.goal_race_date = 'The race date must be in the future.';
+      }
       checkTime(errors, 'goal_target_time', form.goal_target_time);
       checkTime(errors, 'goal_secondary', form.goal_secondary);
       break;
@@ -149,6 +157,9 @@ export function validateStep(step: PlanIntakeStepId, form: PlanIntakeFormState):
           required(`${prefix}_time`, b.time, 'Enter your finish time.');
         }
         checkDate(errors, `${prefix}_date`, b.date);
+        if (!errors[`${prefix}_date`] && validDate(b.date) && b.date > todayIso()) {
+          errors[`${prefix}_date`] = "This date is in the future. Enter the date you ran it.";
+        }
         checkTime(errors, `${prefix}_time`, b.time);
         checkLength(errors, `${prefix}_conditions`, b.conditions, 200);
       });

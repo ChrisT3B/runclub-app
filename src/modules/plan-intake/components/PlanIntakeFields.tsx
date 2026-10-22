@@ -39,10 +39,13 @@ interface TextFieldProps {
   placeholder?: string;
   maxLength?: number;
   autoComplete?: string;
+  /** Earliest and latest dates the date picker offers, as yyyy-mm-dd */
+  min?: string;
+  max?: string;
 }
 
 export const PlanIntakeTextField: React.FC<TextFieldProps> = ({
-  id, label, value, onChange, hint, error, optional, type = 'text', inputMode, placeholder, maxLength, autoComplete,
+  id, label, value, onChange, hint, error, optional, type = 'text', inputMode, placeholder, maxLength, autoComplete, min, max,
 }) => (
   <FieldShell id={id} label={label} hint={hint} error={error} optional={optional}>
     <input
@@ -54,6 +57,8 @@ export const PlanIntakeTextField: React.FC<TextFieldProps> = ({
       inputMode={inputMode}
       placeholder={placeholder}
       maxLength={maxLength}
+      min={min}
+      max={max}
       autoComplete={autoComplete ?? 'off'}
       aria-invalid={error ? true : undefined}
       aria-describedby={describedBy(id, hint, error)}

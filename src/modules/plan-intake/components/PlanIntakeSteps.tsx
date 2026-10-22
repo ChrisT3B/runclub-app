@@ -16,7 +16,7 @@ import type {
   PlanIntakeFormState,
   PlanIntakeHoliday,
 } from '../types';
-import { emptyBaseline, emptyCommitment, isUnder20, runDays } from '../services/planIntakeForm';
+import { emptyBaseline, emptyCommitment, isUnder20, runDays, todayIso, tomorrowIso } from '../services/planIntakeForm';
 import type { PlanIntakeErrors } from '../services/planIntakeForm';
 import {
   PLAN_INTAKE_SESSION_OPTIONS,
@@ -68,7 +68,7 @@ export const PlanIntakeStepAbout: React.FC<PlanIntakeStepProps> = ({ form, updat
         <PlanIntakeSelect id="goal_distance" label="Distance" value={form.goal_distance}
           onChange={v => update({ goal_distance: v })} options={PLAN_INTAKE_DISTANCES} error={errors.goal_distance} />
         <PlanIntakeTextField id="goal_race_date" label="Race date" type="date" value={form.goal_race_date}
-          onChange={v => update({ goal_race_date: v })} error={errors.goal_race_date} />
+          onChange={v => update({ goal_race_date: v })} error={errors.goal_race_date} min={tomorrowIso()} />
       </div>
       <PlanIntakeTimePicker id="goal_target_time" label="Target time" value={form.goal_target_time}
         onChange={v => update({ goal_target_time: v })} error={errors.goal_target_time} optional />
@@ -111,7 +111,7 @@ export const PlanIntakeStepFitness: React.FC<PlanIntakeStepProps> = ({ form, upd
               <PlanIntakeSelect id={`baseline${i}_distance`} label="Distance" value={b.distance}
                 onChange={v => setBaseline(i, { distance: v })} options={PLAN_INTAKE_DISTANCES} error={errors[`baseline${i}_distance`]} />
               <PlanIntakeTextField id={`baseline${i}_date`} label="Date" type="date" value={b.date}
-                onChange={v => setBaseline(i, { date: v })} error={errors[`baseline${i}_date`]} />
+                onChange={v => setBaseline(i, { date: v })} error={errors[`baseline${i}_date`]} max={todayIso()} />
             </div>
             <PlanIntakeTimePicker id={`baseline${i}_time`} label="Finish time" value={b.time}
               onChange={v => setBaseline(i, { time: v })} error={errors[`baseline${i}_time`]} />

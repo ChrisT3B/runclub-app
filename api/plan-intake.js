@@ -447,6 +447,15 @@ function validateAnswers(input) {
 
   if (REQUIRED.some((key) => !clean[key])) return null;
 
+  // Goal race ahead, race results behind. One day of slack each way for UK vs UTC.
+  const dayMs = 24 * 60 * 60 * 1000;
+  const yesterday = new Date(Date.now() - dayMs).toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + dayMs).toISOString().slice(0, 10);
+  if (clean.goal_race_date <= yesterday) return null;
+  for (const n of [1, 2, 3]) {
+    if (clean[`baseline${n}_date`] && clean[`baseline${n}_date`] > tomorrow) return null;
+  }
+
   // Baselines and commitments are all-or-nothing rows
   for (const n of [2, 3]) {
     if (!rowComplete(clean, [`baseline${n}_distance`, `baseline${n}_date`, `baseline${n}_time`], [`baseline${n}_conditions`])) return null;
