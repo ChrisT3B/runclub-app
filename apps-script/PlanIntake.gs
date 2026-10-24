@@ -15,6 +15,9 @@
  *        FOLDER_ID      ID of the Drive folder for athlete sheets (from its URL, after /folders/)
  *        SHARED_SECRET  A long random string. Use the same value for PLAN_INTAKE_SHARED_SECRET in Vercel.
  *        NOTIFY_EMAIL   runalcester@gmail.com
+ *    - Optional fifth property:
+ *        PROPOSAL_URL   the Plan Proposal web app URL (ends in /exec). If set, each new sheet gets a
+ *                       "Build AI prompt for this athlete" link in Brief!A2 (template v8 or later).
  * 3. Run the function `authorise` once from the editor and accept the permissions
  *    (Drive, Sheets, send email). It also creates the "PlanIntake Log" sheet in the folder.
  * 4. Deploy > New deployment > type "Web app":
@@ -97,6 +100,10 @@ function doPost(e) {
 
     var skipped = writeAnswers_(copy.getId(), payload.answers);
     log_(submissionId, skipped.length ? 'created_with_skips' : 'created', skipped.join(','));
+
+    if (!writeProposalLink_(copy.getId(), props.getProperty('PROPOSAL_URL'))) {
+      log_(submissionId, 'link_skipped', '');
+    }
 
     try {
       sendNotification_(props.getProperty('NOTIFY_EMAIL'), payload.athleteName, payload.goalRace, copy.getUrl());
@@ -211,6 +218,24 @@ function writeAnswers_(spreadsheetId, answers) {
 
   SpreadsheetApp.flush();
   return skipped;
+}
+
+/**
+ * Puts a link to the Plan Proposal web app, already pointed at this sheet, in Brief!A2.
+ * Returns false (and changes nothing) if PROPOSAL_URL is not set or not a Google script URL,
+ * the sheet has no Brief tab, or writing fails. Never stops a submission.
+ */
+function writeProposalLink_(spreadsheetId, proposalUrl) {
+  var url = String(proposalUrl || '').trim();
+  if (!/^https:\/\/script\.google\.com\/[A-Za-z0-9_\/.\-]+\/exec$/.test(url)) return false;
+  try {
+    var brief = SpreadsheetApp.openById(spreadsheetId).getSheetByName('Brief');
+    if (!brief) return false;
+    brief.getRange('A2').setFormula('=HYPERLINK("' + url + '?sheet=' + spreadsheetId + '","Build AI prompt for this athlete")');
+    return true;
+  } catch (err) {
+    return false;
+  }
 }
 
 /** Plain text that cannot run as a formula. */
