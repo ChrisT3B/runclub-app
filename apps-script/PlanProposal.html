@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <style>
+    :root {
+      --red: #b91c1c;
+      --red-light: #fef2f2;
+      --amber: #92400e;
+      --amber-light: #fffbeb;
+      --green: #166534;
+      --green-light: #f0fdf4;
+      --grey-50: #f9fafb;
+      --grey-200: #e5e7eb;
+      --grey-300: #d1d5db;
+      --grey-600: #4b5563;
+      --grey-900: #111827;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 1.45;
+      color: var(--grey-900);
+      background: var(--grey-50);
+    }
+    main { max-width: 760px; margin: 0 auto; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .intro { color: var(--grey-600); margin: 0 0 20px; }
+    section {
+      background: #fff;
+      border: 1px solid var(--grey-200);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    h2 { font-size: 18px; margin: 0 0 12px; }
+    label { display: block; font-weight: 600; margin: 12px 0 4px; }
+    .hint { font-size: 14px; color: var(--grey-600); margin: 0 0 6px; }
+    .hint--warn { color: var(--red); font-weight: 600; }
+    input, textarea {
+      width: 100%;
+      font: inherit;
+      font-size: 16px;
+      padding: 10px 12px;
+      border: 1px solid var(--grey-300);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+    textarea { min-height: 96px; resize: vertical; }
+    textarea.big { min-height: 220px; font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
+    button {
+      min-height: 44px;
+      padding: 10px 18px;
+      margin-top: 12px;
+      font: inherit;
+      font-weight: 600;
+      border-radius: var(--radius);
+      border: 1px solid var(--red);
+      background: var(--red);
+      color: #fff;
+      cursor: pointer;
+    }
+    button.secondary { background: #fff; color: var(--grey-900); border-color: var(--grey-300); }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .box { border-radius: var(--radius); padding: 10px 12px; margin-top: 12px; font-size: 15px; }
+    .box ul { margin: 4px 0 0; padding-left: 20px; }
+    .box--error { background: var(--red-light); border: 1px solid var(--red); color: var(--red); }
+    .box--warn { background: var(--amber-light); border: 1px solid var(--amber); color: var(--amber); }
+    .box--ok { background: var(--green-light); border: 1px solid var(--green); color: var(--green); }
+    .box--info { background: var(--grey-50); border: 1px solid var(--grey-200); color: var(--grey-600); }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Plan Proposal</h1>
+  <p class="intro">Build a prompt from an athlete sheet, paste it into an AI, then import the reply for review. Nothing is written to the Plan tab.</p>
+
+  <section>
+    <h2>1. Build the prompt</h2>
+
+    <label for="sheet">Athlete sheet link or ID</label>
+    <input id="sheet" type="text" autocomplete="off" placeholder="https://docs.google.com/spreadsheets/d/..." value="<?= sheet ?>">
+    <p class="hint">Your direction comes from the athlete sheet's Brief tab. Fill it in before building.</p>
+
+    <button id="build" type="button">Build prompt</button>
+
+    <div id="build-errors" class="box box--error hidden"></div>
+    <div id="build-warnings" class="box box--warn hidden"></div>
+    <div id="build-info" class="box box--info hidden"></div>
+
+    <div id="prompt-wrap" class="hidden">
+      <label for="prompt">Prompt (read it before copying)</label>
+      <textarea id="prompt" class="big" readonly></textarea>
+      <button id="copy" type="button" class="secondary">Copy prompt</button>
+      <span id="copied" class="hint hidden">Copied.</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Import the AI's reply</h2>
+    <p class="hint">Uses the sheet in step 1. Paste the whole reply, including the code block.</p>
+
+    <label for="reply">AI reply</label>
+    <textarea id="reply" class="big"></textarea>
+
+    <button id="import" type="button">Validate and import</button>
+
+    <div id="import-errors" class="box box--error hidden"></div>
+    <div id="import-ok" class="box box--ok hidden"></div>
+  </section>
+</main>
+
+<script>
+  var $ = function (id) { return document.getElementById(id); };
+
+  function show(id, show) { $(id).classList.toggle('hidden', !show); }
+
+  /** Fills a box with a heading and a list, using text only. */
+  function fillList(id, heading, items) {
+    var box = $(id);
+    box.textContent = '';
+    if (!items || items.length === 0) { show(id, false); return; }
+    if (heading) {
+      var strong = document.createElement('strong');
+      strong.textContent = heading;
+      box.appendChild(strong);
+    }
+    var ul = document.createElement('ul');
+    items.forEach(function (item) {
+      var li = document.createElement('li');
+      li.textContent = item;
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    show(id, true);
+  }
+
+  function busy(button, isBusy, label) {
+    button.disabled = isBusy;
+    button.textContent = label;
+  }
+
+  $('build').addEventListener('click', function () {
+    var button = $('build');
+    busy(button, true, 'Building...');
+    ['build-errors', 'build-warnings', 'build-info', 'prompt-wrap', 'copied'].forEach(function (id) { show(id, false); });
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        busy(button, false, 'Build prompt');
+        if (!res.ok) { fillList('build-errors', 'Not built:', res.errors); return; }
+        fillList('build-warnings', 'Check before copying:', res.warnings);
+        fillList('build-info', 'Filled in from: ' + res.filled.join(', '), res.notes);
+        $('prompt').value = res.prompt;
+        show('prompt-wrap', true);
+      })
+      .withFailureHandler(function () {
+        busy(button, false, 'Build prompt');
+        fillList('build-errors', 'Not built:', ['Something went wrong. Try again.']);
+      })
+      .buildPrompt({ sheet: $('sheet').value });
+  });
+
+  $('copy').addEventListener('click', function () {
+    var text = $('prompt').value;
+    var done = function () { show('copied', true); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { $('prompt').select(); document.execCommand('copy'); done(); });
+    } else {
+      $('prompt').select();
+      document.execCommand('copy');
+      done();
+    }
+  });
+
+  $('import').addEventListener('click', function () {
+    var button = $('import');
+    busy(button, true, 'Checking...');
+    show('import-errors', false);
+    show('import-ok', false);
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        busy(button, false, 'Validate and import');
+        if (!res.ok) { fillList('import-errors', 'Nothing was written. Fix these and paste again:', res.errors); return; }
+        var s = res.summary;
+        var lines = [
+          s.weeks + ' weeks written to "' + s.tabs[0] + '" and "' + s.tabs[1] + '".',
+          s.departures === 0
+            ? 'No departures from your brief.'
+            : s.departures + ' departure(s) from your brief: read these first in "' + s.tabs[1] + '".',
+          'Goal view: ' + s.goalView.replace('_', ' ') + '.',
+          s.answers + ' answer(s) to your questions and ' + s.assumptions + ' assumption(s) in "' + s.tabs[1] + '".',
+          'In the Plan tab, paste C:K, then U:W, as values. Never paste over O to T.'
+        ];
+        if (s.expectedFrom === 'sheet') lines.push('No prompt was built for this sheet in this tool, so the week count was checked against the sheet as it is now.');
+        fillList('import-ok', 'Imported.', lines);
+      })
+      .withFailureHandler(function () {
+        busy(button, false, 'Validate and import');
+        fillList('import-errors', 'Nothing was written:', ['Something went wrong. Try again.']);
+      })
+      .importProposal({ sheet: $('sheet').value, reply: $('reply').value });
+  });
+</script>
+</body>
+</html>
