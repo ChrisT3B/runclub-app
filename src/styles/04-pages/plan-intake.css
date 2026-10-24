@@ -1,0 +1,735 @@
+/* ==============================================
+   PLAN INTAKE
+   Athlete form (PlanIntakeFormPage, /plan-intake) and
+   admin screen (PlanIntakeAdminPage, plan-intake-admin).
+   Mobile first: 16px inputs (no iOS zoom), 44px tap targets.
+   ============================================== */
+
+/* ---------- Shared inputs ---------- */
+
+.form-input.plan-intake__input {
+  font-size: var(--font-base);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  background: white;
+}
+
+.form-input.plan-intake__textarea {
+  min-height: 88px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+/* mobile-responsive.css lifts focused inputs on short screens; that
+   jumps the page while typing in a long form, so cancel it here */
+.plan-intake input:focus,
+.plan-intake select:focus,
+.plan-intake textarea:focus,
+.plan-intake-admin input:focus {
+  transform: none;
+}
+
+/* ---------- Athlete form: layout ---------- */
+
+.plan-intake {
+  max-width: 720px;
+}
+
+.plan-intake__status {
+  color: var(--gray-600);
+  padding: var(--space-10) var(--space-4);
+  text-align: center;
+}
+
+.plan-intake__panel {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-6);
+  font-size: var(--font-base);
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+.plan-intake__panel p {
+  margin: 0 0 var(--space-4);
+}
+
+.plan-intake__panel--done {
+  text-align: center;
+}
+
+.plan-intake__done-icon {
+  color: var(--success-color);
+  margin-bottom: var(--space-3);
+}
+
+.plan-intake__done-text {
+  font-size: var(--font-lg);
+  font-weight: var(--font-semibold);
+  color: var(--gray-900);
+}
+
+/* ---------- Progress ---------- */
+
+.plan-intake__progress {
+  margin-bottom: var(--space-5);
+}
+
+.plan-intake__progress-text {
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+  margin-bottom: var(--space-2);
+}
+
+.plan-intake__progress-bar {
+  display: block;
+  width: 100%;
+  height: 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--gray-200);
+  overflow: hidden;
+  appearance: none;
+}
+
+.plan-intake__progress-bar::-webkit-progress-bar {
+  background: var(--gray-200);
+  border-radius: var(--radius-sm);
+}
+
+.plan-intake__progress-bar::-webkit-progress-value {
+  background: var(--red-primary);
+  border-radius: var(--radius-sm);
+}
+
+.plan-intake__progress-bar::-moz-progress-bar {
+  background: var(--red-primary);
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Form body ---------- */
+
+.plan-intake__form {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+}
+
+.plan-intake__step-title {
+  font-size: var(--font-xl);
+  font-weight: var(--font-semibold);
+  color: var(--gray-900);
+  margin: 0 0 var(--space-4);
+}
+
+.plan-intake__section {
+  margin-bottom: var(--space-6);
+}
+
+.plan-intake__section:last-of-type {
+  margin-bottom: var(--space-4);
+}
+
+.plan-intake__section-title {
+  font-size: var(--font-lg);
+  font-weight: var(--font-semibold);
+  color: var(--gray-800);
+  margin: 0 0 var(--space-3);
+}
+
+.plan-intake__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 var(--space-4);
+}
+
+.plan-intake__group {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  background: var(--gray-50);
+}
+
+.plan-intake__group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.plan-intake__group-title {
+  font-size: var(--font-base);
+  font-weight: var(--font-semibold);
+  color: var(--gray-800);
+  margin: 0 0 var(--space-3);
+}
+
+.plan-intake__group-head .plan-intake__group-title {
+  margin: 0;
+}
+
+/* ---------- Fields ---------- */
+
+.plan-intake__field {
+  margin-bottom: var(--space-4);
+  min-width: 0;
+}
+
+.plan-intake__fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 var(--space-4);
+  min-width: 0;
+}
+
+.plan-intake__label {
+  display: block;
+  font-size: var(--font-base);
+  font-weight: var(--font-medium);
+  color: var(--gray-800);
+  margin-bottom: var(--space-1);
+  padding: 0;
+}
+
+.plan-intake__optional {
+  font-weight: var(--font-normal);
+  color: var(--gray-500);
+  font-size: var(--font-sm);
+}
+
+.plan-intake__hint {
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+  margin: 0 0 var(--space-2);
+  line-height: 1.4;
+}
+
+.plan-intake__error {
+  color: var(--red-primary);
+  font-size: var(--font-sm);
+  margin: var(--space-1) 0 0;
+}
+
+.plan-intake__field--error .form-input {
+  border-color: var(--red-primary);
+}
+
+/* Checkboxes: the whole label is the tap target */
+.plan-intake__check,
+.plan-intake__day {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  background: white;
+  font-size: var(--font-base);
+  color: var(--gray-800);
+  cursor: pointer;
+}
+
+.plan-intake__checkbox {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--red-primary);
+}
+
+.plan-intake__days {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.plan-intake__day {
+  justify-content: center;
+  padding: 0 var(--space-2);
+}
+
+/* ---------- Time picker: hrs, min, sec drop-downs ---------- */
+
+.plan-intake__time {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  max-width: 360px;
+}
+
+.plan-intake__time-part {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.plan-intake__time-unit {
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+  text-align: center;
+}
+
+/* ---------- Weekly routine grid: one card per day ---------- */
+
+.plan-intake-routine__days {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+.plan-intake-routine__day {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  background: var(--gray-50);
+}
+
+.plan-intake-routine__day--error {
+  border-color: var(--red-primary);
+}
+
+.plan-intake-routine__day-name {
+  font-weight: var(--font-semibold);
+  color: var(--gray-900);
+  margin-bottom: var(--space-2);
+}
+
+.plan-intake-routine__options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.plan-intake-routine__options .plan-intake__check {
+  justify-content: center;
+  padding: 0 var(--space-1);
+  font-size: var(--font-sm);
+}
+
+.plan-intake-routine__detail-label {
+  display: block;
+  font-size: var(--font-sm);
+  color: var(--gray-700);
+  margin-bottom: var(--space-1);
+}
+
+/* ---------- Notices and messages ---------- */
+
+.plan-intake__notice {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-sm);
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+.plan-intake__notice--info {
+  background: var(--info-light);
+  border-color: var(--info-color);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.plan-intake__notice-close {
+  flex-shrink: 0;
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid var(--info-color);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--gray-800);
+  font-size: var(--font-sm);
+  cursor: pointer;
+}
+
+.plan-intake__summary-error {
+  background: var(--red-light);
+  border: 1px solid var(--red-primary);
+  color: var(--red-primary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-sm);
+}
+
+.plan-intake__consent {
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+}
+
+.plan-intake__consent--error {
+  border-color: var(--red-primary);
+}
+
+.plan-intake__check--consent {
+  display: flex;
+  align-items: flex-start;
+  border: none;
+  padding: var(--space-2) 0;
+  line-height: 1.5;
+}
+
+.plan-intake__check--consent .plan-intake__checkbox {
+  margin-top: 2px;
+}
+
+/* ---------- Buttons ---------- */
+
+.plan-intake__button,
+.plan-intake__add,
+.plan-intake__remove,
+.plan-intake-review__edit,
+.plan-intake-admin__send,
+.plan-intake-admin__action,
+.plan-intake-admin__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plan-intake__button,
+.plan-intake__add,
+.plan-intake__remove {
+  min-height: 44px;
+  gap: var(--space-2);
+  font-size: var(--font-base);
+}
+
+.plan-intake__remove {
+  padding: 0 var(--space-3);
+}
+
+.plan-intake__nav {
+  display: flex;
+  gap: var(--space-3);
+  border-top: 1px solid var(--gray-200);
+  padding-top: var(--space-4);
+}
+
+.plan-intake__button--main {
+  flex: 1;
+}
+
+/* ---------- Review ---------- */
+
+.plan-intake-review__section {
+  border-bottom: 1px solid var(--gray-200);
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.plan-intake-review__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.plan-intake-review__head .plan-intake__section-title {
+  margin: 0;
+}
+
+.plan-intake-review__edit {
+  min-height: 44px;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.plan-intake-review__empty {
+  color: var(--gray-500);
+  font-size: var(--font-sm);
+  margin: var(--space-2) 0 0;
+}
+
+.plan-intake-review__list {
+  margin: var(--space-2) 0 0;
+}
+
+.plan-intake-review__item {
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--gray-100);
+}
+
+.plan-intake-review__item dt {
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+}
+
+.plan-intake-review__item dd {
+  margin: 0;
+  color: var(--gray-900);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Admin screen ---------- */
+
+.plan-intake-admin {
+  max-width: 900px;
+}
+
+.plan-intake-admin__card {
+  margin-bottom: var(--space-6);
+}
+
+.plan-intake-admin__message {
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-5);
+  border: 1px solid;
+}
+
+.plan-intake-admin__message--error {
+  background: var(--red-light);
+  border-color: var(--red-primary);
+  color: var(--red-primary);
+}
+
+.plan-intake-admin__message--success {
+  background: var(--gray-50);
+  border-color: var(--success-color);
+  color: var(--gray-800);
+}
+
+.plan-intake-admin__empty {
+  color: var(--gray-600);
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+
+.plan-intake-admin__search {
+  position: relative;
+}
+
+.plan-intake-admin__search-icon {
+  position: absolute;
+  left: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-500);
+  pointer-events: none;
+}
+
+.form-input.plan-intake-admin__search-input {
+  padding-left: var(--space-10);
+}
+
+.plan-intake-admin__results {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.plan-intake-admin__results li + li {
+  border-top: 1px solid var(--gray-100);
+}
+
+.plan-intake-admin__result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan-intake-admin__result:hover:not(:disabled) {
+  background: var(--gray-50);
+}
+
+.plan-intake-admin__result:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.plan-intake-admin__result-note {
+  font-size: var(--font-xs);
+  color: var(--warning-text);
+}
+
+.plan-intake-admin__no-results {
+  padding: var(--space-3);
+  color: var(--gray-600);
+}
+
+.plan-intake-admin__selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.plan-intake-admin__selected-text,
+.plan-intake-admin__item-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.plan-intake-admin__name {
+  font-weight: var(--font-semibold);
+  color: var(--gray-900);
+}
+
+.plan-intake-admin__email {
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+  overflow-wrap: anywhere;
+}
+
+.plan-intake-admin__icon-btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.plan-intake-admin__send {
+  min-height: 44px;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.plan-intake-admin__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.plan-intake-admin__item {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.plan-intake-admin__item + .plan-intake-admin__item {
+  margin-top: var(--space-3);
+}
+
+.plan-intake-admin__item-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.plan-intake-admin__status {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-xl);
+  font-size: var(--font-xs);
+  font-weight: var(--font-medium);
+  border: 1px solid;
+}
+
+.plan-intake-admin__status--info {
+  background: var(--info-light);
+  border-color: var(--info-color);
+  color: var(--gray-800);
+}
+
+.plan-intake-admin__status--success {
+  background: white;
+  border-color: var(--success-color);
+  color: var(--gray-800);
+}
+
+.plan-intake-admin__status--warning {
+  background: white;
+  border-color: var(--warning-color);
+  color: var(--warning-text);
+}
+
+.plan-intake-admin__status--danger {
+  background: var(--red-light);
+  border-color: var(--danger-color);
+  color: var(--red-primary);
+}
+
+.plan-intake-admin__status--muted {
+  background: var(--gray-100);
+  border-color: var(--gray-300);
+  color: var(--gray-600);
+}
+
+.plan-intake-admin__dates {
+  display: flex;
+  gap: var(--space-6);
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-sm);
+}
+
+.plan-intake-admin__dates dt {
+  color: var(--gray-500);
+}
+
+.plan-intake-admin__dates dd {
+  margin: 0;
+  color: var(--gray-800);
+}
+
+.plan-intake-admin__item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.plan-intake-admin__action {
+  min-height: 44px;
+  gap: var(--space-2);
+}
+
+/* ---------- Wider screens ---------- */
+
+@media (min-width: 600px) {
+  .plan-intake__row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .plan-intake__days {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .plan-intake__form {
+    padding: var(--space-6);
+  }
+
+  .plan-intake-admin__send {
+    width: auto;
+  }
+}
+
+@media (min-width: 900px) {
+  .plan-intake-routine__days {
+    grid-template-columns: 1fr 1fr;
+  }
+}

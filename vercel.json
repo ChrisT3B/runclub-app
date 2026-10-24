@@ -5,6 +5,11 @@
       "destination": "/index.html"
     }
   ],
+  "functions": {
+    "api/plan-intake.js": {
+      "maxDuration": 30
+    }
+  },
   "crons": [{
     "path": "/api/lirf-reminder",
     "schedule": "0 9 * * 5"
