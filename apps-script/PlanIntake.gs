@@ -18,6 +18,8 @@
  *    - Optional fifth property:
  *        PROPOSAL_URL   the Plan Proposal web app URL (ends in /exec). If set, each new sheet gets a
  *                       "Build AI prompt for this athlete" link in Brief!A2 (template v8 or later).
+ *    Each new sheet also gets starting values the coach can change: Brief "First week starts" =
+ *    the Monday after the submission, and Paces!B8 "Display units" = the athlete's preferred units.
  * 3. Run the function `authorise` once from the editor and accept the permissions
  *    (Drive, Sheets, send email). It also creates the "PlanIntake Log" sheet in the folder.
  * 4. Deploy > New deployment > type "Web app":
@@ -103,6 +105,10 @@ function doPost(e) {
 
     if (!writeProposalLink_(copy.getId(), props.getProperty('PROPOSAL_URL'))) {
       log_(submissionId, 'link_skipped', '');
+    }
+
+    if (!writeSheetDefaults_(copy.getId(), payload.answers.units, new Date())) {
+      log_(submissionId, 'defaults_skipped', '');
     }
 
     try {
@@ -236,6 +242,62 @@ function writeProposalLink_(spreadsheetId, proposalUrl) {
   } catch (err) {
     return false;
   }
+}
+
+/**
+ * Starting values the coach can change: Brief "First week starts" = the Monday after the submission
+ * (London time), and Paces!B8 "Display units" = the athlete's preferred units. Only fills a start date
+ * that is empty. Returns false if either could not be written. Never stops a submission.
+ */
+function writeSheetDefaults_(spreadsheetId, units, now) {
+  var ok = true;
+  var ss;
+  try {
+    ss = SpreadsheetApp.openById(spreadsheetId);
+  } catch (err) {
+    return false;
+  }
+
+  try {
+    var brief = ss.getSheetByName('Brief');
+    var startRow = brief ? findRowByLabel_(brief, 'First week starts') : 0;
+    if (!startRow) {
+      ok = false;
+    } else if (brief.getRange(startRow, 2).getValue() === '') {
+      brief.getRange(startRow, 2).setValue(nextMonday_(now));
+    }
+  } catch (err) {
+    ok = false;
+  }
+
+  try {
+    var paces = ss.getSheetByName('Paces');
+    var labelOk = paces && /Display units/i.test(String(paces.getRange('A8').getValue()));
+    if (labelOk && (units === 'km' || units === 'mile')) paces.getRange('B8').setValue(units);
+    else ok = false;
+  } catch (err) {
+    ok = false;
+  }
+
+  return ok;
+}
+
+/** Row number (1-based) whose column A is exactly the label, or 0. */
+function findRowByLabel_(sheet, label) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 1) return 0;
+  var values = sheet.getRange(1, 1, lastRow, 1).getValues();
+  for (var r = 0; r < values.length; r++) {
+    if (String(values[r][0]).trim() === label) return r + 1;
+  }
+  return 0;
+}
+
+/** The Monday after `now` in London (a week later if `now` is a Monday), at midnight in the script's time zone. */
+function nextMonday_(now) {
+  var parts = Utilities.formatDate(now, 'Europe/London', 'yyyy-MM-dd-u').split('-');
+  var dayOfWeek = Number(parts[3]); // 1 = Monday ... 7 = Sunday
+  return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]) + (8 - dayOfWeek));
 }
 
 /** Plain text that cannot run as a formula. */
