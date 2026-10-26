@@ -79,7 +79,7 @@
 <body>
 <main>
   <h1>Plan Proposal</h1>
-  <p class="intro">Build a prompt from an athlete sheet, paste it into an AI, then import the reply for review. Nothing is written to the Plan tab.</p>
+  <p class="intro">Build a prompt from an athlete sheet, paste it into an AI, import the reply for review, accept it into the Plan tab, then publish the athlete's plan.</p>
 
   <section>
     <h2>1. Build the prompt</h2>
@@ -128,6 +128,16 @@
       <button id="accept-no" type="button" class="secondary">Cancel</button>
     </div>
     <div id="accept-ok" class="box box--ok hidden"></div>
+  </section>
+
+  <section>
+    <h2>4. Publish the athlete plan</h2>
+    <p class="hint">Make your final edits in the Plan tab and in column C of the Athlete summary tab first. Publish builds the athlete's plan from the Athlete view and the Athlete summary only, values only, in the published plans folder, with a PDF next to it. Publishing again updates the same file, so the athlete's link does not change.</p>
+
+    <button id="publish" type="button">Publish</button>
+
+    <div id="publish-errors" class="box box--error hidden"></div>
+    <div id="publish-ok" class="box box--ok hidden"></div>
   </section>
 </main>
 
@@ -244,6 +254,44 @@
   $('accept-no').addEventListener('click', function () {
     show('accept-confirm', false);
     fillList('accept-ok', 'Cancelled.', ['Nothing was changed.']);
+  });
+
+  /** A box with a heading, lines of text and links, built with text nodes only. */
+  function fillLinks(id, heading, lines, links) {
+    fillList(id, heading, lines);
+    var box = $(id);
+    links.forEach(function (link) {
+      var p = document.createElement('p');
+      var a = document.createElement('a');
+      a.href = link.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = link.label;
+      p.appendChild(a);
+      box.appendChild(p);
+    });
+  }
+
+  $('publish').addEventListener('click', function () {
+    var button = $('publish');
+    busy(button, true, 'Publishing...');
+    show('publish-errors', false);
+    show('publish-ok', false);
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        busy(button, false, 'Publish');
+        if (!res.ok) { fillList('publish-errors', 'Not published:', res.errors); return; }
+        fillLinks('publish-ok', res.first ? 'Published.' : 'Updated.', [
+          '"' + res.name + '": ' + res.weeks + ' week(s) and ' + res.sections + ' summary section(s).',
+          'Anyone with the link can view it. Check it, and the PDF, before sending.'
+        ], [{ label: 'Open the published plan', url: res.url }, { label: 'Open the PDF', url: res.pdfUrl }]);
+      })
+      .withFailureHandler(function () {
+        busy(button, false, 'Publish');
+        fillList('publish-errors', 'Not published:', ['Something went wrong. Try again.']);
+      })
+      .publishPlan({ sheet: $('sheet').value });
   });
 
   $('import').addEventListener('click', function () {
