@@ -197,6 +197,7 @@
             : s.departures + ' departure(s) from your brief: read these first in "' + s.tabs[1] + '".',
           'Goal view: ' + s.goalView.replace('_', ' ') + '.',
           s.answers + ' answer(s) to your questions and ' + s.assumptions + ' assumption(s) in "' + s.tabs[1] + '".',
+          '"' + s.tabs[2] + '" drafted for the athlete' + (s.summaryKept > 0 ? ': ' + s.summaryKept + ' row(s) kept your edited wording in column C.' : '. Edit column C before publishing.'),
           'In the Plan tab, paste C:K, then U:W, as values. Never paste over O to T.'
         ];
         if (s.expectedFrom === 'sheet') lines.push('No prompt was built for this sheet in this tool, so the week count was checked against the sheet as it is now.');

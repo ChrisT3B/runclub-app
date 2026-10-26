@@ -36,8 +36,9 @@
  * "Brief" tab (the coach's sections and plan settings, template v8 or later). Never the Athlete tab,
  * never the Plan tab. Plan Intake writes a link on each sheet's Brief tab that opens this page with
  * the sheet already filled in (?sheet=<id>).
- * Writes only: the "AI proposal" and "AI rationale" tabs of the athlete sheet, and the
- * "PlanProposal Log" sheet in the athlete folder. Never the Plan tab.
+ * Writes only: the "AI proposal", "AI rationale" and "Athlete summary" tabs of the athlete sheet,
+ * and the "PlanProposal Log" sheet in the athlete folder. Never the Plan tab. In the Athlete summary
+ * tab, the coach's column C is only filled where it is empty, so re-importing never overwrites it.
  * No AI service is called. There is no API key and no secret.
  * The log holds time, sheet ID, action, prompt version and a result code. Never answers or reply text.
  */
@@ -48,6 +49,7 @@ var TAB_LISTS = 'Lists';
 var TAB_BRIEF = 'Brief';
 var TAB_PROPOSAL = 'AI proposal';
 var TAB_RATIONALE = 'AI rationale';
+var TAB_SUMMARY = 'Athlete summary';
 var LOG_SHEET_NAME = 'PlanProposal Log';
 var PROMPT_FILE = 'PlanProposalPrompt';
 var BUILD_KEY_PREFIX = 'build_';
@@ -75,8 +77,13 @@ var DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturd
 // Word limits from the prompt's output shape (v3)
 var WORD_LIMITS = {
   follows_brief: 80, goal_view_reason: 60, phase_rationale: 60, short: 40, answer: 60,
-  note_for_athlete: 40, coach_note: 40, rationale: 60
+  note_for_athlete: 40, coach_note: 40, rationale: 60,
+  summary_intro: 80, summary_goal: 60, summary_phase: 40, summary_paces: 60, summary_point: 25
 };
+var MAX_KEY_POINTS = 5;
+
+// Athlete summary tab rows (column A labels). Publish reads column C by these labels.
+var SUMMARY_ROWS = ['About your plan', 'Your goal', 'How the plan is built', 'Using your paces', 'Key points', 'A note from your coach'];
 
 // Brief tab (template v8): sections found by their exact column A text. A section with a
 // defaultText may be left to the AI; the others are Coach specifies or None.
@@ -230,12 +237,14 @@ function importProposal(input) {
     var stamp = Utilities.formatDate(new Date(), 'Europe/London', 'd MMM yyyy HH:mm');
     writeProposalTab_(ss, result.clean, version, stamp, expected);
     writeRationaleTab_(ss, result.clean, version, stamp);
+    var summaryKept = writeSummaryTab_(ss, result.clean.athleteSummary, version, stamp);
 
     log_(sheetId, 'import', version, 'ok');
     return {
       ok: true,
       summary: {
-        tabs: [TAB_PROPOSAL, TAB_RATIONALE],
+        tabs: [TAB_PROPOSAL, TAB_RATIONALE, TAB_SUMMARY],
+        summaryKept: summaryKept,
         weeks: result.clean.weeks.length,
         departures: result.clean.plan.departures.length,
         goalView: result.clean.plan.goal_view,
@@ -708,7 +717,48 @@ function validateReply_(data, ctx) {
 
   if (raceCount > 1) err('Race appears ' + raceCount + ' times. It is allowed at most once, in the last week.');
 
-  return { errors: errors, clean: { plan: plan, weeks: weeks } };
+  // ---- athlete summary (shown to the runner after the coach edits it) ----
+  var athleteSummary = null;
+  var a = data.athlete_summary;
+  if (!isObject_(a)) {
+    err('"athlete_summary" is missing or not an object. Build the prompt again with this tool (prompt v4) and ask the AI again.');
+  } else {
+    var healthCheck = function (where, text) {
+      var hit = HEALTH_PATTERN.exec(String(text || ''));
+      if (hit) err(where + ' contains the health word "' + hit[1] + '". Edit it and paste again.');
+    };
+    athleteSummary = {
+      intro: checkText_(err, 'athlete_summary intro', a.intro, WORD_LIMITS.summary_intro, true),
+      goal: checkText_(err, 'athlete_summary goal', a.goal, WORD_LIMITS.summary_goal, true),
+      phases: checkObjects_(err, 'athlete_summary phases', a.phases, function (o, where) {
+        healthCheck(where, o.what_it_is_for);
+        var match = plan.phases.some(function (ph) { return ph.name === o.name && ph.weeks === String(o.weeks || '').trim(); });
+        if (!match) err(where + ': "' + clip_(o.name) + '" weeks ' + clip_(o.weeks) + ' does not match a phase in "plan".');
+        return {
+          name: guard_(String(o.name || '')),
+          weeks: checkText_(err, where + ' weeks', o.weeks, null, true),
+          what: checkText_(err, where + ' what_it_is_for', o.what_it_is_for, WORD_LIMITS.summary_phase, true)
+        };
+      }),
+      paces: checkText_(err, 'athlete_summary paces', a.paces, WORD_LIMITS.summary_paces, true),
+      keyPoints: checkList_(err, 'athlete_summary key_points', a.key_points)
+    };
+    healthCheck('athlete_summary intro', a.intro);
+    healthCheck('athlete_summary goal', a.goal);
+    healthCheck('athlete_summary paces', a.paces);
+    if (Array.isArray(a.key_points)) {
+      if (a.key_points.length > MAX_KEY_POINTS) err('athlete_summary key_points has ' + a.key_points.length + ' items. The most allowed is ' + MAX_KEY_POINTS + '.');
+      a.key_points.forEach(function (k, i) {
+        var where = 'athlete_summary key_points item ' + (i + 1);
+        healthCheck(where, k);
+        var words = String(k || '').trim().split(/\s+/).filter(Boolean).length;
+        if (words > WORD_LIMITS.summary_point) err(where + ' has ' + words + ' words. The limit is ' + WORD_LIMITS.summary_point + '.');
+      });
+    }
+    if (athleteSummary.phases.length === 0) err('athlete_summary phases is empty.');
+  }
+
+  return { errors: errors, clean: { plan: plan, weeks: weeks, athleteSummary: athleteSummary } };
 }
 
 /** One day string: token, then a quantity (or Rest alone). */
@@ -938,6 +988,62 @@ function writeRationaleTab_(ss, clean, version, stamp) {
   sheet.setColumnWidth(2, 640);
 }
 
+/**
+ * The athlete-facing summary: A section, B AI draft, C the coach's final words (what Publish uses).
+ * Column C is kept wherever it already has text, so re-importing never overwrites the coach's edits.
+ * Returns how many rows kept the coach's existing words.
+ */
+function writeSummaryTab_(ss, summary, version, stamp) {
+  var existing = {};
+  var sheet = ss.getSheetByName(TAB_SUMMARY);
+  if (sheet) {
+    sheet.getDataRange().getValues().forEach(function (row) {
+      var label = String(row[0] || '').trim();
+      if (SUMMARY_ROWS.indexOf(label) !== -1 && String(row[2] || '').trim() !== '') existing[label] = String(row[2]);
+    });
+  }
+
+  var drafts = {
+    'About your plan': summary.intro,
+    'Your goal': summary.goal,
+    'How the plan is built': summary.phases.map(function (ph) { return ph.name + ' (weeks ' + ph.weeks + '): ' + ph.what; }).join('\n'),
+    'Using your paces': summary.paces,
+    'Key points': summary.keyPoints.map(function (k) { return '- ' + k; }).join('\n'),
+    'A note from your coach': ''
+  };
+
+  var kept = 0;
+  var rows = SUMMARY_ROWS.map(function (label) {
+    var final = existing[label];
+    if (final !== undefined) kept++;
+    return [label, drafts[label], final !== undefined ? final : drafts[label]];
+  });
+
+  sheet = freshTab_(ss, TAB_SUMMARY);
+  var top = [
+    ['Athlete summary', '', ''],
+    ['Prompt version', version, ''],
+    ['Imported', stamp, ''],
+    ['', 'Column C is what the athlete sees. Edit it before publishing. Re-importing refreshes column B only; column C keeps your words.', ''],
+    ['Section', 'AI draft', 'Final (shown to the athlete)']
+  ];
+  var all = top.concat(rows);
+  var range = sheet.getRange(1, 1, all.length, 3);
+  range.setNumberFormat('@');
+  range.setValues(all);
+  range.setWrap(true).setVerticalAlignment('top');
+  sheet.getRange(1, 1).setFontWeight('bold').setFontSize(14);
+  sheet.getRange(5, 1, 1, 3).setFontWeight('bold').setBackground('#e5e7eb');
+  sheet.getRange(6, 1, rows.length, 1).setFontWeight('bold');
+  sheet.getRange(6, 2, rows.length, 1).setFontColor('#6b7280');
+  sheet.getRange(6, 3, rows.length, 1).setBackground('#fff9c4').setFontColor('#1d4ed8');
+  sheet.setColumnWidth(1, 200);
+  sheet.setColumnWidth(2, 420);
+  sheet.setColumnWidth(3, 420);
+  sheet.setFrozenRows(5);
+  return kept;
+}
+
 // ---------------------------------------------------------------------------
 // Prompt file, dates, log
 // ---------------------------------------------------------------------------
@@ -1037,6 +1143,13 @@ function testValidator() {
         answers_to_questions: [{ question: 'Long run on Saturday?', answer: 'Yes in week 2.' }],
         assumptions: ['Runs on Sundays']
       },
+      athlete_summary: {
+        intro: 'A short plan to get you to race day ready.',
+        goal: 'Your goal is achievable with steady work.',
+        phases: [{ name: 'Build', weeks: '1-2', what_it_is_for: 'Builds your volume.' }, { name: 'Race', weeks: '3', what_it_is_for: 'Fresh for race day.' }],
+        paces: 'Start at the slow end of each range.',
+        key_points: ['Rest days matter.', 'Warm up before tempo days.']
+      },
       weeks: [
         { week: 1, phase: 'Build', days: ['Rest', 'Easy 8km', 'Rest', 'Tempo 3x10min', 'Rest', 'Cross 45min', 'Long 16km'], target_total_km: 32, note_for_athlete: 'Nice start.', coach_note: 'Watch volume.', rationale: 'Based on current volume.', based_on: ['weekly_volume'] },
         { week: 2, phase: 'Build', days: ['Rest', 'Easy 8km', 'Rest', 'Interval 6x400m', 'Strength 60min', 'Rest', 'Long 18km'], target_total_km: 34, note_for_athlete: 'Keep going.', coach_note: '', rationale: 'Steady build.', based_on: ['days_available', 'time_weekday'] },
@@ -1084,6 +1197,12 @@ function testValidator() {
     ['Missing choice for an AI section', (function () { var r = good(); r.plan.choices.pop(); return r; })(), 'no entry for "How to apply the paces"'],
     ['No answers when a question was asked', (function () { var r = good(); r.plan.answers_to_questions = []; return r; })(), 'answers_to_questions is empty'],
     ['follows_brief over 80 words', (function () { var r = good(); r.plan.follows_brief = new Array(90).join('word '); return r; })(), 'The limit is 80'],
+    ['v3 reply (no athlete summary) is refused', (function () { var r = good(); delete r.athlete_summary; return r; })(), '"athlete_summary" is missing'],
+    ['Health word in the athlete summary', (function () { var r = good(); r.athlete_summary.paces = 'Go easy on the knee.'; return r; })(), 'athlete_summary paces contains the health word "knee"'],
+    ['Health word in a key point', (function () { var r = good(); r.athlete_summary.key_points.push('Stretch the calf.'); return r; })(), 'key_points item 3 contains the health word "calf"'],
+    ['Too many key points', (function () { var r = good(); r.athlete_summary.key_points = ['a', 'b', 'c', 'd', 'e', 'f']; return r; })(), 'The most allowed is 5'],
+    ['Summary phase not in the plan', (function () { var r = good(); r.athlete_summary.phases[0].weeks = '1-3'; return r; })(), 'does not match a phase in "plan"'],
+    ['Summary intro over 80 words', (function () { var r = good(); r.athlete_summary.intro = new Array(90).join('word '); return r; })(), 'The limit is 80'],
     ['v2 reply is refused', (function () { var r = good(); delete r.plan.follows_brief; delete r.plan.choices; delete r.plan.departures; r.plan.key_insight = 'v2'; return r; })(), 'follows_brief is missing'],
     ['Bad goal view', (function () { var r = good(); r.plan.goal_view = 'easy'; return r; })(), 'goal_view must be one of'],
     ['Missing plan', { weeks: [] }, '"plan" is missing']
