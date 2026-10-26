@@ -733,10 +733,12 @@ function checkDay_(value, tokens, units) {
     return { error: '"' + text + '": the quantity must be like 8km, 5mi, 25min, 3x10min or 6x400m.', token: token, value: '' };
   }
 
-  if (units === 'mile' && m[2] === 'km') {
+  // The race day keeps the race's own distance (Race 10km for a miles runner is fine); other sessions match the runner
+  var unitsApply = token !== 'Race';
+  if (unitsApply && units === 'mile' && m[2] === 'km') {
     return { error: '"' + text + '" is in km but this runner uses miles. Write it in mi.', token: token, value: '' };
   }
-  if (units === 'km' && m[2] === 'mi') {
+  if (unitsApply && units === 'km' && m[2] === 'mi') {
     return { error: '"' + text + '" is in miles but this runner uses km. Write it in km.', token: token, value: '' };
   }
 
@@ -1060,6 +1062,8 @@ function testValidator() {
     ['27mi is inside the limit', milesWithDay(1, 6, 'Long 27mi'), null, milesCtx],
     ['km for a miles runner is refused', milesWithDay(0, 1, 'Easy 8km'), 'this runner uses miles', milesCtx],
     ['mi for a km runner is refused', withDay(0, 1, 'Easy 5mi'), 'this runner uses km'],
+    ['Race in km for a miles runner is accepted', milesWithDay(2, 6, 'Race 10km'), null, milesCtx],
+    ['Race in miles for a km runner is accepted', withDay(2, 6, 'Race 13.1mi'), null],
     ['Not JSON', 'Here is your plan: {', 'not valid JSON'],
     ['Jog is not a token', withDay(0, 1, 'Jog 8km'), 'Week 1, Tuesday'],
     ['Missing space', withDay(0, 1, 'Easy8km'), 'does not start with an allowed word'],
