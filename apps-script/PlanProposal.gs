@@ -37,8 +37,11 @@
  * never the Plan tab. Plan Intake writes a link on each sheet's Brief tab that opens this page with
  * the sheet already filled in (?sheet=<id>).
  * Writes only: the "AI proposal", "AI rationale" and "Athlete summary" tabs of the athlete sheet,
- * and the "PlanProposal Log" sheet in the athlete folder. Never the Plan tab. In the Athlete summary
- * tab, the coach's column C is only filled where it is empty, so re-importing never overwrites it.
+ * and the "PlanProposal Log" sheet in the athlete folder. In the Athlete summary tab, the coach's
+ * column C is only filled where it is empty, so re-importing never overwrites it.
+ * The Plan tab is written only by "Accept into Plan", which the coach runs and confirms: it writes
+ * C:K (phase, 7, days) and U:W (notes, rationale) in rows 10 to 33, never a row marked Locked in
+ * column S, and never column B, O to T or the helper columns.
  * No AI service is called. There is no API key and no secret.
  * The log holds time, sheet ID, action, prompt version and a result code. Never answers or reply text.
  */
@@ -50,6 +53,10 @@ var TAB_BRIEF = 'Brief';
 var TAB_PROPOSAL = 'AI proposal';
 var TAB_RATIONALE = 'AI rationale';
 var TAB_SUMMARY = 'Athlete summary';
+var TAB_PLAN = 'Plan';
+var PLAN_FIRST_ROW = 10;
+var PLAN_LAST_ROW = 33;
+var ACCEPT_KEY_PREFIX = 'accept_';
 var LOG_SHEET_NAME = 'PlanProposal Log';
 var PROMPT_FILE = 'PlanProposalPrompt';
 var BUILD_KEY_PREFIX = 'build_';
@@ -256,6 +263,171 @@ function importProposal(input) {
   } catch (err) {
     return failure_(err, sheetId, 'import', version);
   }
+}
+
+/**
+ * Step 3. input: { sheet: link or ID, confirm: true once the coach has seen the preview }
+ * Copies the AI proposal into the Plan tab. If the Plan already has sessions and confirm is not set,
+ * returns { ok, needsConfirm, preview } and writes nothing.
+ * Returns { ok, written, locked, cleared, edited } after writing.
+ */
+function acceptProposal(input) {
+  var version = promptVersion_(readPromptTemplate_());
+  var sheetId = '';
+  try {
+    sheetId = parseSheetId_(input && input.sheet);
+    var ss = openAthleteSheet_(sheetId);
+    var proposal = readProposal_(ss);
+    var plan = ss.getSheetByName(TAB_PLAN);
+    if (!plan) throw new UserError_('This sheet has no "' + TAB_PLAN + '" tab.', 'no_plan');
+    checkPlanLayout_(plan);
+
+    var rows = PLAN_LAST_ROW - PLAN_FIRST_ROW + 1;
+    if (proposal.length > rows) {
+      throw new UserError_('The proposal has ' + proposal.length + ' weeks but the Plan tab has room for ' + rows + '.', 'too_many_weeks');
+    }
+    var weeksNow = weeksFromSheet_(ss);
+    if (weeksNow !== proposal.length) {
+      throw new UserError_('The proposal has ' + proposal.length + ' weeks, but the Brief start date and the race date now give ' + weeksNow +
+        '. Build the prompt and import again before accepting.', 'weeks_changed');
+    }
+
+    var sessions = plan.getRange(PLAN_FIRST_ROW, 3, rows, 9).getValues(); // C:K
+    var notes = plan.getRange(PLAN_FIRST_ROW, 21, rows, 3).getValues();   // U:W
+    var locks = plan.getRange(PLAN_FIRST_ROW, 19, rows, 1).getDisplayValues(); // S
+    var props = PropertiesService.getScriptProperties();
+    var saved = props.getProperty(ACCEPT_KEY_PREFIX + sheetId);
+    var snapshot = saved ? JSON.parse(saved) : null;
+
+    var locked = [];
+    var replace = [];
+    var edited = [];
+    var clear = [];
+    for (var i = 0; i < rows; i++) {
+      var isLocked = /^yes$/i.test(String(locks[i][0]).trim());
+      var content = rowHasContent_(sessions[i], notes[i]);
+      if (i < proposal.length) {
+        if (isLocked) { locked.push(i + 1); continue; }
+        if (content) {
+          replace.push(i + 1);
+          if (!snapshot || snapshot[i] !== rowHash_(sessions[i], notes[i])) edited.push(i + 1);
+        }
+      } else if (content) {
+        if (isLocked) locked.push(i + 1);
+        else clear.push(i + 1);
+      }
+    }
+
+    if (!(input && input.confirm) && (replace.length || clear.length)) {
+      return {
+        ok: true,
+        needsConfirm: true,
+        preview: { weeks: proposal.length, replace: replace, edited: edited, locked: locked, clear: clear }
+      };
+    }
+
+    var newSnapshot = [];
+    var written = 0;
+    for (var r = 0; r < rows; r++) {
+      newSnapshot.push(snapshot && snapshot[r] !== undefined ? snapshot[r] : null);
+      var row = PLAN_FIRST_ROW + r;
+      if (locked.indexOf(r + 1) !== -1) continue;
+      if (r < proposal.length) {
+        var w = proposal[r];
+        var c = [w.phase, 7].concat(w.days).map(guardValue_);
+        var u = [w.note, w.coach, w.rationale].map(guardValue_);
+        plan.getRange(row, 3).setNumberFormat('@');
+        plan.getRange(row, 5, 1, 7).setNumberFormat('@');
+        plan.getRange(row, 21, 1, 3).setNumberFormat('@');
+        plan.getRange(row, 3, 1, 9).setValues([c]);
+        plan.getRange(row, 21, 1, 3).setValues([u]);
+        newSnapshot[r] = rowHash_(c, u);
+        written++;
+      } else if (clear.indexOf(r + 1) !== -1) {
+        plan.getRange(row, 3).setValue('');            // C: phase (D keeps its 7)
+        plan.getRange(row, 5, 1, 7).setValues([['', '', '', '', '', '', '']]); // E:K
+        plan.getRange(row, 21, 1, 3).setValues([['', '', '']]);               // U:W
+        newSnapshot[r] = null;
+      }
+    }
+    props.setProperty(ACCEPT_KEY_PREFIX + sheetId, JSON.stringify(newSnapshot));
+    SpreadsheetApp.flush();
+
+    log_(sheetId, 'accept', version, 'ok');
+    return { ok: true, written: written, locked: locked, cleared: clear, edited: edited };
+  } catch (err) {
+    return failure_(err, sheetId, 'accept', version);
+  }
+}
+
+/** The weeks on the AI proposal tab, as written by the import. */
+function readProposal_(ss) {
+  var sheet = ss.getSheetByName(TAB_PROPOSAL);
+  if (!sheet) throw new UserError_('There is no "' + TAB_PROPOSAL + '" tab yet. Import an AI reply first.', 'no_proposal');
+  var values = sheet.getDataRange().getValues();
+  var header = values[8] || [];
+  if (String(header[0]).trim() !== 'Week' || String(header[2]).trim() !== 'Phase' || String(header[4]).trim() !== 'Day 1' ||
+      String(header[20]).trim() !== 'Note for athlete' || String(header[22]).trim() !== 'Rationale') {
+    throw new UserError_('The "' + TAB_PROPOSAL + '" tab is not in the expected layout. Import the AI reply again.', 'proposal_layout');
+  }
+  var weeks = [];
+  for (var r = 9; r < values.length && String(values[r][0]).trim() !== ''; r++) {
+    var v = values[r];
+    if (Number(v[0]) !== weeks.length + 1) {
+      throw new UserError_('The "' + TAB_PROPOSAL + '" tab has a gap in its week numbers at row ' + (r + 1) + '. Import the AI reply again.', 'proposal_gap');
+    }
+    weeks.push({
+      phase: String(v[2]),
+      days: [v[4], v[5], v[6], v[7], v[8], v[9], v[10]].map(String),
+      note: String(v[20]),
+      coach: String(v[21]),
+      rationale: String(v[22])
+    });
+  }
+  if (weeks.length === 0) throw new UserError_('The "' + TAB_PROPOSAL + '" tab has no weeks. Import an AI reply first.', 'proposal_empty');
+  return weeks;
+}
+
+/** The Plan tab must have the template's headers where Accept writes. */
+function checkPlanLayout_(plan) {
+  var h = plan.getRange(9, 1, 1, 23).getDisplayValues()[0];
+  var ok = h[2] === 'Phase' && h[4] === 'Day 1' && h[10] === 'Day 7' && h[18] === 'Locked' && h[20] === 'Note for athlete';
+  if (!ok) throw new UserError_('The Plan tab is not in the template layout (row 9 headers). Nothing was changed.', 'plan_layout');
+}
+
+/** Weeks from the Brief start date to the week containing the race, as the prompt would ask for now. */
+function weeksFromSheet_(ss) {
+  var brief = ss.getSheetByName(TAB_BRIEF);
+  if (!brief) throw new UserError_('This sheet has no "' + TAB_BRIEF + '" tab.', 'no_brief');
+  var values = brief.getDataRange().getValues();
+  var display = brief.getDataRange().getDisplayValues();
+  var start = null;
+  for (var r = 0; r < values.length; r++) {
+    if (String(values[r][0]).trim() !== SETTING.start) continue;
+    var raw = values[r][1];
+    if (Object.prototype.toString.call(raw) === '[object Date]' && !isNaN(raw.getTime())) start = utcDate_(raw.getFullYear(), raw.getMonth(), raw.getDate());
+    else start = parseDate_(display[r][1]);
+  }
+  if (!start) throw new UserError_('Set "' + SETTING.start + '" on the Brief tab.', 'no_start');
+  var race = parseDate_(readAiCopy_(ss).find(LABEL_RACE_DATE));
+  if (!race) throw new UserError_('No valid "' + LABEL_RACE_DATE + '" in the AI copy tab.', 'no_race_date');
+  return weeksBetween_(start, race);
+}
+
+function rowHasContent_(sessions, notes) {
+  var cells = [sessions[0]].concat(sessions.slice(2), notes); // skip D (the 7)
+  return cells.some(function (v) { return String(v).trim() !== ''; });
+}
+
+/** A short fingerprint of a Plan row (C:K and U:W), so later Accepts can spot hand edits. Stores no content. */
+function rowHash_(sessions, notes) {
+  var text = sessions.concat(notes).map(function (v) { return String(v).replace(/^'/, '').trim(); }).join('\u001f');
+  return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8)).slice(0, 16);
+}
+
+/** Strings that cannot run as formulas in the Plan tab. Numbers pass through. */
+function guardValue_(v) {
+  return typeof v === 'string' ? guard_(v.replace(/^'/, '')) : v;
 }
 
 // ---------------------------------------------------------------------------
@@ -903,7 +1075,7 @@ function writeProposalTab_(ss, clean, version, stamp, expected) {
     ['This is an AI proposal for the coach to review. Nothing here is live until copied into the Plan tab.'],
     ['Column Z holds the AI\'s estimated weekly totals. The Plan tab recalculates the real totals.'],
     ['Plan start ' + expected.planStart + ', race day ' + expected.raceDate + ', ' + clean.weeks.length + ' weeks.'],
-    ['Paste C:K, then U:W, into the Plan tab as values. Never paste over O to T.']
+    ['Use "Accept into Plan" on the Plan Proposal page to copy this into the Plan tab. Locked rows are never changed.']
   ];
   sheet.getRange(1, 1, top.length, WIDTH).setValues(top.map(row));
 
