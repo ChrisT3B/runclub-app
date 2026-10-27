@@ -513,7 +513,14 @@ function fillPublished_(pub, view, summary) {
   named('AP_RACE_DATE').setValue(text(view.raceDate));
   named('AP_TARGET').setValue(text(view.target));
   named('AP_UPDATED').setValue(Utilities.formatDate(new Date(), 'Europe/London', 'd MMM yyyy'));
-  named('AP_PACES').setValues(view.paces.map(function (row) { return row.map(text); }));
+  if (pub.getRangeByName('AP_PACE')) {
+    // Wider layout: zone, pace (B:D merged) and effort (E:J merged) are separate ranges
+    named('AP_PACE_ZONE').setValues(view.paces.map(function (row) { return [text(row[0])]; }));
+    named('AP_PACE').setValues(view.paces.map(function (row) { return [text(row[1])]; }));
+    named('AP_EFFORT').setValues(view.paces.map(function (row) { return [text(row[2])]; }));
+  } else {
+    named('AP_PACES').setValues(view.paces.map(function (row) { return row.map(text); }));
+  }
   named('AP_NOTE').setValue(text(view.note));
 
   var weeksRange = named('AP_WEEKS');

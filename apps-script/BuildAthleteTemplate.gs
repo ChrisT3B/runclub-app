@@ -14,12 +14,13 @@
  *
  * WHAT IT MAKES: a Google Sheet "Athlete Plan Template" in the folder that holds the athlete
  * sheets folder (your Training Plans folder), with two tabs:
- *   "Your plan"        header (athlete, race, race date, target time, last updated), paces with
- *                      effort, the warm-up note, and the week table (24 rows).
+ *   "Your plan"        header (athlete, race, race date, target time, last updated; values in B:F
+ *                      merged), paces with effort (merged cells, so the week table keeps its widths),
+ *                      the warm-up note, and the week table (24 rows).
  *   "About your plan"  the six Athlete summary sections.
  * Named ranges (the anchors Publish uses):
  *   AP_ATHLETE, AP_RACE, AP_RACE_DATE, AP_TARGET, AP_UPDATED   one cell each
- *   AP_PACES     4 rows x 3 columns: zone, pace, effort
+ *   AP_PACE_ZONE, AP_PACE, AP_EFFORT   4 rows x 1 each: zone (A), pace (B:D merged), effort (E:J merged)
  *   AP_NOTE      the warm-up and how-to note
  *   AP_WEEKS     24 rows x 12 columns: Week, Starts, Phase, Mon..Sun, Weekly total, Note
  *   AP_SUMMARY   6 rows x 2 columns: section, text
@@ -68,20 +69,28 @@ function buildPlanTab_(ss, sheet) {
   sheet.getRange(2, 1, header.length, 2).setValues(header);
   sheet.getRange(2, 1, header.length, 1).setFontWeight('bold').setFontColor(AP_GREY);
   sheet.getRange(2, 2, header.length, 1).setFontWeight('bold');
-  sheet.getRange('B2:B6').setNumberFormat('@');
+  for (var hr = 2; hr <= 6; hr++) sheet.getRange(hr, 2, 1, 5).merge().setHorizontalAlignment('left').setNumberFormat('@');
   ['AP_ATHLETE', 'AP_RACE', 'AP_RACE_DATE', 'AP_TARGET', 'AP_UPDATED'].forEach(function (name, i) {
     ss.setNamedRange(name, sheet.getRange(2 + i, 2));
   });
   sheet.getRange('B2').setFontSize(14);
 
-  // Paces
-  sheet.getRange(8, 1, 1, 3).setValues([['Your paces', 'Pace', 'Effort']])
-    .setFontWeight('bold').setBackground(AP_NAVY).setFontColor('#ffffff');
-  var paces = sheet.getRange(9, 1, 4, 3);
-  paces.setValues([['Easy', '', ''], ['Steady', '', ''], ['Tempo', '', ''], ['Interval', '', '']]).setNumberFormat('@');
-  sheet.getRange(9, 1, 4, 1).setFontWeight('bold');
-  paces.setBorder(true, true, true, true, true, true, AP_LINE, SpreadsheetApp.BorderStyle.SOLID);
-  ss.setNamedRange('AP_PACES', paces);
+  // Paces: Zone (A) | Pace (B:D merged) | Effort (E:J merged), so long text fits without
+  // changing the week table's column widths
+  sheet.getRange(8, 1).setValue('Your paces');
+  sheet.getRange(8, 2, 1, 3).merge().setValue('Pace');
+  sheet.getRange(8, 5, 1, 6).merge().setValue('Effort');
+  sheet.getRange(8, 1, 1, 10).setFontWeight('bold').setBackground(AP_NAVY).setFontColor('#ffffff');
+  sheet.getRange(9, 1, 4, 1).setValues([['Easy'], ['Steady'], ['Tempo'], ['Interval']]).setFontWeight('bold');
+  for (var pr = 9; pr <= 12; pr++) {
+    sheet.getRange(pr, 2, 1, 3).merge();
+    sheet.getRange(pr, 5, 1, 6).merge();
+  }
+  sheet.getRange(9, 1, 4, 10).setNumberFormat('@').setWrap(true).setVerticalAlignment('top');
+  sheet.getRange(8, 1, 5, 10).setBorder(true, true, true, true, true, true, AP_LINE, SpreadsheetApp.BorderStyle.SOLID);
+  ss.setNamedRange('AP_PACE_ZONE', sheet.getRange(9, 1, 4, 1));
+  ss.setNamedRange('AP_PACE', sheet.getRange(9, 2, 4, 1));
+  ss.setNamedRange('AP_EFFORT', sheet.getRange(9, 5, 4, 1));
 
   // Note (warm-up and how to use the paces)
   var note = sheet.getRange(14, 1, 1, cols).merge();
