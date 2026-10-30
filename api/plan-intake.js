@@ -26,6 +26,7 @@ const COMMIT_TIMES = ['Morning', 'Evening', 'All day'];
 const COMMIT_FREQS = ['Weekly', 'Fortnightly', 'Variable'];
 const ROUTINE_OPTIONS = ['Rest', 'Run', 'Cross-train', 'Run and cross-train'];
 const UNITS = ['km', 'mile'];
+const BRACE_PRIORITIES = ['Race it', 'Run it as training', 'Coach to advise'];
 
 const SHORT_TEXT = 200;
 const LONG_TEXT = 2000;
@@ -45,6 +46,7 @@ const FIELDS = {
   goal_race_date: { kind: 'date' },
   goal_target_time: { kind: 'time' },
   goal_secondary: { kind: 'time' },
+  brace_note: text(500),
 
   weekly_volume: number(0, 500),
   runs_per_week: number(0, 14, true),
@@ -90,6 +92,11 @@ for (const n of [1, 2, 3]) {
   FIELDS[`baseline${n}_date`] = { kind: 'date' };
   FIELDS[`baseline${n}_time`] = { kind: 'time' };
   FIELDS[`baseline${n}_conditions`] = text(SHORT_TEXT);
+
+  FIELDS[`brace${n}_name`] = text(100);
+  FIELDS[`brace${n}_date`] = { kind: 'date' };
+  FIELDS[`brace${n}_distance`] = oneOf(DISTANCES);
+  FIELDS[`brace${n}_priority`] = oneOf(BRACE_PRIORITIES);
 
   FIELDS[`commit${n}_type`] = oneOf(COMMIT_TYPES);
   FIELDS[`commit${n}_day`] = { kind: 'days' };
@@ -459,6 +466,11 @@ function validateAnswers(input) {
   // Baselines and commitments are all-or-nothing rows
   for (const n of [2, 3]) {
     if (!rowComplete(clean, [`baseline${n}_distance`, `baseline${n}_date`, `baseline${n}_time`], [`baseline${n}_conditions`])) return null;
+  }
+  // B races: any date before the goal race (past dates are allowed; the plan ignores them)
+  for (const n of [1, 2, 3]) {
+    if (!rowComplete(clean, [`brace${n}_date`, `brace${n}_distance`, `brace${n}_priority`], [`brace${n}_name`])) return null;
+    if (clean[`brace${n}_date`] && clean[`brace${n}_date`] >= clean.goal_race_date) return null;
   }
   for (const n of [1, 2, 3]) {
     if (!rowComplete(clean, [`commit${n}_type`, `commit${n}_day`, `commit${n}_time`, `commit${n}_freq`])) return null;

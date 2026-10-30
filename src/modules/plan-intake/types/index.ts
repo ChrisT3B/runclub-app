@@ -38,6 +38,11 @@ export const PLAN_INTAKE_DAY_NAMES: Record<PlanIntakeDay, string> = {
 export const PLAN_INTAKE_COMMIT_TYPES = [
   'Shift work', 'Contact or team sport', 'Physical job', 'Desk or office work', 'Other',
 ] as const;
+/** How the athlete wants to run a B race (a race other than the goal race). */
+export const PLAN_INTAKE_BRACE_PRIORITIES = ['Race it', 'Run it as training', 'Coach to advise'] as const;
+export const PLAN_INTAKE_MAX_BRACES = 3;
+export const PLAN_INTAKE_BRACE_NOTE_MAX = 500;
+
 export const PLAN_INTAKE_COMMIT_TIMES = ['Morning', 'Evening', 'All day'] as const;
 export const PLAN_INTAKE_COMMIT_FREQS = ['Weekly', 'Fortnightly', 'Variable'] as const;
 
@@ -74,6 +79,13 @@ export interface PlanIntakeCommitment {
   freq: string;
 }
 
+export interface PlanIntakeBRace {
+  name: string;
+  date: string;
+  distance: string;
+  priority: string;
+}
+
 export interface PlanIntakeHoliday {
   from: string;
   to: string;
@@ -94,6 +106,8 @@ export interface PlanIntakeFormState {
   goal_race_date: string;
   goal_target_time: string;
   goal_secondary: string;
+  b_races: PlanIntakeBRace[];
+  brace_note: string;
 
   // Fitness
   baselines: PlanIntakeBaseline[];

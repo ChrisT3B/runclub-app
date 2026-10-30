@@ -1,22 +1,27 @@
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
+import { format, parseISO, subDays } from 'date-fns';
 import {
+  PLAN_INTAKE_BRACE_NOTE_MAX,
+  PLAN_INTAKE_BRACE_PRIORITIES,
   PLAN_INTAKE_COMMIT_FREQS,
   PLAN_INTAKE_COMMIT_TIMES,
   PLAN_INTAKE_COMMIT_TYPES,
   PLAN_INTAKE_DAYS,
   PLAN_INTAKE_DAY_NAMES,
   PLAN_INTAKE_DISTANCES,
+  PLAN_INTAKE_MAX_BRACES,
   PLAN_INTAKE_UNITS,
 } from '../types';
 import type {
+  PlanIntakeBRace,
   PlanIntakeBaseline,
   PlanIntakeCommitment,
   PlanIntakeDay,
   PlanIntakeFormState,
   PlanIntakeHoliday,
 } from '../types';
-import { emptyBaseline, emptyCommitment, isUnder20, runDays, todayIso, tomorrowIso } from '../services/planIntakeForm';
+import { emptyBRace, emptyBaseline, emptyCommitment, isUnder20, runDays, todayIso, tomorrowIso } from '../services/planIntakeForm';
 import type { PlanIntakeErrors } from '../services/planIntakeForm';
 import {
   PLAN_INTAKE_SESSION_OPTIONS,
@@ -43,41 +48,94 @@ const unitLabel = (form: PlanIntakeFormState) => (form.units === 'mile' ? 'miles
 // 1. You and your goal
 // ---------------------------------------------------------------------------
 
-export const PlanIntakeStepAbout: React.FC<PlanIntakeStepProps> = ({ form, update, errors }) => (
-  <>
-    <section className="plan-intake__section">
-      <h3 className="plan-intake__section-title">About you</h3>
-      <PlanIntakeTextField id="full_name" label="Your name" value={form.full_name} onChange={v => update({ full_name: v })}
-        error={errors.full_name} maxLength={100} autoComplete="name" />
-      <div className="plan-intake__row">
-        <PlanIntakeTextField id="age" label="Age" value={form.age} onChange={v => update({ age: v })}
-          error={errors.age} optional inputMode="numeric" maxLength={3} />
-        <PlanIntakeSelect id="sex" label="Sex" value={form.sex} onChange={v => update({ sex: v })}
-          options={['Female', 'Male', 'Prefer not to say']} optional />
-      </div>
-      <PlanIntakeSelect id="units" label="Preferred units" value={form.units} onChange={v => update({ units: v })}
-        options={PLAN_INTAKE_UNITS} error={errors.units} />
-    </section>
+/** The day before the goal race as yyyy-mm-dd, or undefined if the goal date isn't set yet. */
+const dayBeforeGoal = (form: PlanIntakeFormState) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(form.goal_race_date) ? format(subDays(parseISO(form.goal_race_date), 1), 'yyyy-MM-dd') : undefined;
 
-    <section className="plan-intake__section">
-      <h3 className="plan-intake__section-title">Your goal race</h3>
-      <PlanIntakeTextField id="goal_race_name" label="Race name" value={form.goal_race_name}
-        onChange={v => update({ goal_race_name: v })} error={errors.goal_race_name} maxLength={100}
-        placeholder="e.g. Stratford Half Marathon" />
-      <div className="plan-intake__row">
-        <PlanIntakeSelect id="goal_distance" label="Distance" value={form.goal_distance}
-          onChange={v => update({ goal_distance: v })} options={PLAN_INTAKE_DISTANCES} error={errors.goal_distance} />
-        <PlanIntakeTextField id="goal_race_date" label="Race date" type="date" value={form.goal_race_date}
-          onChange={v => update({ goal_race_date: v })} error={errors.goal_race_date} min={tomorrowIso()} />
-      </div>
-      <PlanIntakeTimePicker id="goal_target_time" label="Target time" value={form.goal_target_time}
-        onChange={v => update({ goal_target_time: v })} error={errors.goal_target_time} optional />
-      <PlanIntakeTimePicker id="goal_secondary" label="Secondary target time" value={form.goal_secondary}
-        onChange={v => update({ goal_secondary: v })} error={errors.goal_secondary} optional
-        hint="A fallback time if the day doesn't go to plan" />
-    </section>
-  </>
-);
+export const PlanIntakeStepAbout: React.FC<PlanIntakeStepProps> = ({ form, update, errors }) => {
+  const setBRace = (index: number, patch: Partial<PlanIntakeBRace>) =>
+    update({ b_races: form.b_races.map((r, i) => (i === index ? { ...r, ...patch } : r)) });
+
+  return (
+    <>
+      <section className="plan-intake__section">
+        <h3 className="plan-intake__section-title">About you</h3>
+        <PlanIntakeTextField id="full_name" label="Your name" value={form.full_name} onChange={v => update({ full_name: v })}
+          error={errors.full_name} maxLength={100} autoComplete="name" />
+        <div className="plan-intake__row">
+          <PlanIntakeTextField id="age" label="Age" value={form.age} onChange={v => update({ age: v })}
+            error={errors.age} optional inputMode="numeric" maxLength={3} />
+          <PlanIntakeSelect id="sex" label="Sex" value={form.sex} onChange={v => update({ sex: v })}
+            options={['Female', 'Male', 'Prefer not to say']} optional />
+        </div>
+        <PlanIntakeSelect id="units" label="Preferred units" value={form.units} onChange={v => update({ units: v })}
+          options={PLAN_INTAKE_UNITS} error={errors.units} />
+      </section>
+
+      <section className="plan-intake__section">
+        <h3 className="plan-intake__section-title">Your goal race</h3>
+        <PlanIntakeTextField id="goal_race_name" label="Race name" value={form.goal_race_name}
+          onChange={v => update({ goal_race_name: v })} error={errors.goal_race_name} maxLength={100}
+          placeholder="e.g. Stratford Half Marathon" />
+        <div className="plan-intake__row">
+          <PlanIntakeSelect id="goal_distance" label="Distance" value={form.goal_distance}
+            onChange={v => update({ goal_distance: v })} options={PLAN_INTAKE_DISTANCES} error={errors.goal_distance} />
+          <PlanIntakeTextField id="goal_race_date" label="Race date" type="date" value={form.goal_race_date}
+            onChange={v => update({ goal_race_date: v })} error={errors.goal_race_date} min={tomorrowIso()} />
+        </div>
+        <PlanIntakeTimePicker id="goal_target_time" label="Target time" value={form.goal_target_time}
+          onChange={v => update({ goal_target_time: v })} error={errors.goal_target_time} optional />
+        <PlanIntakeTimePicker id="goal_secondary" label="Secondary target time" value={form.goal_secondary}
+          onChange={v => update({ goal_secondary: v })} error={errors.goal_secondary} optional
+          hint="A fallback time if the day doesn't go to plan" />
+      </section>
+
+      <section className="plan-intake__section">
+        <h3 className="plan-intake__section-title">B races (optional)</h3>
+        <p className="plan-intake__hint">
+          Other races you have entered or plan to enter before your goal race. Your coach will build them
+          into your plan, either as a progress check or as a controlled training run. Add up to three.
+        </p>
+
+        {form.b_races.map((r, i) => (
+          <div key={i} className="plan-intake__group">
+            <div className="plan-intake__group-head">
+              <h4 className="plan-intake__group-title">B race {i + 1}</h4>
+              <button type="button" className="btn btn-secondary plan-intake__remove"
+                onClick={() => update({ b_races: form.b_races.filter((_, j) => j !== i) })}>
+                <Trash2 size={16} /> Remove
+              </button>
+            </div>
+            <PlanIntakeTextField id={`brace${i}_name`} label="Race name" value={r.name}
+              onChange={v => setBRace(i, { name: v })} error={errors[`brace${i}_name`]} optional maxLength={100}
+              placeholder="e.g. Alcester 10k" />
+            <div className="plan-intake__row">
+              <PlanIntakeSelect id={`brace${i}_distance`} label="Distance" value={r.distance}
+                onChange={v => setBRace(i, { distance: v })} options={PLAN_INTAKE_DISTANCES} error={errors[`brace${i}_distance`]} />
+              <PlanIntakeTextField id={`brace${i}_date`} label="Race date" type="date" value={r.date}
+                onChange={v => setBRace(i, { date: v })} error={errors[`brace${i}_date`]} max={dayBeforeGoal(form)} />
+            </div>
+            <PlanIntakeSelect id={`brace${i}_priority`} label="How do you want to run it?" value={r.priority}
+              onChange={v => setBRace(i, { priority: v })} options={PLAN_INTAKE_BRACE_PRIORITIES} error={errors[`brace${i}_priority`]} />
+          </div>
+        ))}
+
+        {form.b_races.length < PLAN_INTAKE_MAX_BRACES && (
+          <button type="button" className="btn btn-secondary plan-intake__add"
+            onClick={() => update({ b_races: [...form.b_races, emptyBRace()] })}>
+            <Plus size={16} /> Add a B race
+          </button>
+        )}
+
+        {form.b_races.length > 0 && (
+          <PlanIntakeTextArea id="brace_note" label="Anything else about these races" value={form.brace_note}
+            onChange={v => update({ brace_note: v })} error={errors.brace_note} optional maxLength={PLAN_INTAKE_BRACE_NOTE_MAX}
+            hint="For example a time you'd like to run" />
+        )}
+      </section>
+    </>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // 2. Recent races and running

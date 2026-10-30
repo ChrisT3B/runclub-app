@@ -3,11 +3,13 @@
 
 import { addDays, format } from 'date-fns';
 import {
+  PLAN_INTAKE_BRACE_NOTE_MAX,
   PLAN_INTAKE_DAYS,
   PLAN_INTAKE_HEALTH_KEYS,
   PLAN_INTAKE_ROUTINE_DETAIL_MAX,
 } from '../types';
 import type {
+  PlanIntakeBRace,
   PlanIntakeBaseline,
   PlanIntakeCommitment,
   PlanIntakeDay,
@@ -31,6 +33,7 @@ export type PlanIntakeStepId = typeof PLAN_INTAKE_STEPS[number]['id'];
 export type PlanIntakeErrors = Record<string, string>;
 
 export const emptyBaseline = (): PlanIntakeBaseline => ({ distance: '', date: '', time: '', conditions: '' });
+export const emptyBRace = (): PlanIntakeBRace => ({ name: '', date: '', distance: '', priority: '' });
 export const emptyCommitment = (): PlanIntakeCommitment => ({ type: '', days: [], time: '', freq: '' });
 export const emptyHoliday = (): PlanIntakeHoliday => ({ from: '', to: '', note: '' });
 const emptyRoutineDay = (): PlanIntakeRoutineDay => ({ run: false, cross: false, rest: false, detail: '' });
@@ -39,6 +42,7 @@ export function emptyForm(): PlanIntakeFormState {
   return {
     full_name: '', age: '', sex: '', units: '',
     goal_race_name: '', goal_distance: '', goal_race_date: '', goal_target_time: '', goal_secondary: '',
+    b_races: [], brace_note: '',
     baselines: [emptyBaseline()],
     weekly_volume: '', runs_per_week: '', longest_recent_run: '', time_at_volume: '',
     years_running: '', previous_structure: '', previous_races: '',
@@ -145,6 +149,18 @@ export function validateStep(step: PlanIntakeStepId, form: PlanIntakeFormState):
       }
       checkTime(errors, 'goal_target_time', form.goal_target_time);
       checkTime(errors, 'goal_secondary', form.goal_secondary);
+      form.b_races.forEach((r, i) => {
+        const prefix = `brace${i}`;
+        required(`${prefix}_date`, r.date, 'Enter the date.');
+        required(`${prefix}_distance`, r.distance, 'Choose the distance.');
+        required(`${prefix}_priority`, r.priority, 'Choose how you want to run it.');
+        checkLength(errors, `${prefix}_name`, r.name, 100);
+        checkDate(errors, `${prefix}_date`, r.date);
+        if (!errors[`${prefix}_date`] && validDate(r.date) && validDate(form.goal_race_date) && r.date >= form.goal_race_date) {
+          errors[`${prefix}_date`] = 'A B race must be before your goal race.';
+        }
+      });
+      checkLength(errors, 'brace_note', form.brace_note, PLAN_INTAKE_BRACE_NOTE_MAX);
       break;
 
     case 'fitness':
@@ -236,7 +252,7 @@ export function toAnswers(form: PlanIntakeFormState): Record<string, string> {
 
   const simple = [
     'full_name', 'age', 'sex', 'units',
-    'goal_race_name', 'goal_distance', 'goal_race_date', 'goal_target_time', 'goal_secondary',
+    'goal_race_name', 'goal_distance', 'goal_race_date', 'goal_target_time', 'goal_secondary', 'brace_note',
     'weekly_volume', 'runs_per_week', 'longest_recent_run', 'time_at_volume', 'years_running',
     'previous_structure', 'previous_races',
     'routine_note', 'long_run_day', 'time_weekday', 'time_weekend',
@@ -259,6 +275,14 @@ export function toAnswers(form: PlanIntakeFormState): Record<string, string> {
       put(`baseline${n}_time`, b.time);
       put(`baseline${n}_conditions`, b.conditions);
     });
+
+  form.b_races.forEach((r, i) => {
+    const n = i + 1;
+    put(`brace${n}_name`, r.name);
+    put(`brace${n}_date`, r.date);
+    put(`brace${n}_distance`, r.distance);
+    put(`brace${n}_priority`, r.priority);
+  });
 
   form.commitments.forEach((c, i) => {
     const n = i + 1;

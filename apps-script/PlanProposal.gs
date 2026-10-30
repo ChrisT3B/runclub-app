@@ -37,8 +37,15 @@
  * never the Plan tab. Plan Intake writes a link on each sheet's Brief tab that opens this page with
  * the sheet already filled in (?sheet=<id>).
  * Writes only: the "AI proposal", "AI rationale" and "Athlete summary" tabs of the athlete sheet,
- * and the "PlanProposal Log" sheet in the athlete folder. Never the Plan tab. In the Athlete summary
- * tab, the coach's column C is only filled where it is empty, so re-importing never overwrites it.
+ * and the "PlanProposal Log" sheet in the athlete folder. In the Athlete summary tab, the coach's
+ * column C is only filled where it is empty, so re-importing never overwrites it.
+ * The Plan tab is written only by "Accept into Plan", which the coach runs and confirms: it writes
+ * C:K (phase, 7, days) and U:W (notes, rationale) in rows 10 to 33, never a row marked Locked in
+ * column S, and never column B, O to T or the helper columns.
+ * "Publish" reads only the Athlete view tab (displayed values) and the Athlete summary tab (column C),
+ * copies the athlete plan template (ATHLETE_TEMPLATE_ID) into PUBLISHED_FOLDER_ID, fills it with
+ * values, shares it as "anyone with the link can view" and saves a PDF next to it. Republishing
+ * updates the same file. It writes nothing to the athlete's working sheet.
  * No AI service is called. There is no API key and no secret.
  * The log holds time, sheet ID, action, prompt version and a result code. Never answers or reply text.
  */
@@ -50,6 +57,14 @@ var TAB_BRIEF = 'Brief';
 var TAB_PROPOSAL = 'AI proposal';
 var TAB_RATIONALE = 'AI rationale';
 var TAB_SUMMARY = 'Athlete summary';
+var TAB_PLAN = 'Plan';
+var PLAN_FIRST_ROW = 10;
+var PLAN_LAST_ROW = 33;
+var ACCEPT_KEY_PREFIX = 'accept_';
+var PUBLISH_KEY_PREFIX = 'publish_';
+var TAB_VIEW = 'Athlete view';
+var VIEW_FIRST_WEEK_ROW = 15;
+var VIEW_LAST_WEEK_ROW = 38;
 var LOG_SHEET_NAME = 'PlanProposal Log';
 var PROMPT_FILE = 'PlanProposalPrompt';
 var BUILD_KEY_PREFIX = 'build_';
@@ -256,6 +271,374 @@ function importProposal(input) {
   } catch (err) {
     return failure_(err, sheetId, 'import', version);
   }
+}
+
+/**
+ * Step 3. input: { sheet: link or ID, confirm: true once the coach has seen the preview }
+ * Copies the AI proposal into the Plan tab. If the Plan already has sessions and confirm is not set,
+ * returns { ok, needsConfirm, preview } and writes nothing.
+ * Returns { ok, written, locked, cleared, edited } after writing.
+ */
+function acceptProposal(input) {
+  var version = promptVersion_(readPromptTemplate_());
+  var sheetId = '';
+  try {
+    sheetId = parseSheetId_(input && input.sheet);
+    var ss = openAthleteSheet_(sheetId);
+    var proposal = readProposal_(ss);
+    var plan = ss.getSheetByName(TAB_PLAN);
+    if (!plan) throw new UserError_('This sheet has no "' + TAB_PLAN + '" tab.', 'no_plan');
+    checkPlanLayout_(plan);
+
+    var rows = PLAN_LAST_ROW - PLAN_FIRST_ROW + 1;
+    if (proposal.length > rows) {
+      throw new UserError_('The proposal has ' + proposal.length + ' weeks but the Plan tab has room for ' + rows + '.', 'too_many_weeks');
+    }
+    var weeksNow = weeksFromSheet_(ss);
+    if (weeksNow !== proposal.length) {
+      throw new UserError_('The proposal has ' + proposal.length + ' weeks, but the Brief start date and the race date now give ' + weeksNow +
+        '. Build the prompt and import again before accepting.', 'weeks_changed');
+    }
+
+    var sessions = plan.getRange(PLAN_FIRST_ROW, 3, rows, 9).getValues(); // C:K
+    var notes = plan.getRange(PLAN_FIRST_ROW, 21, rows, 3).getValues();   // U:W
+    var locks = plan.getRange(PLAN_FIRST_ROW, 19, rows, 1).getDisplayValues(); // S
+    var props = PropertiesService.getScriptProperties();
+    var saved = props.getProperty(ACCEPT_KEY_PREFIX + sheetId);
+    var snapshot = saved ? JSON.parse(saved) : null;
+
+    var locked = [];
+    var replace = [];
+    var edited = [];
+    var clear = [];
+    for (var i = 0; i < rows; i++) {
+      var isLocked = /^yes$/i.test(String(locks[i][0]).trim());
+      var content = rowHasContent_(sessions[i], notes[i]);
+      if (i < proposal.length) {
+        if (isLocked) { locked.push(i + 1); continue; }
+        if (content) {
+          replace.push(i + 1);
+          if (!snapshot || snapshot[i] !== rowHash_(sessions[i], notes[i])) edited.push(i + 1);
+        }
+      } else if (content) {
+        if (isLocked) locked.push(i + 1);
+        else clear.push(i + 1);
+      }
+    }
+
+    if (!(input && input.confirm) && (replace.length || clear.length)) {
+      return {
+        ok: true,
+        needsConfirm: true,
+        preview: { weeks: proposal.length, replace: replace, edited: edited, locked: locked, clear: clear }
+      };
+    }
+
+    var newSnapshot = [];
+    var written = 0;
+    for (var r = 0; r < rows; r++) {
+      newSnapshot.push(snapshot && snapshot[r] !== undefined ? snapshot[r] : null);
+      var row = PLAN_FIRST_ROW + r;
+      if (locked.indexOf(r + 1) !== -1) continue;
+      if (r < proposal.length) {
+        var w = proposal[r];
+        var c = [w.phase, 7].concat(w.days).map(guardValue_);
+        var u = [w.note, w.coach, w.rationale].map(guardValue_);
+        plan.getRange(row, 3).setNumberFormat('@');
+        plan.getRange(row, 5, 1, 7).setNumberFormat('@');
+        plan.getRange(row, 21, 1, 3).setNumberFormat('@');
+        plan.getRange(row, 3, 1, 9).setValues([c]);
+        plan.getRange(row, 21, 1, 3).setValues([u]);
+        newSnapshot[r] = rowHash_(c, u);
+        written++;
+      } else if (clear.indexOf(r + 1) !== -1) {
+        plan.getRange(row, 3).setValue('');            // C: phase (D keeps its 7)
+        plan.getRange(row, 5, 1, 7).setValues([['', '', '', '', '', '', '']]); // E:K
+        plan.getRange(row, 21, 1, 3).setValues([['', '', '']]);               // U:W
+        newSnapshot[r] = null;
+      }
+    }
+    props.setProperty(ACCEPT_KEY_PREFIX + sheetId, JSON.stringify(newSnapshot));
+    SpreadsheetApp.flush();
+
+    log_(sheetId, 'accept', version, 'ok');
+    return { ok: true, written: written, locked: locked, cleared: clear, edited: edited };
+  } catch (err) {
+    return failure_(err, sheetId, 'accept', version);
+  }
+}
+
+/**
+ * Step 4. input: { sheet: link or ID }
+ * Builds (or updates) the athlete's published plan from the Athlete view and the Athlete summary.
+ * Returns { ok, url, pdfUrl, name, weeks, sections, first } or { ok: false, errors }.
+ */
+function publishPlan(input) {
+  var version = promptVersion_(readPromptTemplate_());
+  var sheetId = '';
+  try {
+    sheetId = parseSheetId_(input && input.sheet);
+    var ss = openAthleteSheet_(sheetId);
+    var props = PropertiesService.getScriptProperties();
+    var templateId = String(props.getProperty('ATHLETE_TEMPLATE_ID') || '').trim();
+    var publishedFolderId = String(props.getProperty('PUBLISHED_FOLDER_ID') || '').trim().replace(/^.*folders\//, '');
+    if (!templateId) throw new UserError_('ATHLETE_TEMPLATE_ID is not set. Run BuildAthleteTemplate first.', 'no_template');
+    if (!publishedFolderId) throw new UserError_('PUBLISHED_FOLDER_ID is not set in Script Properties.', 'no_published_folder');
+    if (publishedFolderId === folderId_()) {
+      throw new UserError_('PUBLISHED_FOLDER_ID is the private athlete folder. It must be a different folder.', 'same_folder');
+    }
+
+    var view = readAthleteView_(ss);
+    var summary = readAthleteSummary_(ss);
+
+    // Athlete-facing text must not carry health words or contact details
+    var problems = [];
+    var check = function (where, text) {
+      var hit = HEALTH_PATTERN.exec(text);
+      if (hit) problems.push(where + ' contains the health word "' + hit[1] + '".');
+      if (EMAIL_PATTERN.test(text)) problems.push(where + ' contains what looks like an email address.');
+      if (PHONE_PATTERN.test(text)) problems.push(where + ' contains what looks like a phone number.');
+    };
+    summary.forEach(function (row) { check('Athlete summary "' + row.label + '"', row.text); });
+    view.weeks.forEach(function (w) { check('Plan week ' + w.cells[0] + ' note for athlete', w.cells[11]); });
+    check('Athlete view note', view.note);
+    if (problems.length) {
+      throw new UserError_(problems.join(' '), 'publish_blocked', problems.concat(['Edit the wording, then publish again. Nothing was published.']));
+    }
+
+    var name = cleanFileName_(view.athlete + ' - ' + (view.race || 'Race') + ' - Training plan');
+    var folder = DriveApp.getFolderById(publishedFolderId);
+    var saved = props.getProperty(PUBLISH_KEY_PREFIX + sheetId);
+    var record = saved ? JSON.parse(saved) : {};
+    var file = existingFile_(record.fileId);
+    var first = !file;
+    if (first) file = DriveApp.getFileById(templateId).makeCopy(name, folder);
+    else if (file.getName() !== name) file.setName(name);
+
+    fillPublished_(SpreadsheetApp.openById(file.getId()), view, summary);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    SpreadsheetApp.flush();
+
+    // A fresh PDF of the published copy (never the working sheet), replacing the last one
+    var oldPdf = existingFile_(record.pdfId);
+    var pdf = folder.createFile(file.getAs(MimeType.PDF).setName(name + '.pdf'));
+    if (oldPdf) oldPdf.setTrashed(true);
+
+    props.setProperty(PUBLISH_KEY_PREFIX + sheetId, JSON.stringify({
+      fileId: file.getId(), pdfId: pdf.getId(), publishedAt: new Date().toISOString(), sentAt: record.sentAt || ''
+    }));
+    log_(sheetId, 'publish', version, first ? 'ok_new' : 'ok_update');
+    return {
+      ok: true, first: first, name: name, url: file.getUrl(), pdfUrl: pdf.getUrl(),
+      weeks: view.weeks.length, sections: summary.length
+    };
+  } catch (err) {
+    return failure_(err, sheetId, 'publish', version);
+  }
+}
+
+/** Header, paces, note and weeks from the Athlete view tab, as displayed. */
+function readAthleteView_(ss) {
+  var sheet = ss.getSheetByName(TAB_VIEW);
+  if (!sheet) throw new UserError_('This sheet has no "' + TAB_VIEW + '" tab.', 'no_view');
+  var v = sheet.getRange(1, 1, VIEW_LAST_WEEK_ROW, 15).getDisplayValues();
+  if (String(v[13][0]).trim() !== 'Week' || String(v[13][13]).trim() !== 'Weekly total') {
+    throw new UserError_('The "' + TAB_VIEW + '" tab is not in the template layout.', 'view_layout');
+  }
+
+  var athlete = String(v[1][0]).trim();
+  if (!athlete) throw new UserError_('The "' + TAB_VIEW + '" tab has no athlete name.', 'view_no_name');
+  var raceLine = String(v[2][0]).trim();
+  var m = /^(.*?)(?: on (\S+))?(?: \| target (.*))?$/.exec(raceLine);
+
+  var paces = [];
+  for (var r = 5; r <= 8; r++) paces.push([String(v[r][1]).trim(), String(v[r][3]).trim(), String(v[r][4]).trim()]);
+
+  var weeks = [];
+  for (var w = VIEW_FIRST_WEEK_ROW - 1; w < VIEW_LAST_WEEK_ROW; w++) {
+    var row = v[w];
+    if (String(row[0]).trim() === '') continue;
+    if ([10, 11, 12].some(function (c) { return String(row[c]).trim() !== ''; })) {
+      throw new UserError_('Week ' + row[0] + ' uses days 8 to 10. The athlete plan supports 7-day weeks only.', 'long_microcycle');
+    }
+    weeks.push({ cells: [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[13], row[14]].map(function (x) { return String(x).trim(); }) });
+  }
+  if (weeks.length === 0) {
+    throw new UserError_('The "' + TAB_VIEW + '" tab has no weeks. Accept the proposal into the Plan tab first, and check Brief "First week starts".', 'view_empty');
+  }
+
+  return {
+    athlete: athlete,
+    race: m && m[1] ? m[1].trim() : raceLine,
+    raceDate: m && m[2] ? niceDate_(m[2]) : '',
+    target: m && m[3] ? m[3].trim() : '',
+    paces: paces,
+    note: String(v[9][1]).trim(),
+    weeks: weeks
+  };
+}
+
+/** Column C of the Athlete summary tab, by section. Refuses plans imported before prompt v4. */
+function readAthleteSummary_(ss) {
+  var sheet = ss.getSheetByName(TAB_SUMMARY);
+  if (!sheet) {
+    throw new UserError_('There is no "' + TAB_SUMMARY + '" tab. Build the prompt (v4), ask the AI and import the reply first.', 'no_summary');
+  }
+  var values = sheet.getDataRange().getDisplayValues();
+  var rows = [];
+  SUMMARY_ROWS.forEach(function (label) {
+    for (var r = 0; r < values.length; r++) {
+      if (String(values[r][0]).trim() === label) {
+        var text = String(values[r][2] || '').trim();
+        if (text) rows.push({ label: label, text: text });
+        return;
+      }
+    }
+  });
+  if (rows.length === 0) throw new UserError_('The "' + TAB_SUMMARY + '" tab has nothing in column C. Write or accept the drafts first.', 'summary_empty');
+  return rows;
+}
+
+/** Fills the published copy through the template's named ranges. Values only. */
+function fillPublished_(pub, view, summary) {
+  var named = function (name) {
+    var range = pub.getRangeByName(name);
+    if (!range) throw new UserError_('The athlete plan template has no named range "' + name + '". Check Data > Named ranges.', 'template_range');
+    return range;
+  };
+  var text = function (x) { return guard_(String(x || '')); };
+
+  named('AP_ATHLETE').setValue(text(view.athlete));
+  named('AP_RACE').setValue(text(view.race));
+  named('AP_RACE_DATE').setValue(text(view.raceDate));
+  named('AP_TARGET').setValue(text(view.target));
+  named('AP_UPDATED').setValue(Utilities.formatDate(new Date(), 'Europe/London', 'd MMM yyyy'));
+  if (pub.getRangeByName('AP_PACE')) {
+    // Wider layout: zone, pace (B:D merged) and effort (E:J merged) are separate ranges
+    named('AP_PACE_ZONE').setValues(view.paces.map(function (row) { return [text(row[0])]; }));
+    named('AP_PACE').setValues(view.paces.map(function (row) { return [text(row[1])]; }));
+    named('AP_EFFORT').setValues(view.paces.map(function (row) { return [text(row[2])]; }));
+  } else {
+    named('AP_PACES').setValues(view.paces.map(function (row) { return row.map(text); }));
+  }
+  named('AP_NOTE').setValue(text(view.note));
+
+  var weeksRange = named('AP_WEEKS');
+  var rows = weeksRange.getNumRows();
+  if (view.weeks.length > rows) throw new UserError_('The plan has ' + view.weeks.length + ' weeks but the template has room for ' + rows + '.', 'template_too_small');
+  var cols = weeksRange.getNumColumns();
+  var body = [];
+  for (var i = 0; i < rows; i++) {
+    var cells = i < view.weeks.length ? view.weeks[i].cells.map(text) : [];
+    while (cells.length < cols) cells.push('');
+    body.push(cells.slice(0, cols));
+  }
+  weeksRange.setValues(body);
+  var planSheet = weeksRange.getSheet();
+  planSheet.showRows(weeksRange.getRow(), rows);
+  if (view.weeks.length < rows) planSheet.hideRows(weeksRange.getRow() + view.weeks.length, rows - view.weeks.length);
+
+  var summaryRange = named('AP_SUMMARY');
+  var labels = summaryRange.getValues();
+  var aboutSheet = summaryRange.getSheet();
+  aboutSheet.showRows(summaryRange.getRow(), labels.length);
+  var filled = labels.map(function (row, i) {
+    var match = summary.filter(function (s) { return s.label === String(row[0]).trim(); })[0];
+    if (!match) aboutSheet.hideRows(summaryRange.getRow() + i);
+    return [row[0], match ? text(match.text) : ''];
+  });
+  summaryRange.setValues(filled);
+}
+
+/** A Drive file by ID if it still exists and is not in the bin, else null. */
+function existingFile_(id) {
+  if (!id) return null;
+  try {
+    var f = DriveApp.getFileById(id);
+    return f.isTrashed() ? null : f;
+  } catch (err) {
+    return null;
+  }
+}
+
+function cleanFileName_(name) {
+  return String(name).replace(/[\u0000-\u001f\u007f\/\\]/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 120);
+}
+
+/** "2026-12-24" as "24 Dec 2026"; anything else unchanged. */
+function niceDate_(text) {
+  var d = parseDate_(text);
+  return d ? Utilities.formatDate(d, 'UTC', 'd MMM yyyy') : String(text);
+}
+
+/** The weeks on the AI proposal tab, as written by the import. */
+function readProposal_(ss) {
+  var sheet = ss.getSheetByName(TAB_PROPOSAL);
+  if (!sheet) throw new UserError_('There is no "' + TAB_PROPOSAL + '" tab yet. Import an AI reply first.', 'no_proposal');
+  var values = sheet.getDataRange().getValues();
+  var header = values[8] || [];
+  if (String(header[0]).trim() !== 'Week' || String(header[2]).trim() !== 'Phase' || String(header[4]).trim() !== 'Day 1' ||
+      String(header[20]).trim() !== 'Note for athlete' || String(header[22]).trim() !== 'Rationale') {
+    throw new UserError_('The "' + TAB_PROPOSAL + '" tab is not in the expected layout. Import the AI reply again.', 'proposal_layout');
+  }
+  var weeks = [];
+  for (var r = 9; r < values.length && String(values[r][0]).trim() !== ''; r++) {
+    var v = values[r];
+    if (Number(v[0]) !== weeks.length + 1) {
+      throw new UserError_('The "' + TAB_PROPOSAL + '" tab has a gap in its week numbers at row ' + (r + 1) + '. Import the AI reply again.', 'proposal_gap');
+    }
+    weeks.push({
+      phase: String(v[2]),
+      days: [v[4], v[5], v[6], v[7], v[8], v[9], v[10]].map(String),
+      note: String(v[20]),
+      coach: String(v[21]),
+      rationale: String(v[22])
+    });
+  }
+  if (weeks.length === 0) throw new UserError_('The "' + TAB_PROPOSAL + '" tab has no weeks. Import an AI reply first.', 'proposal_empty');
+  return weeks;
+}
+
+/** The Plan tab must have the template's headers where Accept writes. */
+function checkPlanLayout_(plan) {
+  var h = plan.getRange(9, 1, 1, 23).getDisplayValues()[0];
+  var ok = h[2] === 'Phase' && h[4] === 'Day 1' && h[10] === 'Day 7' && h[18] === 'Locked' && h[20] === 'Note for athlete';
+  if (!ok) throw new UserError_('The Plan tab is not in the template layout (row 9 headers). Nothing was changed.', 'plan_layout');
+}
+
+/** Weeks from the Brief start date to the week containing the race, as the prompt would ask for now. */
+function weeksFromSheet_(ss) {
+  var brief = ss.getSheetByName(TAB_BRIEF);
+  if (!brief) throw new UserError_('This sheet has no "' + TAB_BRIEF + '" tab.', 'no_brief');
+  var values = brief.getDataRange().getValues();
+  var display = brief.getDataRange().getDisplayValues();
+  var start = null;
+  for (var r = 0; r < values.length; r++) {
+    if (String(values[r][0]).trim() !== SETTING.start) continue;
+    var raw = values[r][1];
+    if (Object.prototype.toString.call(raw) === '[object Date]' && !isNaN(raw.getTime())) start = utcDate_(raw.getFullYear(), raw.getMonth(), raw.getDate());
+    else start = parseDate_(display[r][1]);
+  }
+  if (!start) throw new UserError_('Set "' + SETTING.start + '" on the Brief tab.', 'no_start');
+  var race = parseDate_(readAiCopy_(ss).find(LABEL_RACE_DATE));
+  if (!race) throw new UserError_('No valid "' + LABEL_RACE_DATE + '" in the AI copy tab.', 'no_race_date');
+  return weeksBetween_(start, race);
+}
+
+function rowHasContent_(sessions, notes) {
+  var cells = [sessions[0]].concat(sessions.slice(2), notes); // skip D (the 7)
+  return cells.some(function (v) { return String(v).trim() !== ''; });
+}
+
+/** A short fingerprint of a Plan row (C:K and U:W), so later Accepts can spot hand edits. Stores no content. */
+function rowHash_(sessions, notes) {
+  var text = sessions.concat(notes).map(function (v) { return String(v).replace(/^'/, '').trim(); }).join('\u001f');
+  return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8)).slice(0, 16);
+}
+
+/** Strings that cannot run as formulas in the Plan tab. Numbers pass through. */
+function guardValue_(v) {
+  return typeof v === 'string' ? guard_(v.replace(/^'/, '')) : v;
 }
 
 // ---------------------------------------------------------------------------
@@ -903,7 +1286,7 @@ function writeProposalTab_(ss, clean, version, stamp, expected) {
     ['This is an AI proposal for the coach to review. Nothing here is live until copied into the Plan tab.'],
     ['Column Z holds the AI\'s estimated weekly totals. The Plan tab recalculates the real totals.'],
     ['Plan start ' + expected.planStart + ', race day ' + expected.raceDate + ', ' + clean.weeks.length + ' weeks.'],
-    ['Paste C:K, then U:W, into the Plan tab as values. Never paste over O to T.']
+    ['Use "Accept into Plan" on the Plan Proposal page to copy this into the Plan tab. Locked rows are never changed.']
   ];
   sheet.getRange(1, 1, top.length, WIDTH).setValues(top.map(row));
 

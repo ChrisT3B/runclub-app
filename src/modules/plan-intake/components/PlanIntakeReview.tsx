@@ -17,6 +17,11 @@ const SECTIONS: Array<{ step: PlanIntakeStepId; fields: Array<[string, string]> 
       ['full_name', 'Name'], ['age', 'Age'], ['sex', 'Sex'], ['units', 'Units'],
       ['goal_race_name', 'Goal race'], ['goal_distance', 'Distance'], ['goal_race_date', 'Race date'],
       ['goal_target_time', 'Target time'], ['goal_secondary', 'Secondary target'],
+      ...n3.flatMap((n): Array<[string, string]> => [
+        [`brace${n}_name`, `B race ${n}`], [`brace${n}_date`, `B race ${n}: date`],
+        [`brace${n}_distance`, `B race ${n}: distance`], [`brace${n}_priority`, `B race ${n}: how to run it`],
+      ]),
+      ['brace_note', 'More on B races'],
     ],
   },
   {
