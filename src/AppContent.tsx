@@ -32,6 +32,7 @@ import { ParkrunImprovementReportPage } from './modules/leagues/pages/ParkrunImp
 import { ParkrunExpiryReportPage } from './modules/leagues/pages/ParkrunExpiryReportPage';
 import { RunTemplatesManager } from './modules/admin/components/RunTemplatesManager';
 import { PlanIntakeAdminPage } from './modules/plan-intake/pages/PlanIntakeAdminPage';
+import { IncidentReportsPage } from './modules/incidents/pages/IncidentReportsPage';
 
 export const AppContent: React.FC = () => {
   const { state } = useAuth();
@@ -221,6 +222,8 @@ export const AppContent: React.FC = () => {
         return <RunTemplatesManager onNavigate={handleNavigation} />;
       case 'plan-intake-admin':
         return <PlanIntakeAdminPage onNavigate={handleNavigation} />;
+      case 'incident-reports':
+        return <IncidentReportsPage onNavigate={handleNavigation} />;
       default:
         console.log('⚠️ Unknown page, defaulting to DashboardContent. Page was:', currentPage);
         return <DashboardContent onNavigate={handleNavigation} />;

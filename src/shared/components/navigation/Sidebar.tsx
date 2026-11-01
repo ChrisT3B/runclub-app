@@ -37,6 +37,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
   // Add Reports for LIRFs and Admins
   if (permissions.canManageRuns || permissions.canManageMembers) {
     navigation.push({ id: 'admin-reports', name: 'Reports', icon: '📊' })
+    // Admins see all reports; LIRFs see only their own (enforced by RLS)
+    navigation.push({ id: 'incident-reports', name: 'Incident Reports', icon: '🩹' })
   }
 
   // Add admin-only navigation using permissions

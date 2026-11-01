@@ -4,6 +4,8 @@ import { ScheduledRunsService, ScheduledRun } from '../../admin/services/schedul
 import { BookingService } from '../../admin/services/bookingService';
 import { supabase } from '../../../services/supabase';
 import { EmergencyInfoButton, EmergencyInfoModal } from './EmergencyInfoModal';
+import { IncidentReportModal } from '../../incidents/components/IncidentReportModal';
+import { IncidentService } from '../../incidents/services/IncidentService';
 
 interface LeadYourRunProps {
   onNavigateToAttendance?: (runId: string, runTitle: string) => void;
@@ -29,6 +31,8 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
   const [selectedRunBookings, setSelectedRunBookings] = useState<BookingWithMember[] | null>(null);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [showEmergencyInfo, setShowEmergencyInfo] = useState(false);
+  const [reportIncidentRunIds, setReportIncidentRunIds] = useState<string[]>([]);
+  const [incidentRun, setIncidentRun] = useState<{ id: string; title: string } | null>(null);
 
   useEffect(() => {
     loadAssignedRuns();
@@ -230,8 +234,9 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
     }
   };
 
-  const updateRunStatus = async (runId: string, newStatus: 'in_progress' | 'completed') => {
-    if (!state.user?.id) return;
+  // Returns true when the status change was saved (used by the incident tick box)
+  const updateRunStatus = async (runId: string, newStatus: 'in_progress' | 'completed'): Promise<boolean> => {
+    if (!state.user?.id) return false;
 
     try {
       setStatusUpdating(runId);
@@ -254,12 +259,32 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
           }, 500);
         }
       }
-      
+
+      return true;
     } catch (err: any) {
       console.error('Failed to update run status:', err);
       setError(err.message || 'Failed to update run status');
+      return false;
     } finally {
       setStatusUpdating(null);
+    }
+  };
+
+  const toggleReportIncident = (runId: string) => {
+    setReportIncidentRunIds(prev =>
+      prev.includes(runId) ? prev.filter(id => id !== runId) : [...prev, runId]
+    );
+  };
+
+  // Complete Run is unchanged. When "Report an incident" is ticked, the incident
+  // form opens only once the run has completed, so completing never waits on a
+  // report. If completion fails the tick stays, and a successful retry opens it.
+  const handleCompleteRun = async (run: ScheduledRun) => {
+    const wantsReport = reportIncidentRunIds.includes(run.id);
+    const completed = await updateRunStatus(run.id, 'completed');
+    if (completed && wantsReport) {
+      setReportIncidentRunIds(prev => prev.filter(id => id !== run.id));
+      setIncidentRun({ id: run.id, title: run.run_title });
     }
   };
 
@@ -418,6 +443,18 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
                   </div>
                 </div>
 
+                {canCompleteRun(run) && (
+                  <label className="incident-tick">
+                    <input
+                      type="checkbox"
+                      className="incident-tick__input"
+                      checked={reportIncidentRunIds.includes(run.id)}
+                      onChange={() => toggleReportIncident(run.id)}
+                    />
+                    Report an incident
+                  </label>
+                )}
+
                 {/* Action Buttons — equal-width row matching All Runs cards */}
                 <div className="run-card-actions-container">
                   {canViewBookings(run) && (
@@ -454,7 +491,7 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
                   {canCompleteRun(run) && (
                     <button
                       className="action-btn action-btn--success"
-                      onClick={() => updateRunStatus(run.id, 'completed')}
+                      onClick={() => handleCompleteRun(run)}
                       disabled={statusUpdating === run.id}
                     >
                       {statusUpdating === run.id ? '⏳' : '✅'}
@@ -489,6 +526,16 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
 
                 {run.run_status === 'in_progress' && (
                   <EmergencyInfoButton onClick={() => setShowEmergencyInfo(true)} />
+                )}
+
+                {run.run_status === 'completed' && IncidentService.hasDraft(run.id) && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary incident-resume"
+                    onClick={() => setIncidentRun({ id: run.id, title: run.run_title })}
+                  >
+                    Resume unsaved incident report
+                  </button>
                 )}
               </div>
             </div>
@@ -677,6 +724,16 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
         isOpen={showEmergencyInfo}
         onClose={() => setShowEmergencyInfo(false)}
       />
+
+      {incidentRun && (
+        <IncidentReportModal
+          key={incidentRun.id}
+          isOpen
+          runId={incidentRun.id}
+          runTitle={incidentRun.title}
+          onClose={() => setIncidentRun(null)}
+        />
+      )}
     </div>
   );
 };
