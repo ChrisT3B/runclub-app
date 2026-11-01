@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { BookingService } from '../../admin/services/bookingService';
 import { supabase } from '../../../services/supabase';
 import { InvitationService } from '../../../services/invitationService';
+import { EmergencyInfoButton, EmergencyInfoModal } from './EmergencyInfoModal';
 
 interface Member {
   id: string;
@@ -63,7 +64,8 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  
+  const [showEmergencyInfo, setShowEmergencyInfo] = useState(false);
+
   // Add Runner Modal State
   const [showAddRunner, setShowAddRunner] = useState(false);
   const [addRunnerType, setAddRunnerType] = useState<'member' | 'manual'>('member');
@@ -483,6 +485,8 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
           Mark attendance for: <strong>{runTitle}</strong>
         </p>
       </div>
+
+      <EmergencyInfoButton onClick={() => setShowEmergencyInfo(true)} />
 
       {/* Summary Stats */}
       <div className="card" style={{ marginBottom: '24px' }}>
@@ -1154,6 +1158,11 @@ export const RunAttendance: React.FC<RunAttendanceProps> = ({ runId, runTitle, o
           </div>
         </div>
       )}
+
+      <EmergencyInfoModal
+        isOpen={showEmergencyInfo}
+        onClose={() => setShowEmergencyInfo(false)}
+      />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { ScheduledRunsService, ScheduledRun } from '../../admin/services/scheduledRunsService';
 import { BookingService } from '../../admin/services/bookingService';
 import { supabase } from '../../../services/supabase';
+import { EmergencyInfoButton, EmergencyInfoModal } from './EmergencyInfoModal';
 
 interface LeadYourRunProps {
   onNavigateToAttendance?: (runId: string, runTitle: string) => void;
@@ -27,6 +28,7 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
   const [selectedRunBookings, setSelectedRunBookings] = useState<BookingWithMember[] | null>(null);
   const [loadingBookings, setLoadingBookings] = useState(false);
+  const [showEmergencyInfo, setShowEmergencyInfo] = useState(false);
 
   useEffect(() => {
     loadAssignedRuns();
@@ -484,6 +486,10 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
                     🏃‍♂️ Run started at {new Date(run.started_at).toLocaleTimeString('en-GB')}
                   </div>
                 )}
+
+                {run.run_status === 'in_progress' && (
+                  <EmergencyInfoButton onClick={() => setShowEmergencyInfo(true)} />
+                )}
               </div>
             </div>
           ))}
@@ -666,6 +672,11 @@ export const LeadYourRun: React.FC<LeadYourRunProps> = ({ onNavigateToAttendance
           </div>
         </div>
       )}
+
+      <EmergencyInfoModal
+        isOpen={showEmergencyInfo}
+        onClose={() => setShowEmergencyInfo(false)}
+      />
     </div>
   );
 };
