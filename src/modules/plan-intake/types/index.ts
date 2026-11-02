@@ -123,7 +123,6 @@ export interface PlanIntakeFormState {
   routine: Record<PlanIntakeDay, PlanIntakeRoutineDay>;
   routine_note: string;
   days_available: PlanIntakeDay[];
-  days_available_touched: boolean;
   long_run_day: string;
   time_weekday: string;
   time_weekend: string;

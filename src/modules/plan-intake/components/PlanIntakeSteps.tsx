@@ -21,7 +21,7 @@ import type {
   PlanIntakeFormState,
   PlanIntakeHoliday,
 } from '../types';
-import { emptyBRace, emptyBaseline, emptyCommitment, isUnder20, runDays, todayIso, tomorrowIso } from '../services/planIntakeForm';
+import { emptyBRace, emptyBaseline, emptyCommitment, isUnder20, todayIso, tomorrowIso } from '../services/planIntakeForm';
 import type { PlanIntakeErrors } from '../services/planIntakeForm';
 import {
   PLAN_INTAKE_SESSION_OPTIONS,
@@ -224,13 +224,7 @@ export const PlanIntakeStepWeek: React.FC<PlanIntakeStepProps> = ({ form, update
       <PlanIntakeRoutineGrid
         routine={form.routine}
         errors={errors}
-        onChange={(day, value) => {
-          const routine = { ...form.routine, [day]: value };
-          // Days available follow the Run ticks until the athlete edits them
-          const patch: Partial<PlanIntakeFormState> = { routine };
-          if (!form.days_available_touched) patch.days_available = runDays({ ...form, routine });
-          update(patch);
-        }}
+        onChange={(day, value) => update({ routine: { ...form.routine, [day]: value } })}
       />
       <PlanIntakeTextArea id="routine_note" label="Anything that varies?" value={form.routine_note}
         onChange={v => update({ routine_note: v })} optional
@@ -241,9 +235,9 @@ export const PlanIntakeStepWeek: React.FC<PlanIntakeStepProps> = ({ form, update
       <h3 className="plan-intake__section-title">What can't move</h3>
       <PlanIntakeDayPicker id="days_available" label="Days you could train"
         value={form.days_available}
-        onChange={days => update({ days_available: days, days_available_touched: true })}
+        onChange={days => update({ days_available: days })}
         error={errors.days_available}
-        hint="Filled in from your Run days. Add any other days you could run." />
+        hint="Every day you could fit in a session, even if you don't run on that day now." />
       <PlanIntakeSelect id="long_run_day" label="Best day for a long run" value={form.long_run_day}
         onChange={v => update({ long_run_day: v })}
         options={PLAN_INTAKE_DAYS.map(d => ({ value: d, label: PLAN_INTAKE_DAY_NAMES[d] }))} optional />
@@ -254,7 +248,7 @@ export const PlanIntakeStepWeek: React.FC<PlanIntakeStepProps> = ({ form, update
           onChange={v => update({ time_weekend: v })} options={PLAN_INTAKE_SESSION_OPTIONS} error={errors.time_weekend} optional />
       </div>
       <PlanIntakeDayPicker id="fixed_rest_days" label="Days you can never train" value={form.fixed_rest_days}
-        onChange={days => update({ fixed_rest_days: days })} optional />
+        onChange={days => update({ fixed_rest_days: days })} error={errors.fixed_rest_days} optional />
     </section>
   </>
 );

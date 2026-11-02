@@ -47,7 +47,7 @@ export function emptyForm(): PlanIntakeFormState {
     weekly_volume: '', runs_per_week: '', longest_recent_run: '', time_at_volume: '',
     years_running: '', previous_structure: '', previous_races: '',
     routine: Object.fromEntries(PLAN_INTAKE_DAYS.map(d => [d, emptyRoutineDay()])) as Record<PlanIntakeDay, PlanIntakeRoutineDay>,
-    routine_note: '', days_available: [], days_available_touched: false,
+    routine_note: '', days_available: [],
     long_run_day: '', time_weekday: '', time_weekend: '', fixed_rest_days: [],
     commitments: [], holidays: [emptyHoliday(), emptyHoliday()],
     holidays_travel: '', seasonal_changes: '', exams_events: '', work_education_hours: '',
@@ -69,8 +69,6 @@ const NUMBER_PATTERN = /^\d+(\.\d+)?$/;
 /** Days in Mon to Sun order. */
 export const sortDays = (days: PlanIntakeDay[]) => PLAN_INTAKE_DAYS.filter(d => days.includes(d));
 const joinDays = (days: PlanIntakeDay[]) => sortDays(days).join(', ');
-
-export const runDays = (form: PlanIntakeFormState) => PLAN_INTAKE_DAYS.filter(d => form.routine[d].run);
 
 /** Under 20, so the standing height question applies. */
 export const isUnder20 = (form: PlanIntakeFormState) => {
@@ -196,6 +194,12 @@ export function validateStep(step: PlanIntakeStepId, form: PlanIntakeFormState):
         }
       });
       if (form.days_available.length === 0) errors.days_available = 'Choose at least one day you could train.';
+      {
+        const clash = sortDays(form.fixed_rest_days.filter(d => form.days_available.includes(d)));
+        if (clash.length > 0) {
+          errors.fixed_rest_days = `${clash.join(', ')} can't be both a day you could train and a day you can never train.`;
+        }
+      }
       checkNumber(errors, 'time_weekday', form.time_weekday, 1, 600, true);
       checkNumber(errors, 'time_weekend', form.time_weekend, 1, 600, true);
       break;
