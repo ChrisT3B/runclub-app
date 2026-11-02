@@ -88,6 +88,10 @@ var MAX_REPS = 40;
 var KM_PER_MILE = 1.609344;
 var GOAL_VIEWS = ['achievable', 'aggressive', 'needs_discussion'];
 var DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+var DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+var B_RACE_TOKEN = 'BRace';
+var B_RACE_APPROACHES = ['milestone', 'controlled'];
+var TIME_PATTERN = /^(\d{1,2}:[0-5]\d:[0-5]\d|\d{1,2}:[0-5]\d)$/;
 
 // Word limits from the prompt's output shape (v3)
 var WORD_LIMITS = {
@@ -112,8 +116,13 @@ var BRIEF_SECTIONS = [
   { name: 'How to apply the paces', defaultText: 'Default: use the paces as calculated, starting at the slow end of each range.' },
   { name: 'Training adjustments from health' },
   { name: 'Firm rules' },
-  { name: 'Questions for the AI' }
+  { name: 'Questions for the AI' },
+  // Template v8.2. Optional: older sheets have no row. Left out of the prompt when it is AI chooses
+  // and the runner listed no B races, so the AI is not asked to choose about nothing.
+  { name: 'B races', optional: true,
+    defaultText: 'Follow the runner\'s choice for each B race: "Race it" is a milestone, "Run it as training" is controlled, "Coach to advise" is controlled.' }
 ];
+var B_RACES_SECTION = 'B races';
 var HEALTH_SECTION = 'Training adjustments from health';
 var QUESTIONS_SECTION = 'Questions for the AI';
 var SETTING = {
@@ -174,7 +183,7 @@ function buildPrompt(input) {
     var ss = openAthleteSheet_(sheetId);
 
     var aiCopy = readAiCopy_(ss);
-    var brief = readBrief_(ss);
+    var brief = readBrief_(ss, aiCopy);
     var window = readWindow_(aiCopy, brief);
     var paces = readPaces_(ss);
 
@@ -265,6 +274,7 @@ function importProposal(input) {
         goalView: result.clean.plan.goal_view,
         assumptions: result.clean.plan.assumptions.length,
         answers: result.clean.plan.answers_to_questions.length,
+        bRaces: result.clean.plan.b_races.length,
         expectedFrom: expected.source
       }
     };
@@ -482,7 +492,7 @@ function readAthleteView_(ss) {
 function readAthleteSummary_(ss) {
   var sheet = ss.getSheetByName(TAB_SUMMARY);
   if (!sheet) {
-    throw new UserError_('There is no "' + TAB_SUMMARY + '" tab. Build the prompt (v4), ask the AI and import the reply first.', 'no_summary');
+    throw new UserError_('There is no "' + TAB_SUMMARY + '" tab. Build the prompt (v4 or later), ask the AI and import the reply first.', 'no_summary');
   }
   var values = sheet.getDataRange().getDisplayValues();
   var rows = [];
@@ -756,7 +766,7 @@ function readWindow_(aiCopy, brief) {
  * The Brief tab: each section's mode and text, and the plan settings.
  * Returns { text, sections, aiSections, questions, planStart, notes }. Lists every problem at once.
  */
-function readBrief_(ss) {
+function readBrief_(ss, aiCopy) {
   var sheet = ss.getSheetByName(TAB_BRIEF);
   if (!sheet) throw new UserError_('This sheet has no "' + TAB_BRIEF + '" tab.', 'no_brief');
   var range = sheet.getDataRange();
@@ -776,10 +786,16 @@ function readBrief_(ss) {
   var aiSections = [];
   var questions = [];
 
+  var runnerHasBRaces = !!aiCopy && aiCopy.rows.some(function (row) { return /^B race \d+: date$/.test(row.label); });
+
   BRIEF_SECTIONS.forEach(function (def) {
     var r = findRow(def.name);
-    if (r === -1) { problems.push('The Brief tab has no "' + def.name + '" row.'); return; }
+    if (r === -1) {
+      if (!def.optional) problems.push('The Brief tab has no "' + def.name + '" row.');
+      return;
+    }
     var mode = String(display[r][1] || '').trim();
+    if (def.name === B_RACES_SECTION && mode === MODE_AI && !runnerHasBRaces) return;
     var text = String(display[r][2] || '').trim();
     var allowed = def.defaultText ? [MODE_COACH, MODE_AI] : [MODE_COACH, MODE_NONE];
     if (allowed.indexOf(mode) === -1) {
@@ -851,8 +867,9 @@ function expectedWindow_(ss, sheetId) {
       units: build.units || '', aiSections: build.aiSections || [], questions: build.questions || 0, source: 'prompt'
     };
   }
-  var brief = readBrief_(ss);
-  var window = readWindow_(readAiCopy_(ss), brief);
+  var aiCopy = readAiCopy_(ss);
+  var brief = readBrief_(ss, aiCopy);
+  var window = readWindow_(aiCopy, brief);
   return {
     weeks: window.weeks, planStart: isoDate_(window.planStart), raceDate: isoDate_(window.raceDate),
     units: window.units, aiSections: brief.aiSections, questions: brief.questions.length, source: 'sheet'
@@ -1048,6 +1065,7 @@ function validateReply_(data, ctx) {
   }
 
   var raceCount = 0;
+  var bRaceDays = [];
   var lastIndex = data.weeks.length - 1;
 
   data.weeks.forEach(function (w, i) {
@@ -1072,8 +1090,9 @@ function validateReply_(data, ctx) {
         if (check.error) err(where + ': ' + check.error);
         if (check.token === 'Race') {
           raceCount++;
-          if (i !== lastIndex) err(where + ': Race is only allowed in the last week.');
+          if (i !== lastIndex) err(where + ': Race is only allowed in the last week. If this is a B race, write it as BRace.');
         }
+        if (check.token === B_RACE_TOKEN) bRaceDays.push({ week: i + 1, day: DAY_SHORT[j], where: where });
         days.push(check.value);
       });
     }
@@ -1100,11 +1119,49 @@ function validateReply_(data, ctx) {
 
   if (raceCount > 1) err('Race appears ' + raceCount + ' times. It is allowed at most once, in the last week.');
 
+  // ---- B races (prompt v5): exactly one plan.b_races entry for each BRace day ----
+  var bRaces = [];
+  if (p.b_races !== undefined || bRaceDays.length) {
+    bRaces = checkObjects_(err, 'plan b_races', p.b_races === undefined ? [] : p.b_races, function (o, where) {
+      var day = String(o.day || '').trim();
+      var target = typeof o.target_time === 'string' ? o.target_time.trim() : '';
+      if (typeof o.week !== 'number' || o.week !== Math.floor(o.week) || o.week < 1 || o.week > data.weeks.length) {
+        err(where + ': "week" must be a week number from 1 to ' + data.weeks.length + '.');
+      }
+      if (DAY_SHORT.indexOf(day) === -1) err(where + ': "day" must be one of ' + DAY_SHORT.join(', ') + '.');
+      if (B_RACE_APPROACHES.indexOf(o.approach) === -1) err(where + ': "approach" must be milestone or controlled.');
+      if (!TIME_PATTERN.test(target)) err(where + ': "target_time" must be a time like 45:00 or 1:38:00.');
+      return {
+        week: o.week,
+        day: day,
+        distance: checkText_(err, where + ' distance', o.distance, null, true),
+        approach: B_RACE_APPROACHES.indexOf(o.approach) === -1 ? '' : o.approach,
+        target: guard_(target),
+        reason: checkText_(err, where + ' reason', o.reason, WORD_LIMITS.short, true)
+      };
+    });
+    var key = function (week, day) { return week + ' ' + day; };
+    var listed = {};
+    bRaces.forEach(function (b) {
+      if (listed[key(b.week, b.day)]) err('plan b_races lists week ' + b.week + ' ' + b.day + ' more than once.');
+      listed[key(b.week, b.day)] = true;
+    });
+    var onPlan = {};
+    bRaceDays.forEach(function (d) {
+      onPlan[key(d.week, d.day)] = true;
+      if (!listed[key(d.week, d.day)]) err(d.where + ' is a BRace day but plan b_races has no entry for week ' + d.week + ' ' + d.day + '.');
+    });
+    bRaces.forEach(function (b) {
+      if (!onPlan[key(b.week, b.day)]) err('plan b_races has week ' + b.week + ' ' + b.day + ', but that day is not a BRace day.');
+    });
+  }
+  plan.b_races = bRaces;
+
   // ---- athlete summary (shown to the runner after the coach edits it) ----
   var athleteSummary = null;
   var a = data.athlete_summary;
   if (!isObject_(a)) {
-    err('"athlete_summary" is missing or not an object. Build the prompt again with this tool (prompt v4) and ask the AI again.');
+    err('"athlete_summary" is missing or not an object. Build the prompt again with this tool (prompt v4 or later) and ask the AI again.');
   } else {
     var healthCheck = function (where, text) {
       var hit = HEALTH_PATTERN.exec(String(text || ''));
@@ -1166,8 +1223,8 @@ function checkDay_(value, tokens, units) {
     return { error: '"' + text + '": the quantity must be like 8km, 5mi, 25min, 3x10min or 6x400m.', token: token, value: '' };
   }
 
-  // The race day keeps the race's own distance (Race 10km for a miles runner is fine); other sessions match the runner
-  var unitsApply = token !== 'Race';
+  // Race days keep the race's own distance (Race 10km for a miles runner is fine); other sessions match the runner
+  var unitsApply = token !== 'Race' && token !== B_RACE_TOKEN;
   if (unitsApply && units === 'mile' && m[2] === 'km') {
     return { error: '"' + text + '" is in km but this runner uses miles. Write it in mi.', token: token, value: '' };
   }
@@ -1358,6 +1415,9 @@ function writeRationaleTab_(ss, clean, version, stamp) {
   section('How the plan follows your brief', [plan.follows_brief]);
   section('Goal view', [view.charAt(0).toUpperCase() + view.slice(1) + '. ' + plan.goal_view_reason]);
   section('Phases', plan.phases.map(function (ph) { return ph.name + ' (weeks ' + ph.weeks + '): ' + ph.rationale; }));
+  section('B races', (plan.b_races || []).map(function (b) {
+    return 'Week ' + b.week + ' ' + b.day + ', ' + b.distance + ': ' + b.approach + ', target ' + b.target + '. ' + b.reason;
+  }));
   section('Answers to your questions', plan.answers_to_questions.map(function (a) { return 'Q: ' + a.question + '\nA: ' + a.answer; }));
   section('Assumptions', plan.assumptions);
 
@@ -1501,7 +1561,7 @@ function getLogSheet_() {
 
 function testValidator() {
   var ctx = {
-    tokens: ['Easy', 'Steady', 'Tempo', 'Interval', 'Long', 'Race', 'Cross', 'Strength', 'Rest'],
+    tokens: ['Easy', 'Steady', 'Tempo', 'Interval', 'Long', 'Race', 'Cross', 'Strength', 'Rest', 'BRace'],
     phases: ['Base', 'Build', 'Peak', 'Taper', 'Race', 'Recovery'],
     weeksExpected: 3,
     briefSections: BRIEF_SECTIONS.map(function (b) { return b.name; }),
@@ -1548,6 +1608,13 @@ function testValidator() {
     return r;
   };
   var milesWithDay = function (week, day, value) { var r = goodMiles(); r.weeks[week].days[day] = value; return r; };
+  // A B race on Sunday of week 2, with its b_races entry
+  var withBRace = function (patch) {
+    var r = withDay(1, 6, 'BRace 10km');
+    r.plan.b_races = [{ week: 2, day: 'Sun', distance: '10km', approach: 'milestone', target_time: '45:00', reason: 'Checks progress before the taper.' }];
+    if (patch) patch(r);
+    return r;
+  };
 
   var cases = [
     ['Good reply', good(), null],
@@ -1588,7 +1655,18 @@ function testValidator() {
     ['Summary intro over 80 words', (function () { var r = good(); r.athlete_summary.intro = new Array(90).join('word '); return r; })(), 'The limit is 80'],
     ['v2 reply is refused', (function () { var r = good(); delete r.plan.follows_brief; delete r.plan.choices; delete r.plan.departures; r.plan.key_insight = 'v2'; return r; })(), 'follows_brief is missing'],
     ['Bad goal view', (function () { var r = good(); r.plan.goal_view = 'easy'; return r; })(), 'goal_view must be one of'],
-    ['Missing plan', { weeks: [] }, '"plan" is missing']
+    ['Missing plan', { weeks: [] }, '"plan" is missing'],
+    ['B race with its entry', withBRace(), null],
+    ['Empty b_races with no BRace days', (function () { var r = good(); r.plan.b_races = []; return r; })(), null],
+    ['BRace in miles for a km runner is accepted', withBRace(function (r) { r.weeks[1].days[6] = 'BRace 6.2mi'; }), null],
+    ['BRace day with no entry', withBRace(function (r) { r.plan.b_races = []; }), 'is a BRace day but plan b_races has no entry'],
+    ['BRace day with b_races missing', withBRace(function (r) { delete r.plan.b_races; }), 'is a BRace day but plan b_races has no entry'],
+    ['Entry for a day that is not a BRace day', withBRace(function (r) { r.plan.b_races[0].day = 'Sat'; }), 'that day is not a BRace day'],
+    ['Same B race listed twice', withBRace(function (r) { r.plan.b_races.push(r.plan.b_races[0]); }), 'more than once'],
+    ['Bad approach', withBRace(function (r) { r.plan.b_races[0].approach = 'hard'; }), '"approach" must be milestone or controlled'],
+    ['Bad target time', withBRace(function (r) { r.plan.b_races[0].target_time = 'about 45 min'; }), '"target_time" must be a time'],
+    ['Day written in full', withBRace(function (r) { r.plan.b_races[0].day = 'Sunday'; }), '"day" must be one of'],
+    ['Race used for a B race', withDay(1, 6, 'Race 10km'), 'write it as BRace']
   ];
 
   var passed = 0;
