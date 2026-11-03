@@ -113,6 +113,7 @@
 
     <div id="import-errors" class="box box--error hidden"></div>
     <div id="import-ok" class="box box--ok hidden"></div>
+    <div id="import-warnings" class="box box--warn hidden"></div>
   </section>
 
   <section>
@@ -137,6 +138,11 @@
     <button id="publish" type="button">Publish</button>
 
     <div id="publish-errors" class="box box--error hidden"></div>
+    <div id="publish-confirm" class="box box--warn hidden">
+      <div id="publish-preview"></div>
+      <button id="publish-yes" type="button">Publish anyway</button>
+      <button id="publish-no" type="button" class="secondary">Cancel</button>
+    </div>
     <div id="publish-ok" class="box box--ok hidden"></div>
   </section>
 </main>
@@ -272,15 +278,19 @@
     });
   }
 
-  $('publish').addEventListener('click', function () {
+  function runPublish(confirmHealth) {
     var button = $('publish');
     busy(button, true, 'Publishing...');
-    show('publish-errors', false);
-    show('publish-ok', false);
+    ['publish-errors', 'publish-ok', 'publish-confirm'].forEach(function (id) { show(id, false); });
 
     google.script.run
       .withSuccessHandler(function (res) {
         busy(button, false, 'Publish');
+        if (res.needsConfirm) {
+          fillList('publish-preview', 'The athlete will see these health words. Publish anyway if this is your own wording:', res.problems);
+          show('publish-confirm', true);
+          return;
+        }
         if (!res.ok) { fillList('publish-errors', 'Not published:', res.errors); return; }
         fillLinks('publish-ok', res.first ? 'Published.' : 'Updated.', [
           '"' + res.name + '": ' + res.weeks + ' week(s) and ' + res.sections + ' summary section(s).',
@@ -291,14 +301,20 @@
         busy(button, false, 'Publish');
         fillList('publish-errors', 'Not published:', ['Something went wrong. Try again.']);
       })
-      .publishPlan({ sheet: $('sheet').value });
+      .publishPlan({ sheet: $('sheet').value, confirmHealth: confirmHealth });
+  }
+
+  $('publish').addEventListener('click', function () { runPublish(false); });
+  $('publish-yes').addEventListener('click', function () { runPublish(true); });
+  $('publish-no').addEventListener('click', function () {
+    show('publish-confirm', false);
+    fillList('publish-ok', 'Cancelled.', ['Nothing was published.']);
   });
 
   $('import').addEventListener('click', function () {
     var button = $('import');
     busy(button, true, 'Checking...');
-    show('import-errors', false);
-    show('import-ok', false);
+    ['import-errors', 'import-ok', 'import-warnings'].forEach(function (id) { show(id, false); });
 
     google.script.run
       .withSuccessHandler(function (res) {
@@ -318,6 +334,7 @@
         ];
         if (s.expectedFrom === 'sheet') lines.push('No prompt was built for this sheet in this tool, so the week count was checked against the sheet as it is now.');
         fillList('import-ok', 'Imported.', lines);
+        fillList('import-warnings', 'Check these in the proposal before accepting:', s.warnings);
       })
       .withFailureHandler(function () {
         busy(button, false, 'Validate and import');

@@ -72,6 +72,12 @@ var BUILD_KEY_PREFIX = 'build_';
 // Labels as they appear in column A of the AI copy tab (the template's Athlete tab labels)
 var LABEL_RACE_DATE = 'Goal race date';
 var LABEL_UNITS = 'Preferred units (km or miles)';
+var LABEL_TIME_WEEKDAY = 'Time available per session: weekday (minutes)';
+var LABEL_TIME_WEEKEND = 'Time available per session: weekend (minutes)';
+var LABEL_DAYS_AVAILABLE = 'Days available to train';
+var LABEL_FIXED_REST = 'Fixed rest days';
+var HOLIDAY_FROM = /^Holiday or travel (\d+): from \(date\)$/;
+var MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // Lists tab headers (row 3 of the template)
 var LIST_TOKENS = 'Session token';
@@ -138,7 +144,9 @@ var HEALTH_WORDS = [
   'injury', 'injured', 'pain', 'painful', 'sore', 'medical', 'doctor', 'GP', 'physio', 'surgery', 'operation',
   'tight', 'strain', 'sprain', 'adductor', 'hamstring', 'calf', 'knee', 'achilles', 'shin', 'groin', 'hip',
   'stress fracture', 'asthma', 'heart', 'medication', 'pregnant', 'pregnancy', 'illness', 'ill', 'infection',
-  'diabetes', 'anxiety', 'depression'
+  'diabetes', 'anxiety', 'depression',
+  // v6: return-to-run and older athletes. "back" alone would catch "welcome back".
+  'joint', 'joints', 'arthritis', 'ligament', 'tendon', 'cartilage', 'back pain', 'bad back', 'menopause', 'osteoporosis'
 ];
 var HEALTH_PATTERN = new RegExp('\\b(' + HEALTH_WORDS.map(function (w) { return w.replace(/ /g, '\\s+'); }).join('|') + ')\\b', 'i');
 var EMAIL_PATTERN = /[^\s@]+@[^\s@]+\.[^\s@]+/;
@@ -204,6 +212,7 @@ function buildPrompt(input) {
       units: window.units,
       aiSections: brief.aiSections,
       questions: brief.questions.length,
+      warmup: brief.warmup,
       version: version,
       builtAt: new Date().toISOString()
     }));
@@ -218,7 +227,9 @@ function buildPrompt(input) {
       prompt: prompt,
       filled: [TAB_AI_COPY + ' tab', TAB_PACES + ' tab', TAB_LISTS + ' tab', TAB_BRIEF + ' tab'],
       notes: notes,
-      warnings: startWarnings_(window.planStart, new Date()).concat(promptWarnings_(aiCopy.rows, brief.sections))
+      warnings: startWarnings_(window.planStart, new Date())
+        .concat(promptWarnings_(aiCopy.rows, brief.sections))
+        .concat(answerWarnings_(aiCopy))
     };
   } catch (err) {
     return failure_(err, sheetId, 'prompt', version);
@@ -251,13 +262,15 @@ function importProposal(input) {
       briefSections: BRIEF_SECTIONS.map(function (b) { return b.name; }),
       aiSections: expected.aiSections,
       questionsCount: expected.questions,
-      units: expected.units
+      units: expected.units,
+      raceDay: dayIndex_(parseDate_(expected.raceDate))
     });
     if (result.errors.length) {
       log_(sheetId, 'import', version, 'invalid');
       return { ok: false, errors: result.errors };
     }
 
+    var warnings = planWarnings_(result.clean.weeks, readAiCopy_(ss), parseDate_(expected.planStart), expected.warmup);
     var stamp = Utilities.formatDate(new Date(), 'Europe/London', 'd MMM yyyy HH:mm');
     writeProposalTab_(ss, result.clean, version, stamp, expected);
     writeRationaleTab_(ss, result.clean, version, stamp);
@@ -275,6 +288,7 @@ function importProposal(input) {
         assumptions: result.clean.plan.assumptions.length,
         answers: result.clean.plan.answers_to_questions.length,
         bRaces: result.clean.plan.b_races.length,
+        warnings: warnings,
         expectedFrom: expected.source
       }
     };
@@ -402,10 +416,12 @@ function publishPlan(input) {
     var summary = readAthleteSummary_(ss);
 
     // Athlete-facing text must not carry health words or contact details
+    // Contact details are always refused. Health words may be the coach's own wording, so they need a confirmation.
     var problems = [];
+    var healthHits = [];
     var check = function (where, text) {
       var hit = HEALTH_PATTERN.exec(text);
-      if (hit) problems.push(where + ' contains the health word "' + hit[1] + '".');
+      if (hit) healthHits.push(where + ' contains the health word "' + hit[1] + '".');
       if (EMAIL_PATTERN.test(text)) problems.push(where + ' contains what looks like an email address.');
       if (PHONE_PATTERN.test(text)) problems.push(where + ' contains what looks like a phone number.');
     };
@@ -414,6 +430,10 @@ function publishPlan(input) {
     check('Athlete view note', view.note);
     if (problems.length) {
       throw new UserError_(problems.join(' '), 'publish_blocked', problems.concat(['Edit the wording, then publish again. Nothing was published.']));
+    }
+    if (healthHits.length && !(input && input.confirmHealth === true)) {
+      log_(sheetId, 'publish', version, 'needs_confirm');
+      return { ok: false, needsConfirm: true, problems: healthHits };
     }
 
     var name = cleanFileName_(view.athlete + ' - ' + (view.race || 'Race') + ' - Training plan');
@@ -853,6 +873,7 @@ function readBrief_(ss, aiCopy) {
     aiSections: aiSections,
     questions: questions,
     planStart: planStart,
+    warmup: warmup,
     notes: notes
   };
 }
@@ -864,7 +885,8 @@ function expectedWindow_(ss, sheetId) {
     var build = JSON.parse(saved);
     return {
       weeks: build.weeks, planStart: build.planStart, raceDate: build.raceDate,
-      units: build.units || '', aiSections: build.aiSections || [], questions: build.questions || 0, source: 'prompt'
+      units: build.units || '', aiSections: build.aiSections || [], questions: build.questions || 0,
+      warmup: build.warmup || 0, source: 'prompt'
     };
   }
   var aiCopy = readAiCopy_(ss);
@@ -872,8 +894,84 @@ function expectedWindow_(ss, sheetId) {
   var window = readWindow_(aiCopy, brief);
   return {
     weeks: window.weeks, planStart: isoDate_(window.planStart), raceDate: isoDate_(window.raceDate),
-    units: window.units, aiSections: brief.aiSections, questions: brief.questions.length, source: 'sheet'
+    units: window.units, aiSections: brief.aiSections, questions: brief.questions.length,
+    warmup: brief.warmup || 0, source: 'sheet'
   };
+}
+
+/** Monday = 0 ... Sunday = 6, or null. */
+function dayIndex_(date) {
+  return date ? (date.getUTCDay() + 6) % 7 : null;
+}
+
+function shortDate_(date) {
+  return date.getUTCDate() + ' ' + MONTHS_SHORT[date.getUTCMonth()];
+}
+
+/** Day names from an answer like "Mon, Wed". */
+function daysFrom_(text) {
+  return String(text || '').split(',').map(function (d) { return d.trim(); }).filter(function (d) { return DAY_SHORT.indexOf(d) !== -1; });
+}
+
+/** Warnings about the runner's answers, shown before the prompt is copied. Labels only, never answers. */
+function answerWarnings_(aiCopy) {
+  var fixed = daysFrom_(aiCopy.find(LABEL_FIXED_REST));
+  var both = daysFrom_(aiCopy.find(LABEL_DAYS_AVAILABLE)).filter(function (d) { return fixed.indexOf(d) !== -1; });
+  return both.length
+    ? ['"' + LABEL_DAYS_AVAILABLE + '" and "' + LABEL_FIXED_REST + '" both include ' + both.join(', ') + '. Settle it in the Brief (Firm rules) before asking the AI.']
+    : [];
+}
+
+/** Minutes for one day string, or null when it is a distance (no pace is assumed). Tempo and Interval add the warm-up and cool-down. */
+function sessionMinutes_(text, warmup) {
+  var space = text.indexOf(' ');
+  if (space === -1) return null;
+  var token = text.slice(0, space);
+  var m = QUANTITY_PATTERN.exec(text.slice(space + 1));
+  if (!m) return null;
+  var minutes = m[1] ? (m[2] === 'min' ? Number(m[1]) : null) : (m[5] === 'min' ? Number(m[3]) * Number(m[4]) : null);
+  if (minutes === null) return null;
+  if (token === 'Tempo' || token === 'Interval') minutes += 2 * (Number(warmup) || 0);
+  return minutes;
+}
+
+/**
+ * Warnings on an imported plan (nothing is refused): sessions on holiday or travel dates, and
+ * sessions longer than the time the runner has. Reads only the AI copy answers it needs.
+ */
+function planWarnings_(weeks, aiCopy, planStart, warmup) {
+  var warnings = [];
+  if (!planStart) return warnings;
+
+  var holidays = [];
+  aiCopy.rows.forEach(function (row) {
+    var m = HOLIDAY_FROM.exec(row.label);
+    if (!m) return;
+    var from = parseDate_(row.answer);
+    var to = parseDate_(aiCopy.find('Holiday or travel ' + m[1] + ': to (date)'));
+    if (from && to && to >= from) holidays.push({ n: m[1], from: from, to: to });
+  });
+  var weekday = Number(aiCopy.find(LABEL_TIME_WEEKDAY)) || 0;
+  var weekend = Number(aiCopy.find(LABEL_TIME_WEEKEND)) || 0;
+
+  weeks.forEach(function (w) {
+    w.days.forEach(function (text, j) {
+      if (!text || text === 'Rest') return;
+      var date = new Date(planStart.getTime() + ((w.week - 1) * 7 + j) * 86400000);
+      var where = 'Week ' + w.week + ', ' + DAY_NAMES[j] + ' ' + shortDate_(date);
+      holidays.forEach(function (h) {
+        if (date >= h.from && date <= h.to) {
+          warnings.push(where + ': ' + text + ' falls in holiday or travel ' + h.n + ' (' + shortDate_(h.from) + ' to ' + shortDate_(h.to) + ').');
+        }
+      });
+      var limit = j < 5 ? weekday : weekend;
+      var minutes = sessionMinutes_(text, warmup);
+      if (limit > 0 && minutes !== null && minutes > limit) {
+        warnings.push(where + ': ' + text + ' takes about ' + Math.round(minutes) + ' min, more than the ' + limit + ' min the runner has on ' + (j < 5 ? 'a weekday' : 'the weekend') + '.');
+      }
+    });
+  });
+  return warnings;
 }
 
 /** Fixed result cells on the Paces tab (template v7), as displayed. */
@@ -1091,6 +1189,7 @@ function validateReply_(data, ctx) {
         if (check.token === 'Race') {
           raceCount++;
           if (i !== lastIndex) err(where + ': Race is only allowed in the last week. If this is a B race, write it as BRace.');
+          else if (typeof ctx.raceDay === 'number' && j !== ctx.raceDay) err(where + ': Race must be on race day, ' + DAY_NAMES[ctx.raceDay] + '.');
         }
         if (check.token === B_RACE_TOKEN) bRaceDays.push({ week: i + 1, day: DAY_SHORT[j], where: where });
         days.push(check.value);
@@ -1118,6 +1217,9 @@ function validateReply_(data, ctx) {
   });
 
   if (raceCount > 1) err('Race appears ' + raceCount + ' times. It is allowed at most once, in the last week.');
+  if (raceCount === 0 && typeof ctx.raceDay === 'number' && data.weeks.length === ctx.weeksExpected) {
+    err('The last week needs Race on race day, ' + DAY_NAMES[ctx.raceDay] + '.');
+  }
 
   // ---- B races (prompt v5): exactly one plan.b_races entry for each BRace day ----
   var bRaces = [];
@@ -1666,7 +1768,12 @@ function testValidator() {
     ['Bad approach', withBRace(function (r) { r.plan.b_races[0].approach = 'hard'; }), '"approach" must be milestone or controlled'],
     ['Bad target time', withBRace(function (r) { r.plan.b_races[0].target_time = 'about 45 min'; }), '"target_time" must be a time'],
     ['Day written in full', withBRace(function (r) { r.plan.b_races[0].day = 'Sunday'; }), '"day" must be one of'],
-    ['Race used for a B race', withDay(1, 6, 'Race 10km'), 'write it as BRace']
+    ['Race used for a B race', withDay(1, 6, 'Race 10km'), 'write it as BRace'],
+    ['Race on race day (Sunday)', good(), null, Object.assign({}, ctx, { raceDay: 6 })],
+    ['Race on the wrong day', good(), 'Race must be on race day, Friday', Object.assign({}, ctx, { raceDay: 4 })],
+    ['No Race in the last week', withDay(2, 6, 'Rest'), 'The last week needs Race on race day', Object.assign({}, ctx, { raceDay: 6 })],
+    ['Health word "joints" in a key point', (function () { var r = good(); r.athlete_summary.key_points.push('Listen to your joints.'); return r; })(), 'health word "joints"'],
+    ['"Welcome back" is not a health word', (function () { var r = good(); r.athlete_summary.intro = 'Welcome back to running.'; return r; })(), null]
   ];
 
   var passed = 0;

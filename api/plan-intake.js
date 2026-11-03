@@ -463,6 +463,12 @@ function validateAnswers(input) {
     if (clean[`baseline${n}_date`] && clean[`baseline${n}_date`] > tomorrow) return null;
   }
 
+  // A day cannot be both available and a fixed rest day
+  if (clean.fixed_rest_days) {
+    const fixed = clean.fixed_rest_days.split(', ');
+    if (clean.days_available.split(', ').some((day) => fixed.includes(day))) return null;
+  }
+
   // Baselines and commitments are all-or-nothing rows
   for (const n of [2, 3]) {
     if (!rowComplete(clean, [`baseline${n}_distance`, `baseline${n}_date`, `baseline${n}_time`], [`baseline${n}_conditions`])) return null;
